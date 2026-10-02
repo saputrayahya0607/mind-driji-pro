@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="accessibility_service_label">MIND DRIJI Doomscroll Monitor</string>
+    <string name="accessibility_service_description">Mendukung deteksi kebiasaan scrolling berulang pada aplikasi media sosial untuk memonitor digital wellness secara privat tanpa membaca isi konten atau teks pribadi.</string>
+</resources>

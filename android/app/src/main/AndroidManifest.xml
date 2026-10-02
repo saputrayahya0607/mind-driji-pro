@@ -1,0 +1,115 @@
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools">
+
+    <!-- Special Access Permission untuk membaca data statistik penggunaan aplikasi -->
+    <uses-permission
+        android:name="android.permission.PACKAGE_USAGE_STATS"
+        tools:ignore="ProtectedPermissions" />
+
+    <!-- Camera Permission untuk Eye Monitoring (hanya aktif saat user memulai monitoring) -->
+    <uses-permission android:name="android.permission.CAMERA" />
+    <uses-feature android:name="android.hardware.camera.any" />
+    <uses-feature android:name="android.hardware.camera.front" android:required="false" />
+
+    <!-- Foreground Service permissions untuk background camera sampling (Android 14+ / API 34+ compliant) -->
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_CAMERA" />
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+    <uses-permission android:name="android.permission.WAKE_LOCK" />
+
+    <!-- Diperlukan pada Android 11+ (API 30+) untuk mendapatkan nama/label dari package aplikasi lain -->
+    <uses-permission
+        android:name="android.permission.QUERY_ALL_PACKAGES"
+        tools:ignore="QueryAllPackagesPermission" />
+
+    <application
+        android:label="mind_drji"
+        android:name="${applicationName}"
+        android:icon="@mipmap/ic_launcher">
+        <activity
+            android:name=".MainActivity"
+            android:exported="true"
+            android:launchMode="singleTop"
+            android:taskAffinity=""
+            android:theme="@style/LaunchTheme"
+            android:configChanges="orientation|keyboardHidden|keyboard|screenSize|smallestScreenSize|locale|layoutDirection|fontScale|screenLayout|density|uiMode"
+            android:hardwareAccelerated="true"
+            android:windowSoftInputMode="adjustResize">
+            <!-- Specifies an Android theme to apply to this Activity as soon as
+                 the Android process has started. This theme is visible to the user
+                 while the Flutter UI initializes. After that, this theme continues
+                 to determine the Window background behind the Flutter UI. -->
+            <meta-data
+              android:name="io.flutter.embedding.android.NormalTheme"
+              android:resource="@style/NormalTheme"
+              />
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN"/>
+                <category android:name="android.intent.category.LAUNCHER"/>
+            </intent-filter>
+        </activity>
+
+        <!-- Accessibility Service untuk mendeteksi event scrolling nyata (Doomscroll Monitoring) -->
+        <service
+            android:name=".DoomscrollAccessibilityService"
+            android:permission="android.permission.BIND_ACCESSIBILITY_SERVICE"
+            android:label="@string/accessibility_service_label"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.accessibilityservice.AccessibilityService" />
+            </intent-filter>
+            <meta-data
+                android:name="android.accessibilityservice"
+                android:resource="@xml/accessibility_service_config" />
+        </service>
+
+        <!-- Foreground Service untuk Background Eye Monitoring Periodic Camera Sampling -->
+        <service
+            android:name=".EyeMonitoringForegroundService"
+            android:foregroundServiceType="camera"
+            android:exported="false" />
+
+        <!-- Don't delete the meta-data below.
+             This is used by the Flutter tool to generate GeneratedPluginRegistrant.java -->
+        <meta-data
+            android:name="flutterEmbedding"
+            android:value="2" />
+    </application>
+    <!--
+      PACKAGE VISIBILITY STRATEGY (Android 11+ / API 30+):
+      1. QUERY_ALL_PACKAGES: Diperlukan oleh fitur Screen Time Digital Wellness MIND DRIJI
+         untuk menghitung agregat penggunaan harian seluruh aplikasi yang terpasang pada perangkat
+         dan menyelesaikan label aplikasi pengguna via PackageManager. Sesuai kebijakan Google Play,
+         kasus penggunaan 'Digital Wellbeing & Screen Time Monitoring' merupakan kategori yang
+         diperbolehkan untuk menggunakan izin ini.
+      2. TARGET PACKAGES DECLARATION (<package>): Sebagai prinsip pertahanan berlapis (defense in depth),
+         target aplikasi pemantauan perilaku (behavioral monitoring: TikTok, Instagram, YouTube, Snapchat)
+         dideklarasikan secara eksplisit dalam blok <queries>. Hal ini menjamin package-package tersebut
+         tetap terlihat dan dapat diidentifikasi secara konsisten di seluruh varian Android, bahkan jika
+         izin QUERY_ALL_PACKAGES dibatasi pada OEM atau profil kerja tertentu.
+    -->
+    <queries>
+        <!-- Flutter Engine Process Text Query -->
+        <intent>
+            <action android:name="android.intent.action.PROCESS_TEXT"/>
+            <data android:mimeType="text/plain"/>
+        </intent>
+
+        <!-- Behavioral Monitoring Target Packages (Multi-Package & Multi-Region Support) -->
+        <!-- TikTok Varian: SEA/ID, Global, Lite, Regional -->
+        <package android:name="com.ss.android.ugc.trill" />
+        <package android:name="com.zhiliaoapp.musically" />
+        <package android:name="com.zhiliaoapp.musically.go" />
+        <package android:name="com.ss.android.ugc.aweme" />
+
+        <!-- Meta Platforms -->
+        <package android:name="com.instagram.android" />
+        <package android:name="com.instagram.lite" />
+
+        <!-- Google Video Platform -->
+        <package android:name="com.google.android.youtube" />
+
+        <!-- Snap Platform -->
+        <package android:name="com.snapchat.android" />
+    </queries>
+</manifest>
