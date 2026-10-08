@@ -225,13 +225,7 @@ class EyeMonitoringController extends GetxController with WidgetsBindingObserver
     } else if (state == AppLifecycleState.resumed) {
       checkPermissionAndStatus();
       loadStoredSessions();
-      if (_syncManager.isOnline.value) {
-        _syncManager.refreshPendingCount().then((_) {
-          if (_syncManager.pendingCount.value > 0) {
-            _syncManager.syncPendingData().then((_) => loadStoredSessions());
-          }
-        });
-      }
+      _syncManager.refreshPendingCount();
     }
   }
 
@@ -241,16 +235,8 @@ class EyeMonitoringController extends GetxController with WidgetsBindingObserver
     errorMessage.value = null;
     await checkPermissionAndStatus();
     await loadStoredSessions();
+    await _syncManager.refreshPendingCount();
     isLoading.value = false;
-
-    // Picu auto-sync jika online dan ada antrean pending
-    if (_syncManager.isOnline.value) {
-      await _syncManager.refreshPendingCount();
-      if (_syncManager.pendingCount.value > 0) {
-        await _syncManager.syncPendingData();
-        await loadStoredSessions();
-      }
-    }
   }
 
   /// Memeriksa status izin kamera dan status monitoring aktif

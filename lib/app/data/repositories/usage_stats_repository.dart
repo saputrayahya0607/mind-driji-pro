@@ -43,34 +43,36 @@ class UsageStatsRepository {
   String get _currentUserId =>
       _supabase?.auth.currentUser?.id ?? 'local_user';
 
-  /// Mengambil data penggunaan hari ini:
-  /// 1. Ambil data real dari provider native Android
-  /// 2. Simpan (UPSERT) secara lokal ke SQLite via LocalUsageRepository
-  /// 3. Jika native gagal, fallback mengambil dari SQLite lokal (offline-first)
+  /// Mengambil data penggunaan hari ini langsung dari perangkat (Native UsageStats)
+  /// Jika native gagal / tidak tersedia, fallback mengambil dari database lokal
   Future<UsageStatsModel> getTodayUsage() async {
-    final actualUserId = _currentUserId;
-    final today = _formatDate(DateTime.now());
-
     try {
       final realStats = await _provider.getTodayUsage();
-
-      // Simpan ke SQLite lokal
-      await _localRepository.saveTodayUsage(
-        userId: actualUserId,
-        date: today,
-        totalUsageMillis: realStats.totalUsageMillis,
-        apps: realStats.apps,
-      );
-
       return realStats;
     } catch (e) {
-      // Fallback offline: muat data yang tersimpan di SQLite lokal
+      // Fallback offline: muat data yang tersimpan di database lokal jika ada
       final localStats = await getLocalTodayUsage();
       if (localStats != null) {
         return localStats;
       }
       rethrow;
     }
+  }
+
+  /// Menyimpan snapshot data penggunaan harian ke database lokal SQLite
+  /// (Dijalankan pada akhir hari / pukul 23:59 WIB sebelum sinkronisasi cloud)
+  Future<void> saveDailySnapshot({UsageStatsModel? stats, DateTime? date}) async {
+    final actualUserId = _currentUserId;
+    final targetDate = date ?? DateTime.now();
+    final dateStr = _formatDate(targetDate);
+    final usageToSave = stats ?? await _provider.getTodayUsage();
+
+    await _localRepository.saveTodayUsage(
+      userId: actualUserId,
+      date: dateStr,
+      totalUsageMillis: usageToSave.totalUsageMillis,
+      apps: usageToSave.apps,
+    );
   }
 
   /// Membaca data penggunaan hari ini langsung dari SQLite lokal

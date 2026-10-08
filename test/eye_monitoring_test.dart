@@ -440,7 +440,7 @@ void main() {
       expect(find.text('Matikan Monitoring'), findsOneWidget);
     });
 
-    testWidgets('EyeMonitoringView menampilkan status Menunggu Sinkronisasi ketika sesi lokal berstatus pending',
+    testWidgets('EyeMonitoringView menampilkan info Penyimpanan Lokal Aktif dan jadwal sinkronisasi 23:59',
         (tester) async {
       final controller = Get.put(EyeMonitoringController(
         repository: fakeRepo,
@@ -448,7 +448,7 @@ void main() {
       ));
       await controller.initialCheck();
 
-      // Tambahkan sesi lokal yang berstatus pending
+      // Tambahkan sesi lokal
       controller.storedSessions.add(
         EyeMonitoringSessionData(
           id: 'sess-pending-1',
@@ -476,54 +476,10 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      // Verifikasi banner konsisten menampilkan 'Menunggu Sinkronisasi'
-      expect(find.text('Menunggu Sinkronisasi'), findsOneWidget);
-      expect(find.text('Pending'), findsOneWidget);
-      expect(find.text('Tersinkronisasi Penuh'), findsNothing);
-    });
-
-    testWidgets('EyeMonitoringView menampilkan status Sinkronisasi Bermasalah ketika ada sesi yang failed',
-        (tester) async {
-      final controller = Get.put(EyeMonitoringController(
-        repository: fakeRepo,
-        syncManager: fakeSyncManager,
-      ));
-      await controller.initialCheck();
-
-      // Tambahkan sesi lokal yang berstatus failed
-      controller.storedSessions.add(
-        EyeMonitoringSessionData(
-          id: 'sess-failed-1',
-          userId: 'test-user',
-          deviceId: 'dev-1',
-          startedAt: DateTime.now().subtract(const Duration(minutes: 10)),
-          endedAt: DateTime.now().subtract(const Duration(minutes: 9)),
-          durationMillis: BigInt.from(60000),
-          averageEar: 0.26,
-          minEar: 0.15,
-          eyeClosureEvents: 3,
-          blinkCount: 15,
-          collectedAt: DateTime.now(),
-          syncStatus: SyncStatus.failed,
-          syncAttempts: 1,
-          lastSyncError: 'Supabase network timeout',
-          createdAt: DateTime.now(),
-          updatedAt: DateTime.now(),
-        ),
-      );
-
-      await tester.pumpWidget(
-        const GetMaterialApp(
-          home: EyeMonitoringView(),
-        ),
-      );
-      await tester.pumpAndSettle();
-
-      // Verifikasi banner konsisten menampilkan 'Sinkronisasi Bermasalah' dan tombol 'Retry'
-      expect(find.text('Sinkronisasi Bermasalah'), findsOneWidget);
-      expect(find.text('Retry'), findsOneWidget);
-      expect(find.text('Failed'), findsOneWidget);
-      expect(find.text('Tersinkronisasi Penuh'), findsNothing);
+      // Verifikasi banner info penyimpanan lokal aktif dan status tersimpan
+      expect(find.text('Penyimpanan Lokal Aktif'), findsOneWidget);
+      expect(find.textContaining('23:59 WIB'), findsOneWidget);
+      expect(find.text('Tersimpan'), findsOneWidget);
     });
   });
 }

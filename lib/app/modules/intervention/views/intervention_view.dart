@@ -184,11 +184,11 @@ class InterventionView extends GetView<InterventionController> {
           const SizedBox(height: 14),
           Obx(() {
             return Row(
-              children: [15, 30, 60].map((mins) {
+              children: [5, 15, 30, 60].map((mins) {
                 final isSelected = selectedBreak.value == mins;
                 return Expanded(
                   child: Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 4),
+                    padding: const EdgeInsets.symmetric(horizontal: 3),
                     child: ChoiceChip(
                       label: Center(
                         child: Text(

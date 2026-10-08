@@ -17,16 +17,35 @@ class SplashView extends GetView<SplashController> {
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               Container(
-                width: 80,
-                height: 80,
+                width: 88,
+                height: 88,
                 decoration: BoxDecoration(
-                  color: AppColors.primary.withAlpha(26),
-                  borderRadius: BorderRadius.circular(20),
+                  borderRadius: BorderRadius.circular(22),
+                  boxShadow: [
+                    BoxShadow(
+                      color: AppColors.primary.withAlpha(50),
+                      blurRadius: 20,
+                      offset: const Offset(0, 8),
+                    ),
+                  ],
                 ),
-                child: const Icon(
-                  Icons.spa_rounded,
-                  size: 42,
-                  color: AppColors.primary,
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(22),
+                  child: Image.asset(
+                    'assets/icons/app_icon.png',
+                    fit: BoxFit.cover,
+                    errorBuilder: (context, error, stackTrace) => Container(
+                      decoration: BoxDecoration(
+                        color: AppColors.primary.withAlpha(26),
+                        borderRadius: BorderRadius.circular(22),
+                      ),
+                      child: const Icon(
+                        Icons.spa_rounded,
+                        size: 42,
+                        color: AppColors.primary,
+                      ),
+                    ),
+                  ),
                 ),
               ),
               const SizedBox(height: 20),

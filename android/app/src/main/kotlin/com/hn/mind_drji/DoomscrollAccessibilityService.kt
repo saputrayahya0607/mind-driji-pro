@@ -32,18 +32,25 @@ import java.util.concurrent.ConcurrentHashMap
 object DoomscrollConfig {
     const val TAG = "MIND_DRIJI_DOOMSCROLL"
     const val INACTIVITY_TIMEOUT_MS = 60_000L // 60 detik timeout ketidakaktifan
+    private const val PREFS_TARGET_APPS = "minddriji_target_apps"
+    private const val KEY_CUSTOM_APPS = "custom_packages_json"
+
+    private val defaultPackagesMap = mapOf(
+        "com.ss.android.ugc.trill" to "TikTok",             // TikTok SEA / Indonesia
+        "com.zhiliaoapp.musically" to "TikTok",             // TikTok Global
+        "com.zhiliaoapp.musically.go" to "TikTok Lite",      // TikTok Lite
+        "com.ss.android.ugc.aweme" to "TikTok",             // TikTok / Douyin
+        "com.instagram.android" to "Instagram",             // Instagram
+        "com.instagram.lite" to "Instagram Lite",           // Instagram Lite
+        "com.google.android.youtube" to "YouTube",          // YouTube
+        "com.snapchat.android" to "Snapchat",               // Snapchat
+        "com.twitter.android" to "X (Twitter)",             // X / Twitter
+        "com.facebook.katana" to "Facebook",               // Facebook
+        "com.facebook.lite" to "Facebook Lite"              // Facebook Lite
+    )
 
     // ConcurrentHashMap agar thread-safe dan dapat dikonfigurasi dinamis
-    private val targetPackagesMap = ConcurrentHashMap<String, String>().apply {
-        put("com.ss.android.ugc.trill", "TikTok")             // TikTok SEA / Indonesia
-        put("com.zhiliaoapp.musically", "TikTok")             // TikTok Global
-        put("com.zhiliaoapp.musically.go", "TikTok Lite")      // TikTok Lite
-        put("com.ss.android.ugc.aweme", "TikTok")             // TikTok / Douyin
-        put("com.instagram.android", "Instagram")             // Instagram
-        put("com.instagram.lite", "Instagram Lite")           // Instagram Lite
-        put("com.google.android.youtube", "YouTube")          // YouTube
-        put("com.snapchat.android", "Snapchat")                // Snapchat
-    }
+    private val targetPackagesMap = ConcurrentHashMap<String, String>(defaultPackagesMap)
 
     val TARGET_PACKAGES: Map<String, String>
         get() = targetPackagesMap
@@ -60,6 +67,58 @@ object DoomscrollConfig {
     fun addTargetPackage(packageName: String, appName: String) {
         targetPackagesMap[packageName] = appName
         Log.d(TAG, "Added target package: $packageName ($appName)")
+    }
+
+    fun loadTargetPackages(context: Context): Map<String, String> {
+        try {
+            val prefs = context.getSharedPreferences(PREFS_TARGET_APPS, Context.MODE_PRIVATE)
+            val jsonStr = prefs.getString(KEY_CUSTOM_APPS, null)
+            if (!jsonStr.isNullOrEmpty()) {
+                val json = JSONObject(jsonStr)
+                targetPackagesMap.clear()
+                val keys = json.keys()
+                while (keys.hasNext()) {
+                    val key = keys.next()
+                    targetPackagesMap[key] = json.getString(key)
+                }
+                Log.d(TAG, "Loaded custom target packages: ${targetPackagesMap.size} apps")
+            } else {
+                targetPackagesMap.clear()
+                targetPackagesMap.putAll(defaultPackagesMap)
+            }
+        } catch (e: Exception) {
+            Log.e(TAG, "Gagal memuat custom target packages: ${e.localizedMessage}")
+        }
+        return targetPackagesMap
+    }
+
+    fun saveTargetPackages(context: Context, packages: Map<String, String>) {
+        try {
+            targetPackagesMap.clear()
+            targetPackagesMap.putAll(packages)
+            val json = JSONObject(packages)
+            context.getSharedPreferences(PREFS_TARGET_APPS, Context.MODE_PRIVATE)
+                .edit()
+                .putString(KEY_CUSTOM_APPS, json.toString())
+                .apply()
+            Log.d(TAG, "Saved custom target packages: ${packages.size} apps")
+        } catch (e: Exception) {
+            Log.e(TAG, "Gagal menyimpan custom target packages: ${e.localizedMessage}")
+        }
+    }
+
+    fun resetToDefaults(context: Context) {
+        try {
+            targetPackagesMap.clear()
+            targetPackagesMap.putAll(defaultPackagesMap)
+            context.getSharedPreferences(PREFS_TARGET_APPS, Context.MODE_PRIVATE)
+                .edit()
+                .remove(KEY_CUSTOM_APPS)
+                .apply()
+            Log.d(TAG, "Reset target packages to defaults")
+        } catch (e: Exception) {
+            Log.e(TAG, "Gagal reset custom target packages: ${e.localizedMessage}")
+        }
     }
 }
 
@@ -222,6 +281,7 @@ class DoomscrollAccessibilityService : AccessibilityService() {
     override fun onServiceConnected() {
         super.onServiceConnected()
         instance = this
+        DoomscrollConfig.loadTargetPackages(applicationContext)
         Log.i(DoomscrollConfig.TAG, "[MIND_DRIJI_DOOMSCROLL] Accessibility connected")
         Log.d(DoomscrollConfig.TAG, "onServiceConnected: AccessibilityService connected and initialized")
 

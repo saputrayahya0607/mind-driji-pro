@@ -108,6 +108,33 @@ class FakeLocalUsageRepository extends LocalUsageRepository {
             a.date.compareTo(endDate) <= 0)
         .toList();
   }
+
+  @override
+  Future<void> saveTodayUsage({
+    required String userId,
+    String? deviceId,
+    required String date,
+    required int totalUsageMillis,
+    required List<AppUsageModel> apps,
+  }) async {
+    storedScreenTimes.removeWhere((st) => st.userId == userId && st.date == date);
+    storedScreenTimes.add(createScreenTimeData(
+      userId: userId,
+      date: date,
+      totalMillis: totalUsageMillis,
+    ));
+
+    storedAppUsages.removeWhere((a) => a.userId == userId && a.date == date);
+    for (final app in apps) {
+      storedAppUsages.add(createAppUsageData(
+        userId: userId,
+        date: date,
+        pkg: app.packageName,
+        appName: app.appName,
+        millis: app.usageMillis,
+      ));
+    }
+  }
 }
 
 class FakeDoomscrollRepository extends DoomscrollRepository {
@@ -722,6 +749,106 @@ void main() {
       // 30 September 2026 berada dalam minggu 28 Sep – 4 Okt
       ctrl.selectedDate.value = DateTime(2026, 9, 30);
       expect(ctrl.dateRangeLabel, '28 Sep – 4 Okt');
+    });
+
+    test('Weekly Tab: Backfill hari lampau dari UsageStatsManager jika SQLite kosong', () async {
+      final now = DateTime.now();
+      // Misal hari ini adalah hari tertentu dalam minggu ini (Senin-Minggu)
+      final monday = DateTime(now.year, now.month, now.day).subtract(Duration(days: now.weekday - 1));
+
+      // Jika sekarang bukan hari Senin, buat mock data getUsageRange untuk hari Senin lampau
+      if (now.weekday > 1) {
+        final pastMondayStart = DateTime(monday.year, monday.month, monday.day, 0, 0, 0);
+        final pastMondayEnd = pastMondayStart.add(const Duration(days: 1));
+        final key = '${pastMondayStart.millisecondsSinceEpoch}_${pastMondayEnd.millisecondsSinceEpoch}';
+
+        fakeUsageStats.rangeUsageMap[key] = const UsageStatsModel(
+          totalUsageMillis: 7200000, // 2 jam
+          apps: [
+            AppUsageModel(packageName: 'com.mobile.legends', appName: 'Mobile Legends', usageMillis: 3600000),
+            AppUsageModel(packageName: 'com.tiktok.app', appName: 'TikTok', usageMillis: 3600000),
+          ],
+        );
+      }
+
+      final weeklyDays = await dataService.getWeeklyDays(
+        dateInWeek: now,
+        userId: testUser,
+      );
+
+      expect(weeklyDays.length, 7);
+      if (now.weekday > 1) {
+        // Senin lampau berhasil di-backfill ke 7200000 ms
+        expect(weeklyDays[0].screenTimeMillis, 7200000);
+      }
+    });
+
+    test('Weekly Tab: getTopApps menggabungkan SQLite lampau dan live apps hari ini', () async {
+      final now = DateTime.now();
+      final monday = DateTime(now.year, now.month, now.day).subtract(Duration(days: now.weekday - 1));
+
+      // 1. Simpan app hari lampau di SQLite jika ada
+      if (now.weekday > 1) {
+        final pastDateStr = dataService.formatDate(monday);
+        fakeLocalUsage.storedAppUsages.add(
+          createAppUsageData(
+            userId: testUser,
+            date: pastDateStr,
+            pkg: 'com.game.magicchess',
+            appName: 'Magic Chess',
+            millis: 3600000, // 1 jam
+          ),
+        );
+      }
+
+      // 2. Set live apps hari ini
+      fakeUsageStats.mockTodayUsage = const UsageStatsModel(
+        totalUsageMillis: 1800000,
+        apps: [
+          AppUsageModel(packageName: 'com.game.magicchess', appName: 'Magic Chess', usageMillis: 1800000), // +30m
+          AppUsageModel(packageName: 'com.zhiliaoapp.musically', appName: 'TikTok', usageMillis: 1800000), // 30m
+        ],
+      );
+
+      final topApps = await dataService.getTopApps(
+        period: MonitoringPeriod.weekly,
+        date: now,
+        userId: testUser,
+      );
+
+      expect(topApps.isNotEmpty, isTrue);
+      final mc = topApps.firstWhere((a) => a.packageName == 'com.game.magicchess');
+      if (now.weekday > 1) {
+        // 1 jam (SQLite) + 30m (Live) = 5400000 ms
+        expect(mc.usageMillis, 5400000);
+      } else {
+        expect(mc.usageMillis, 1800000);
+      }
+    });
+
+    test('Weekly Tab: Screen time summary menghitung total dan comparison text', () async {
+      final wednesday = DateTime(2026, 9, 30); // Rabu
+      // Minggu ini: 3 hari ada data (30m + 1j + 1j 30m = 3j = 10800000 ms)
+      fakeLocalUsage.storedScreenTimes.addAll([
+        createScreenTimeData(userId: testUser, date: '2026-09-28', totalMillis: 1800000),
+        createScreenTimeData(userId: testUser, date: '2026-09-29', totalMillis: 3600000),
+        createScreenTimeData(userId: testUser, date: '2026-09-30', totalMillis: 5400000),
+      ]);
+
+      // Minggu lalu: total 2 jam (7200000 ms) -> Naik 1j dibanding minggu lalu
+      fakeLocalUsage.storedScreenTimes.addAll([
+        createScreenTimeData(userId: testUser, date: '2026-09-21', totalMillis: 3600000),
+        createScreenTimeData(userId: testUser, date: '2026-09-22', totalMillis: 3600000),
+      ]);
+
+      final summary = await dataService.getScreenTimeSummary(
+        period: MonitoringPeriod.weekly,
+        date: wednesday,
+        userId: testUser,
+      );
+
+      expect(summary['totalMillis'], 10800000);
+      expect(summary['comparisonText'], 'Naik 1j dibanding minggu lalu');
     });
   });
 

@@ -26,30 +26,6 @@ class DoomscrollView extends GetView<DoomscrollController> {
           onPressed: () => Get.back(),
           tooltip: 'Kembali',
         ),
-        actions: [
-          Obx(() {
-            final isSyncing = controller.syncManager.isSyncing.value;
-            return IconButton(
-              icon: isSyncing
-                  ? const SizedBox(
-                      width: 18,
-                      height: 18,
-                      child: CircularProgressIndicator(
-                        strokeWidth: 2,
-                        color: AppColors.primary,
-                      ),
-                    )
-                  : const Icon(
-                      Icons.sync_rounded,
-                      color: AppColors.textPrimary,
-                      size: 22,
-                    ),
-              tooltip: 'Sinkronisasi Cloud',
-              onPressed: isSyncing ? null : () => controller.manualSync(),
-            );
-          }),
-          const SizedBox(width: 8),
-        ],
       ),
       body: Obx(() {
         if (controller.isLoading.value) {
@@ -87,7 +63,7 @@ class DoomscrollView extends GetView<DoomscrollController> {
               children: [
                 _buildHeader(),
                 const SizedBox(height: 14),
-                _buildSyncStatusBanner(),
+                _buildSyncInfoCard(),
                 const SizedBox(height: 16),
                 _buildServiceStatusCard(),
                 const SizedBox(height: 16),
@@ -130,145 +106,66 @@ class DoomscrollView extends GetView<DoomscrollController> {
     );
   }
 
-  /// Banner status sinkronisasi ke Supabase
-  Widget _buildSyncStatusBanner() {
-    return Obx(() {
-      final syncMgr = controller.syncManager;
-      final isSyncing = syncMgr.isSyncing.value;
-      final isOnline = syncMgr.isOnline.value;
-      final pending = syncMgr.pendingCount.value;
-
-      Color badgeBg;
-      Color badgeBorder;
-      Color iconColor;
-      IconData iconData;
-      String statusTitle;
-      String statusSubtitle;
-
-      if (isSyncing) {
-        badgeBg = const Color(0xFFE6FFFA);
-        badgeBorder = const Color(0xFF81E6D9);
-        iconColor = AppColors.primary;
-        iconData = Icons.sync_rounded;
-        statusTitle = 'Menyinkronkan sesi ke Cloud...';
-        statusSubtitle = 'Menghubungkan ke Supabase';
-      } else if (!isOnline) {
-        badgeBg = const Color(0xFFF1F5F9);
-        badgeBorder = const Color(0xFFCBD5E1);
-        iconColor = const Color(0xFF64748B);
-        iconData = Icons.cloud_off_rounded;
-        statusTitle = 'Mode Offline (SQLite Aktif)';
-        statusSubtitle = pending > 0
-            ? '$pending data tersimpan lokal, siap sync saat online'
-            : 'Data sesi tersimpan aman di database lokal';
-      } else if (pending > 0) {
-        badgeBg = const Color(0xFFFFFBEB);
-        badgeBorder = const Color(0xFFFDE68A);
-        iconColor = const Color(0xFFD97706);
-        iconData = Icons.cloud_queue_rounded;
-        statusTitle = 'Menunggu Sinkronisasi';
-        statusSubtitle = '$pending data lokal siap disinkronkan';
-      } else {
-        badgeBg = const Color(0xFFF0FDF4);
-        badgeBorder = const Color(0xFFBBF7D0);
-        iconColor = const Color(0xFF16A34A);
-        iconData = Icons.cloud_done_rounded;
-        statusTitle = 'Tersinkronisasi Penuh';
-        statusSubtitle = 'Data sesi lokal & Supabase Cloud telah sinkron';
-      }
-
-      return Container(
-        width: double.infinity,
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 11),
-        decoration: BoxDecoration(
-          color: badgeBg,
-          borderRadius: BorderRadius.circular(14),
-          border: Border.all(color: badgeBorder, width: 1),
-        ),
-        child: Row(
-          children: [
-            Container(
-              width: 34,
-              height: 34,
-              decoration: BoxDecoration(
-                color: Colors.white,
-                shape: BoxShape.circle,
-                boxShadow: [
-                  BoxShadow(
-                    color: iconColor.withValues(alpha: 0.15),
-                    blurRadius: 6,
-                    offset: const Offset(0, 2),
-                  ),
-                ],
-              ),
-              child: isSyncing
-                  ? Padding(
-                      padding: const EdgeInsets.all(8.0),
-                      child: CircularProgressIndicator(
-                        strokeWidth: 2,
-                        color: iconColor,
-                      ),
-                    )
-                  : Icon(iconData, size: 18, color: iconColor),
+  /// Kartu informasi penyimpanan lokal & jadwal sinkronisasi otomatis
+  Widget _buildSyncInfoCard() {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+      decoration: BoxDecoration(
+        color: const Color(0xFFF0FDF4),
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: const Color(0xFFBBF7D0), width: 1),
+      ),
+      child: Row(
+        children: [
+          Container(
+            width: 36,
+            height: 36,
+            decoration: BoxDecoration(
+              color: Colors.white,
+              shape: BoxShape.circle,
+              boxShadow: [
+                BoxShadow(
+                  color: const Color(0xFF16A34A).withValues(alpha: 0.12),
+                  blurRadius: 6,
+                  offset: const Offset(0, 2),
+                ),
+              ],
             ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    statusTitle,
-                    style: const TextStyle(
-                      fontSize: 13,
-                      fontWeight: FontWeight.w600,
-                      color: AppColors.textPrimary,
-                    ),
-                  ),
-                  const SizedBox(height: 2),
-                  Text(
-                    statusSubtitle,
-                    style: const TextStyle(
-                      fontSize: 11,
-                      color: AppColors.textSecondary,
-                    ),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                ],
-              ),
+            child: const Icon(
+              Icons.schedule_rounded,
+              size: 20,
+              color: Color(0xFF16A34A),
             ),
-            if (!isSyncing && isOnline && pending > 0)
-              InkWell(
-                onTap: () => controller.manualSync(),
-                borderRadius: BorderRadius.circular(8),
-                child: Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                  decoration: BoxDecoration(
-                    color: AppColors.primary,
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: const Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(Icons.sync, size: 13, color: Colors.white),
-                      SizedBox(width: 4),
-                      Text(
-                        'Sync',
-                        style: TextStyle(
-                          fontSize: 11,
-                          fontWeight: FontWeight.w600,
-                          color: Colors.white,
-                        ),
-                      ),
-                    ],
+          ),
+          const SizedBox(width: 12),
+          const Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Penyimpanan Lokal Aktif',
+                  style: TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600,
+                    color: AppColors.textPrimary,
                   ),
                 ),
-              ),
-          ],
-        ),
-      );
-    });
+                SizedBox(height: 2),
+                Text(
+                  'Data sesi scrolling tersimpan aman di perangkat. Sinkronisasi otomatis ke cloud berjalan setiap pukul 23:59 WIB.',
+                  style: TextStyle(
+                    fontSize: 11,
+                    color: AppColors.textSecondary,
+                    height: 1.3,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
   }
 
   /// Kartu status Accessibility Service (Aktif / Belum Aktif)
@@ -502,8 +399,6 @@ class DoomscrollView extends GetView<DoomscrollController> {
         ? '$durationSeconds dtk'
         : '${durationSeconds ~/ 60}m ${durationSeconds % 60}d';
 
-    final isSynced = session.syncStatus == 'synced';
-
     return Container(
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
@@ -614,24 +509,18 @@ class DoomscrollView extends GetView<DoomscrollController> {
                       ),
                     ),
                     const Spacer(),
-                    Icon(
-                      isSynced
-                          ? Icons.cloud_done_rounded
-                          : Icons.cloud_upload_outlined,
+                    const Icon(
+                      Icons.check_circle_outline_rounded,
                       size: 13,
-                      color: isSynced
-                          ? const Color(0xFF16A34A)
-                          : const Color(0xFFD97706),
+                      color: Color(0xFF16A34A),
                     ),
                     const SizedBox(width: 3),
-                    Text(
-                      isSynced ? 'Synced' : 'Pending',
+                    const Text(
+                      'Tersimpan',
                       style: TextStyle(
                         fontSize: 10,
                         fontWeight: FontWeight.w600,
-                        color: isSynced
-                            ? const Color(0xFF16A34A)
-                            : const Color(0xFFD97706),
+                        color: Color(0xFF16A34A),
                       ),
                     ),
                   ],

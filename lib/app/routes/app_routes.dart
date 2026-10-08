@@ -17,6 +17,7 @@ abstract class Routes {
   static const eyeRelaxation = _Paths.eyeRelaxation;
   static const focusMode = _Paths.focusMode;
   static const interventionHistory = _Paths.interventionHistory;
+  static const targetApps = _Paths.targetApps;
 }
 
 abstract class _Paths {
@@ -38,4 +39,5 @@ abstract class _Paths {
   static const eyeRelaxation = '/intervention/eye-relaxation';
   static const focusMode = '/intervention/focus-mode';
   static const interventionHistory = '/intervention-history';
+  static const targetApps = '/target-apps';
 }

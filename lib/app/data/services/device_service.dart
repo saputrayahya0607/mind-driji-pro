@@ -238,4 +238,37 @@ class DeviceService extends GetxService {
       return false;
     }
   }
+
+  /// Memeriksa apakah aplikasi telah dikecualikan dari pembatasan optimasi baterai (Doze mode)
+  Future<bool> checkBatteryOptimization() async {
+    try {
+      final isIgnoring =
+          await _channel.invokeMethod<bool>('checkBatteryOptimization');
+      return isIgnoring ?? true;
+    } catch (_) {
+      return true;
+    }
+  }
+
+  /// Meminta pengguna untuk mengecualikan aplikasi dari optimasi baterai (Ignore Battery Optimizations)
+  Future<bool> requestIgnoreBatteryOptimization() async {
+    try {
+      final requested = await _channel
+          .invokeMethod<bool>('requestIgnoreBatteryOptimization');
+      return requested ?? false;
+    } catch (_) {
+      return false;
+    }
+  }
+
+  /// Membuka halaman pengaturan Auto-Start khusus OEM (Xiaomi, Samsung, Oppo, Vivo, Asus, dll)
+  Future<bool> openOemAutoStartSettings() async {
+    try {
+      final opened =
+          await _channel.invokeMethod<bool>('openOemAutoStartSettings');
+      return opened ?? false;
+    } catch (_) {
+      return false;
+    }
+  }
 }

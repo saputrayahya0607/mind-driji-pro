@@ -366,8 +366,8 @@ void main() {
       expect(find.text('Instagram'), findsOneWidget);
       expect(find.text('32 scroll'), findsOneWidget);
       expect(find.text('28 bawah'), findsOneWidget);
-      expect(find.text('4 atas'), findsOneWidget);
-      expect(find.text('Synced'), findsOneWidget);
+      expect(find.text('Tersimpan'), findsOneWidget);
+      expect(find.text('Penyimpanan Lokal Aktif'), findsOneWidget);
     });
 
     testWidgets('Tampilkan empty state jika tidak ada activeSession dan history kosong',

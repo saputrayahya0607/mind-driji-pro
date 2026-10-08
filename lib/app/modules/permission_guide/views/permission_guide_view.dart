@@ -96,6 +96,14 @@ class PermissionGuideView extends GetView<PermissionGuideController> {
                     isGranted: controller.notificationGranted.value,
                     onAction: controller.requestNotification,
                   )),
+              const SizedBox(height: 18),
+
+              // OEM Adaptive Guide Section
+              Obx(() {
+                final manufacturer =
+                    controller.deviceManufacturer.value.trim();
+                return _buildOemGuideSection(manufacturer);
+              }),
               const SizedBox(height: 28),
 
               // Bottom CTA Section
@@ -372,6 +380,167 @@ class PermissionGuideView extends GetView<PermissionGuideController> {
           ],
         ],
       ),
+    );
+  }
+
+  /// Banner panduan khusus latar belakang yang menyesuaikan dengan brand/vendor HP pengguna
+  Widget _buildOemGuideSection(String manufacturer) {
+    final brand =
+        manufacturer.isEmpty ? 'Perangkat Anda' : manufacturer.toUpperCase();
+
+    return Container(
+      padding: const EdgeInsets.all(18),
+      decoration: BoxDecoration(
+        color: const Color(0xFFFFFBEB), // Warm yellow/amber
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: const Color(0xFFFDE68A), width: 1.2),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFFEF3C7),
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: const Icon(
+                  Icons.bolt_rounded,
+                  color: Color(0xFFD97706),
+                  size: 20,
+                ),
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Panduan Latar Belakang ($brand)',
+                      style: const TextStyle(
+                        fontWeight: FontWeight.w700,
+                        fontSize: 14,
+                        color: Color(0xFF92400E),
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    const Text(
+                      'Cegah sistem mematikan pemantauan saat layar mati',
+                      style: TextStyle(
+                        fontSize: 11,
+                        color: Color(0xFFB45309),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 14),
+          _buildStepItem(
+            '1',
+            'Pilih opsi "Tidak Ada Pembatasan" (Unrestricted) pada Penghemat Baterai.',
+          ),
+          const SizedBox(height: 8),
+          _buildStepItem(
+            '2',
+            'Aktifkan izin "Mulai Otomatis" (Auto-start / Background Start).',
+          ),
+          const SizedBox(height: 14),
+          Row(
+            children: [
+              if (!controller.batteryOptimizationIgnored.value) ...[
+                Expanded(
+                  child: OutlinedButton(
+                    key: const Key('btn_matikan_hemat_baterai'),
+                    onPressed: () => controller.requestBatteryOptimization(),
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: const Color(0xFF92400E),
+                      side: const BorderSide(color: Color(0xFFD97706), width: 1.2),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      backgroundColor: Colors.white.withValues(alpha: 0.7),
+                      padding: const EdgeInsets.symmetric(vertical: 10),
+                    ),
+                    child: const Text(
+                      'Matikan Hemat Baterai',
+                      style: TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 8),
+              ],
+              Expanded(
+                child: ElevatedButton.icon(
+                  key: const Key('btn_buka_pengaturan_oem'),
+                  onPressed: () => controller.openOemAutoStart(),
+                  icon: const Icon(Icons.settings_suggest_rounded,
+                      size: 16, color: Colors.white),
+                  label: Text(
+                    'Buka Pengaturan $brand',
+                    style: const TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w700,
+                      color: Colors.white,
+                    ),
+                  ),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFFD97706),
+                    elevation: 0,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    padding: const EdgeInsets.symmetric(vertical: 10),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildStepItem(String number, String text) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Container(
+          width: 20,
+          height: 20,
+          decoration: BoxDecoration(
+            color: const Color(0xFFD97706),
+            borderRadius: BorderRadius.circular(6),
+          ),
+          child: Center(
+            child: Text(
+              number,
+              style: const TextStyle(
+                color: Colors.white,
+                fontSize: 11,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ),
+        ),
+        const SizedBox(width: 10),
+        Expanded(
+          child: Text(
+            text,
+            style: const TextStyle(
+              fontSize: 12,
+              color: Color(0xFF78350F),
+              height: 1.35,
+            ),
+          ),
+        ),
+      ],
     );
   }
 }

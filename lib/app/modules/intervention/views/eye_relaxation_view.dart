@@ -14,7 +14,14 @@ class EyeRelaxationView extends GetView<InterventionController> {
         title: const Text('Relaksasi Mata'),
         leading: IconButton(
           icon: const Icon(Icons.arrow_back),
-          onPressed: () => Get.back(),
+          onPressed: () {
+            controller.setEyeStep(0);
+            if (Navigator.of(context).canPop()) {
+              Navigator.of(context).pop();
+            } else {
+              Get.back();
+            }
+          },
         ),
       ),
       body: Obx(() {
@@ -139,7 +146,15 @@ class EyeRelaxationView extends GetView<InterventionController> {
                   if (!isLast)
                     Expanded(
                       child: OutlinedButton(
-                        onPressed: () => controller.cancel(),
+                        onPressed: () async {
+                          await controller.cancel();
+                          controller.setEyeStep(0);
+                          if (context.mounted && Navigator.of(context).canPop()) {
+                            Navigator.of(context).pop();
+                          } else {
+                            Get.back();
+                          }
+                        },
                         style: OutlinedButton.styleFrom(
                           padding: const EdgeInsets.symmetric(vertical: 14),
                           side: const BorderSide(color: AppColors.border),

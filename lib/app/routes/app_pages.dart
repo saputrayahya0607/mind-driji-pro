@@ -31,6 +31,8 @@ import '../modules/register/bindings/register_binding.dart';
 import '../modules/register/views/register_view.dart';
 import '../modules/splash/bindings/splash_binding.dart';
 import '../modules/splash/views/splash_view.dart';
+import '../modules/target_apps/bindings/target_apps_binding.dart';
+import '../modules/target_apps/views/target_apps_view.dart';
 import 'app_routes.dart';
 
 class AppPages {
@@ -118,6 +120,11 @@ class AppPages {
       name: Routes.interventionHistory,
       page: () => const InterventionHistoryView(),
       binding: InterventionHistoryBinding(),
+    ),
+    GetPage(
+      name: Routes.targetApps,
+      page: () => const TargetAppsView(),
+      binding: TargetAppsBinding(),
     ),
   ];
 }

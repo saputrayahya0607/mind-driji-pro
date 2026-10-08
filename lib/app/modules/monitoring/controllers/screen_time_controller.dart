@@ -83,8 +83,7 @@ class ScreenTimeController extends GetxController with WidgetsBindingObserver {
     }
   }
 
-  /// Mengambil data statistik penggunaan hari ini:
-  /// Menyimpan ke SQLite lokal, lalu memicu sinkronisasi latar belakang jika online
+  /// Mengambil data statistik penggunaan hari ini langsung dari kernel Android / SQLite lokal
   Future<void> loadUsage() async {
     try {
       errorMessage.value = null;
@@ -94,11 +93,6 @@ class ScreenTimeController extends GetxController with WidgetsBindingObserver {
 
       // Perbarui status antrean sinkronisasi
       await _syncManager.refreshPendingCount();
-
-      // Jika ada internet, lakukan sinkronisasi otomatis di latar belakang
-      if (_syncManager.isOnline.value) {
-        _syncManager.syncPendingData();
-      }
     } catch (e) {
       // Fallback offline: coba baca dari database lokal
       try {

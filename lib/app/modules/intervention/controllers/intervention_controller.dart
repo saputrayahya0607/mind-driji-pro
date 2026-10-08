@@ -1,4 +1,5 @@
 import 'package:get/get.dart';
+import '../../../core/utils/uuid_generator.dart';
 import '../../../data/models/intervention_model.dart';
 import '../../../data/services/intervention_service.dart';
 
@@ -100,16 +101,45 @@ class InterventionController extends GetxController {
 
   /// Selesaikan intervensi
   Future<void> complete() async {
-    await service.completeIntervention();
+    if (service.activeIntervention.value != null && service.isActive.value) {
+      await service.completeIntervention();
+    } else {
+      // Catat sesi relaksasi manual jika dijalankan mandiri tanpa timer aktif
+      try {
+        final now = DateTime.now();
+        final model = InterventionModel(
+          id: 'eye_relax_${UuidGenerator.v4()}',
+          type: InterventionType.eyeRelaxation,
+          title: 'Relaksasi Mata',
+          durationMinutes: 1,
+          startedAt: now.subtract(const Duration(minutes: 1)),
+          endedAt: now,
+          status: InterventionStatus.completed,
+          createdAt: now,
+        );
+        await service.historyRepository.insert(model);
+      } catch (_) {}
+    }
   }
 
-  /// Melangkah ke tahap panduan relaksasi mata berikutnya
+  /// Melangkah ke tahap panduan relaksasi mata berikutnya atau menyelesaikan sesi
   void nextEyeStep() {
     if (eyeStep < eyeRelaxationSteps.length - 1) {
       service.nextEyeRelaxationStep();
     } else {
       complete();
+      service.setEyeRelaxationStep(0);
+      _closeRelaxationScreen();
     }
+  }
+
+  void _closeRelaxationScreen() {
+    try {
+      if (Get.isDialogOpen ?? false) {
+        Get.back();
+      }
+      Get.back();
+    } catch (_) {}
   }
 
   void setEyeStep(int step) {

@@ -275,12 +275,13 @@ class MonitoringDataService {
 
         if (sDt.isBefore(now)) {
           final queryEnd = eDt.isAfter(now) ? now : eDt;
+          final maxSegment = queryEnd.difference(sDt).inMilliseconds;
           try {
             final segUsage = await _usageStatsRepo.getUsageRange(
               startTime: sDt,
               endTime: queryEnd,
             );
-            segmentScreenTimes[label] = segUsage.totalUsageMillis;
+            segmentScreenTimes[label] = segUsage.totalUsageMillis.clamp(0, maxSegment);
           } catch (_) {
             segmentScreenTimes[label] = 0;
           }
@@ -300,6 +301,7 @@ class MonitoringDataService {
       final segEnd = (eHour == 24)
           ? DateTime(date.year, date.month, date.day + 1, 0, 0, 0)
           : DateTime(date.year, date.month, date.day, eHour, 0, 0);
+      final maxSegmentDuration = segEnd.difference(segStart).inMilliseconds;
 
       // Hitung agregasi doomscroll pada segmen ini (dengan penanganan edge cases time boundary)
       int segDoomscrollMillis = 0;
@@ -330,11 +332,11 @@ class MonitoringDataService {
         }
       }
 
-      int segScreenTimeMillis = segmentScreenTimes[label] ?? 0;
+      int segScreenTimeMillis = (segmentScreenTimes[label] ?? 0).clamp(0, maxSegmentDuration);
       // Jika screen time per segmen tidak tersedia tapi ada total harian dan segmen doomscroll
       if (segScreenTimeMillis == 0 && totalScreenTimeMillis > 0) {
         if (segDoomscrollMillis > 0) {
-          segScreenTimeMillis = segDoomscrollMillis;
+          segScreenTimeMillis = segDoomscrollMillis.clamp(0, maxSegmentDuration);
         }
       }
 
@@ -387,16 +389,54 @@ class MonitoringDataService {
       screenTimeMap[st.date] = st.totalUsageMillis.toInt();
     }
 
-    // Jika minggu ini mencakup hari ini, pastikan data hari ini akurat dari UsageStats
     final now = DateTime.now();
+    final todayMidnight = DateTime(now.year, now.month, now.day);
     final todayStr = formatDate(now);
-    if (monday.isBefore(now) && sunday.add(const Duration(days: 1)).isAfter(now)) {
-      try {
-        final todayUsage = await _usageStatsRepo.getTodayUsage();
-        if (todayUsage.totalUsageMillis > 0) {
-          screenTimeMap[todayStr] = todayUsage.totalUsageMillis;
+
+    // Loop 7 hari: jika data SQLite belum ada / 0, ambil dari native UsageStats untuk hari yang sudah/sedang berjalan
+    for (int i = 0; i < 7; i++) {
+      final dayDt = monday.add(Duration(days: i));
+      final dStr = formatDate(dayDt);
+      final dStart = DateTime(dayDt.year, dayDt.month, dayDt.day, 0, 0, 0);
+      final dEnd = dStart.add(const Duration(days: 1));
+
+      if (dStr == todayStr) {
+        try {
+          final todayUsage = await _usageStatsRepo.getTodayUsage();
+          if (todayUsage.totalUsageMillis > 0) {
+            screenTimeMap[todayStr] = todayUsage.totalUsageMillis;
+            try {
+              await _localUsageRepo.saveTodayUsage(
+                userId: effectiveUserId,
+                date: todayStr,
+                totalUsageMillis: todayUsage.totalUsageMillis,
+                apps: todayUsage.apps,
+              );
+            } catch (_) {}
+          }
+        } catch (_) {}
+      } else if (dayDt.isBefore(todayMidnight)) {
+        // Hari lampau dalam minggu ini
+        if (screenTimeMap[dStr] == null || screenTimeMap[dStr] == 0) {
+          try {
+            final pastUsage = await _usageStatsRepo.getUsageRange(
+              startTime: dStart,
+              endTime: dEnd,
+            );
+            if (pastUsage.totalUsageMillis > 0) {
+              screenTimeMap[dStr] = pastUsage.totalUsageMillis;
+              try {
+                await _localUsageRepo.saveTodayUsage(
+                  userId: effectiveUserId,
+                  date: dStr,
+                  totalUsageMillis: pastUsage.totalUsageMillis,
+                  apps: pastUsage.apps,
+                );
+              } catch (_) {}
+            }
+          } catch (_) {}
         }
-      } catch (_) {}
+      }
     }
 
     // Ambil sesi doomscroll dalam rentang minggu ini
@@ -476,7 +516,7 @@ class MonitoringDataService {
     final monthStartStr = formatDate(DateTime(year, month, 1));
     final monthEndStr = formatDate(DateTime(year, month, daysInMonth));
 
-    // Ambil data screen time sebulan penuh
+    // Ambil data screen time sebulan penuh dari Drift
     final screenTimes = await _localUsageRepo.getScreenTimesBetween(
       userId: effectiveUserId,
       startDate: monthStartStr,
@@ -488,13 +528,55 @@ class MonitoringDataService {
       screenTimeMap[st.date] = st.totalUsageMillis.toInt();
     }
 
-    // Perbarui data hari ini jika berada di bulan yang sedang ditampilkan
     final now = DateTime.now();
+    final todayMidnight = DateTime(now.year, now.month, now.day);
+    final todayStr = formatDate(now);
+
+    // Perbarui data hari ini & backfill hari lampau jika berada di bulan yang sedang ditampilkan
     if (year == now.year && month == now.month) {
-      try {
-        final todayUsage = await _usageStatsRepo.getTodayUsage();
-        screenTimeMap[formatDate(now)] = todayUsage.totalUsageMillis;
-      } catch (_) {}
+      for (int d = 1; d <= now.day; d++) {
+        final dayDt = DateTime(year, month, d);
+        final dStr = formatDate(dayDt);
+        final dStart = DateTime(year, month, d, 0, 0, 0);
+        final dEnd = dStart.add(const Duration(days: 1));
+
+        if (dStr == todayStr) {
+          try {
+            final todayUsage = await _usageStatsRepo.getTodayUsage();
+            if (todayUsage.totalUsageMillis > 0) {
+              screenTimeMap[todayStr] = todayUsage.totalUsageMillis;
+              try {
+                await _localUsageRepo.saveTodayUsage(
+                  userId: effectiveUserId,
+                  date: todayStr,
+                  totalUsageMillis: todayUsage.totalUsageMillis,
+                  apps: todayUsage.apps,
+                );
+              } catch (_) {}
+            }
+          } catch (_) {}
+        } else if (dayDt.isBefore(todayMidnight)) {
+          if (screenTimeMap[dStr] == null || screenTimeMap[dStr] == 0) {
+            try {
+              final pastUsage = await _usageStatsRepo.getUsageRange(
+                startTime: dStart,
+                endTime: dEnd,
+              );
+              if (pastUsage.totalUsageMillis > 0) {
+                screenTimeMap[dStr] = pastUsage.totalUsageMillis;
+                try {
+                  await _localUsageRepo.saveTodayUsage(
+                    userId: effectiveUserId,
+                    date: dStr,
+                    totalUsageMillis: pastUsage.totalUsageMillis,
+                    apps: pastUsage.apps,
+                  );
+                } catch (_) {}
+              }
+            } catch (_) {}
+          }
+        }
+      }
     }
 
     // Ambil seluruh sesi doomscroll bulan ini
@@ -647,6 +729,7 @@ class MonitoringDataService {
       final sunday = monday.add(const Duration(days: 6));
       final sStr = formatDate(monday);
       final eStr = formatDate(sunday);
+      final todayStr = formatDate(now);
 
       final rawApps = await _localUsageRepo.getAppUsagesBetween(
         userId: effectiveUserId,
@@ -655,7 +738,14 @@ class MonitoringDataService {
       );
 
       final aggregated = <String, AppUsageModel>{};
+      final isCurrentWeek = monday.isBefore(now) &&
+          sunday.add(const Duration(days: 1)).isAfter(now);
+
+      // 1. Agregasi app usage dari SQLite Drift (abaikan hari ini jika minggu berjalan, agar digabung dengan live hari ini)
       for (final a in rawApps) {
+        if (isCurrentWeek && a.date == todayStr) {
+          continue;
+        }
         final existing = aggregated[a.packageName];
         final addMillis = a.usageMillis.toInt();
         if (existing == null) {
@@ -667,10 +757,67 @@ class MonitoringDataService {
         } else {
           aggregated[a.packageName] = AppUsageModel(
             packageName: a.packageName,
-            appName: a.appName,
+            appName: a.appName.isNotEmpty ? a.appName : existing.appName,
             usageMillis: existing.usageMillis + addMillis,
           );
         }
+      }
+
+      // 2. Gabungkan data live hari ini jika rentang minggu mencakup hari ini
+      if (isCurrentWeek) {
+        try {
+          final todayStats = await _usageStatsRepo.getTodayUsage();
+          for (final app in todayStats.apps) {
+            if (app.usageMillis <= 0) continue;
+            final existing = aggregated[app.packageName];
+            if (existing == null) {
+              aggregated[app.packageName] = app;
+            } else {
+              aggregated[app.packageName] = AppUsageModel(
+                packageName: app.packageName,
+                appName: app.appName.isNotEmpty ? app.appName : existing.appName,
+                usageMillis: existing.usageMillis + app.usageMillis,
+              );
+            }
+          }
+        } catch (_) {
+          for (final a in rawApps.where((a) => a.date == todayStr)) {
+            final existing = aggregated[a.packageName];
+            final addMillis = a.usageMillis.toInt();
+            if (existing == null) {
+              aggregated[a.packageName] = AppUsageModel(
+                packageName: a.packageName,
+                appName: a.appName,
+                usageMillis: addMillis,
+              );
+            } else {
+              aggregated[a.packageName] = AppUsageModel(
+                packageName: a.packageName,
+                appName: a.appName.isNotEmpty ? a.appName : existing.appName,
+                usageMillis: existing.usageMillis + addMillis,
+              );
+            }
+          }
+        }
+      }
+
+      // 3. Fallback jika agregasi masih kosong sama sekali (misal user baru install dan langsung buka Tab Minggu)
+      if (aggregated.isEmpty) {
+        try {
+          final weekStart = DateTime(monday.year, monday.month, monday.day, 0, 0, 0);
+          final weekEndQuery = sunday.add(const Duration(days: 1)).isAfter(now)
+              ? now
+              : DateTime(sunday.year, sunday.month, sunday.day, 23, 59, 59);
+          final rangeStats = await _usageStatsRepo.getUsageRange(
+            startTime: weekStart,
+            endTime: weekEndQuery,
+          );
+          for (final app in rangeStats.apps) {
+            if (app.usageMillis > 0) {
+              aggregated[app.packageName] = app;
+            }
+          }
+        } catch (_) {}
       }
 
       final list = aggregated.values.where((a) => a.usageMillis > 0).toList();
@@ -679,8 +826,11 @@ class MonitoringDataService {
     } else {
       // Monthly
       final daysInMonth = DateTime(date.year, date.month + 1, 0).day;
-      final sStr = formatDate(DateTime(date.year, date.month, 1));
-      final eStr = formatDate(DateTime(date.year, date.month, daysInMonth));
+      final mStart = DateTime(date.year, date.month, 1, 0, 0, 0);
+      final mEnd = DateTime(date.year, date.month, daysInMonth, 23, 59, 59);
+      final sStr = formatDate(mStart);
+      final eStr = formatDate(mEnd);
+      final todayStr = formatDate(now);
 
       final rawApps = await _localUsageRepo.getAppUsagesBetween(
         userId: effectiveUserId,
@@ -689,7 +839,12 @@ class MonitoringDataService {
       );
 
       final aggregated = <String, AppUsageModel>{};
+      final isCurrentMonth = date.year == now.year && date.month == now.month;
+
       for (final a in rawApps) {
+        if (isCurrentMonth && a.date == todayStr) {
+          continue;
+        }
         final existing = aggregated[a.packageName];
         final addMillis = a.usageMillis.toInt();
         if (existing == null) {
@@ -701,10 +856,62 @@ class MonitoringDataService {
         } else {
           aggregated[a.packageName] = AppUsageModel(
             packageName: a.packageName,
-            appName: a.appName,
+            appName: a.appName.isNotEmpty ? a.appName : existing.appName,
             usageMillis: existing.usageMillis + addMillis,
           );
         }
+      }
+
+      if (isCurrentMonth) {
+        try {
+          final todayStats = await _usageStatsRepo.getTodayUsage();
+          for (final app in todayStats.apps) {
+            if (app.usageMillis <= 0) continue;
+            final existing = aggregated[app.packageName];
+            if (existing == null) {
+              aggregated[app.packageName] = app;
+            } else {
+              aggregated[app.packageName] = AppUsageModel(
+                packageName: app.packageName,
+                appName: app.appName.isNotEmpty ? app.appName : existing.appName,
+                usageMillis: existing.usageMillis + app.usageMillis,
+              );
+            }
+          }
+        } catch (_) {
+          for (final a in rawApps.where((a) => a.date == todayStr)) {
+            final existing = aggregated[a.packageName];
+            final addMillis = a.usageMillis.toInt();
+            if (existing == null) {
+              aggregated[a.packageName] = AppUsageModel(
+                packageName: a.packageName,
+                appName: a.appName,
+                usageMillis: addMillis,
+              );
+            } else {
+              aggregated[a.packageName] = AppUsageModel(
+                packageName: a.packageName,
+                appName: a.appName.isNotEmpty ? a.appName : existing.appName,
+                usageMillis: existing.usageMillis + addMillis,
+              );
+            }
+          }
+        }
+      }
+
+      if (aggregated.isEmpty) {
+        try {
+          final mEndQuery = mEnd.isAfter(now) ? now : mEnd;
+          final rangeStats = await _usageStatsRepo.getUsageRange(
+            startTime: mStart,
+            endTime: mEndQuery,
+          );
+          for (final app in rangeStats.apps) {
+            if (app.usageMillis > 0) {
+              aggregated[app.packageName] = app;
+            }
+          }
+        } catch (_) {}
       }
 
       final list = aggregated.values.where((a) => a.usageMillis > 0).toList();

@@ -99,12 +99,7 @@ class DoomscrollController extends GetxController with WidgetsBindingObserver {
 
       // Selalu muat sesi yang sudah tersimpan di database lokal Drift
       await loadStoredSessions();
-
-      // Sinkronkan ke Supabase jika internet tersedia
-      if (_syncManager.isOnline.value) {
-        await _syncManager.refreshPendingCount();
-        _syncManager.syncPendingData();
-      }
+      await _syncManager.refreshPendingCount();
     } catch (e) {
       errorMessage.value = 'Gagal memuat status monitoring doomscrolling.';
     }

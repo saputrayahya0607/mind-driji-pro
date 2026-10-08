@@ -6,6 +6,7 @@ import '../local/repositories/doomscroll_local_repository.dart';
 import '../local/repositories/eye_monitoring_local_repository.dart';
 import '../local/repositories/local_usage_repository.dart';
 import '../local/tables/sync_queue.dart';
+import '../repositories/usage_stats_repository.dart';
 import '../services/device_service.dart';
 
 /// SyncManager mengelola sinkronisasi data lokal ke Supabase secara otomatis dan manual.
@@ -76,6 +77,7 @@ class SyncManager extends GetxService {
   final syncStatus = SyncStatus.synced.obs;
 
   StreamSubscription<List<ConnectivityResult>>? _connectivitySubscription;
+  Timer? _dailySyncTimer;
 
   @override
   void onInit() {
@@ -83,12 +85,14 @@ class SyncManager extends GetxService {
     if (autoStart) {
       _initConnectivity();
       refreshPendingCount();
+      _scheduleDailySyncAt2359();
     }
   }
 
   @override
   void onClose() {
     _connectivitySubscription?.cancel();
+    _dailySyncTimer?.cancel();
     super.onClose();
   }
 
@@ -104,13 +108,37 @@ class SyncManager extends GetxService {
   /// Menangani perubahan status konektivitas internet
   void _updateConnectionStatus(List<ConnectivityResult> results) {
     final connected = results.any((r) => r != ConnectivityResult.none);
-    final wasOffline = !isOnline.value;
     isOnline.value = connected;
+    refreshPendingCount();
+  }
 
-    // Jika internet kembali aktif dan ada antrean yang belum tersinkron, jalankan auto-sync
-    if (connected && (wasOffline || pendingCount.value > 0) && !isSyncing.value) {
-      syncPendingData();
+  /// Mengambil snapshot penggunaan harian dari perangkat dan menyimpannya ke database lokal saat akhir hari
+  Future<void> _snapshotDailyUsageBeforeSync() async {
+    try {
+      if (Get.isRegistered<UsageStatsRepository>()) {
+        final usageRepo = Get.find<UsageStatsRepository>();
+        await usageRepo.saveDailySnapshot();
+      } else {
+        final usageRepo = UsageStatsRepository();
+        await usageRepo.saveDailySnapshot();
+      }
+    } catch (_) {}
+  }
+
+  /// Menjadwalkan penyimpanan database lokal & sinkronisasi otomatis harian pada pukul 23:59
+  void _scheduleDailySyncAt2359() {
+    _dailySyncTimer?.cancel();
+    final now = DateTime.now();
+    var scheduled = DateTime(now.year, now.month, now.day, 23, 59, 0);
+    if (now.isAfter(scheduled)) {
+      scheduled = scheduled.add(const Duration(days: 1));
     }
+    final delay = scheduled.difference(now);
+    _dailySyncTimer = Timer(delay, () async {
+      await _snapshotDailyUsageBeforeSync();
+      await syncPendingData();
+      _scheduleDailySyncAt2359();
+    });
   }
 
   /// Memperbarui jumlah antrean pending untuk pengguna yang sedang aktif

@@ -212,6 +212,8 @@ class ProfileView extends GetView<ProfileController> {
             const SizedBox(height: 14),
             _buildEditButton(context, profile),
             const SizedBox(height: 24),
+            _buildSettingsSection(),
+            const SizedBox(height: 24),
             _buildPersonalInfoSection(profile),
             const SizedBox(height: 24),
             _buildDeviceInfoSection(),
@@ -551,6 +553,131 @@ class ProfileView extends GetView<ProfileController> {
           }),
         ),
       ],
+    );
+  }
+
+  /// Section Pengaturan & Preferensi Monitoring
+  Widget _buildSettingsSection() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Text(
+          'Pengaturan Monitoring',
+          style: TextStyle(
+            fontSize: 16,
+            fontWeight: FontWeight.w700,
+            color: AppColors.textPrimary,
+            letterSpacing: -0.2,
+          ),
+        ),
+        const SizedBox(height: 12),
+        Container(
+          decoration: BoxDecoration(
+            color: AppColors.card,
+            borderRadius: BorderRadius.circular(20),
+            border: Border.all(color: AppColors.border, width: 1),
+            boxShadow: [
+              BoxShadow(
+                color: AppColors.secondary.withValues(alpha: 0.03),
+                blurRadius: 12,
+                offset: const Offset(0, 3),
+              ),
+            ],
+          ),
+          child: Column(
+            children: [
+              _buildNavigationTile(
+                key: const Key('tile_target_apps'),
+                icon: Icons.sensors_rounded,
+                title: 'Target Doomscrolling',
+                subtitle: 'Kelola aplikasi yang dipantau pola scrolling-nya',
+                onTap: () => Get.toNamed(Routes.targetApps),
+                isFirst: true,
+              ),
+              const Divider(height: 1, thickness: 1, color: AppColors.border),
+              _buildNavigationTile(
+                key: const Key('tile_permission_guide'),
+                icon: Icons.verified_user_outlined,
+                title: 'Izin & Optimasi HP',
+                subtitle: 'Panduan izin dan kestabilan latar belakang HP Anda',
+                onTap: () => Get.toNamed(Routes.permissionGuide),
+                isLast: true,
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildNavigationTile({
+    Key? key,
+    required IconData icon,
+    required String title,
+    required String subtitle,
+    required VoidCallback onTap,
+    bool isFirst = false,
+    bool isLast = false,
+  }) {
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        key: key,
+        onTap: onTap,
+        borderRadius: BorderRadius.vertical(
+          top: isFirst ? const Radius.circular(20) : Radius.zero,
+          bottom: isLast ? const Radius.circular(20) : Radius.zero,
+        ),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+          child: Row(
+            children: [
+              Container(
+                width: 38,
+                height: 38,
+                decoration: BoxDecoration(
+                  color: AppColors.primary.withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: Icon(
+                  icon,
+                  size: 20,
+                  color: AppColors.primary,
+                ),
+              ),
+              const SizedBox(width: 14),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      title,
+                      style: const TextStyle(
+                        fontSize: 14,
+                        color: AppColors.textPrimary,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      subtitle,
+                      style: const TextStyle(
+                        fontSize: 12,
+                        color: AppColors.textSecondary,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const Icon(
+                Icons.chevron_right_rounded,
+                color: AppColors.textSecondary,
+                size: 20,
+              ),
+            ],
+          ),
+        ),
+      ),
     );
   }
 

@@ -3,11 +3,13 @@ package com.hn.mind_drji
 import android.app.AppOpsManager
 import android.app.usage.UsageStats
 import android.app.usage.UsageStatsManager
+import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.net.Uri
 import android.os.Build
+import android.os.PowerManager
 import android.os.Process
 import android.provider.Settings
 import androidx.annotation.NonNull
@@ -74,13 +76,17 @@ class MainActivity : FlutterActivity() {
                 }
                 "getTodayUsage" -> {
                     try {
-                        if (!hasUsageStatsPermission()) {
-                            result.error("NO_USAGE_ACCESS", "Usage access permission has not been granted", null)
-                        } else {
-                            val startArg = (call.argument<Number>("startTime"))?.toLong()
-                            val endArg = (call.argument<Number>("endTime"))?.toLong()
-                            val data = getTodayUsage(startArg, endArg)
+                        val hasAccess = hasUsageStatsPermission()
+                        val startArg = (call.argument<Number>("startTime"))?.toLong()
+                        val endArg = (call.argument<Number>("endTime"))?.toLong()
+                        val data = getTodayUsage(startArg, endArg)
+                        val totalMillis = (data["totalUsageMillis"] as? Long) ?: 0L
+                        val apps = (data["apps"] as? List<*>) ?: emptyList<Any>()
+
+                        if (totalMillis > 0 || apps.isNotEmpty() || hasAccess) {
                             result.success(data)
+                        } else {
+                            result.error("NO_USAGE_ACCESS", "Usage access permission has not been granted", null)
                         }
                     } catch (e: Exception) {
                         result.error("QUERY_USAGE_ERROR", e.localizedMessage, null)
@@ -153,6 +159,93 @@ class MainActivity : FlutterActivity() {
                     } catch (e: Exception) {
                         android.util.Log.e(DoomscrollConfig.TAG, "MethodChannel flushCurrentDoomscrollSession error: ${e.localizedMessage}")
                         result.error("FLUSH_SESSION_ERROR", e.localizedMessage, null)
+                    }
+                }
+                "getInstalledApps" -> {
+                    try {
+                        val pm = packageManager
+                        val mainIntent = Intent(Intent.ACTION_MAIN, null).apply {
+                            addCategory(Intent.CATEGORY_LAUNCHER)
+                        }
+                        val resolveInfos = pm.queryIntentActivities(mainIntent, 0)
+                        val appList = mutableListOf<Map<String, Any>>()
+                        val seenPackages = mutableSetOf<String>()
+
+                        for (info in resolveInfos) {
+                            val pkg = info.activityInfo.packageName
+                            if (pkg == packageName || seenPackages.contains(pkg)) continue
+                            seenPackages.add(pkg)
+
+                            val appName = try {
+                                info.loadLabel(pm).toString()
+                            } catch (e: Exception) {
+                                pkg
+                            }
+                            val isMonitored = DoomscrollConfig.isTargetPackage(pkg)
+                            appList.add(mapOf(
+                                "packageName" to pkg,
+                                "appName" to appName,
+                                "isMonitored" to isMonitored
+                            ))
+                        }
+                        appList.sortBy { (it["appName"] as String).lowercase() }
+                        result.success(appList)
+                    } catch (e: Exception) {
+                        android.util.Log.e(DoomscrollConfig.TAG, "MethodChannel getInstalledApps error: ${e.localizedMessage}")
+                        result.error("GET_INSTALLED_APPS_ERROR", e.localizedMessage, null)
+                    }
+                }
+                "getTargetPackages" -> {
+                    try {
+                        val targets = DoomscrollConfig.loadTargetPackages(this)
+                        val list = targets.map { entry ->
+                            mapOf(
+                                "packageName" to entry.key,
+                                "appName" to entry.value,
+                                "isMonitored" to true
+                            )
+                        }
+                        result.success(list)
+                    } catch (e: Exception) {
+                        android.util.Log.e(DoomscrollConfig.TAG, "MethodChannel getTargetPackages error: ${e.localizedMessage}")
+                        result.error("GET_TARGET_PACKAGES_ERROR", e.localizedMessage, null)
+                    }
+                }
+                "saveTargetPackages" -> {
+                    try {
+                        val rawList = call.argument<List<Map<String, Any>>>("targetApps") ?: emptyList()
+                        val newMap = mutableMapOf<String, String>()
+                        for (item in rawList) {
+                            val pkg = item["packageName"] as? String ?: continue
+                            val name = item["appName"] as? String ?: pkg
+                            val isMonitored = item["isMonitored"] as? Boolean ?: true
+                            if (isMonitored) {
+                                newMap[pkg] = name
+                            }
+                        }
+                        DoomscrollConfig.saveTargetPackages(this, newMap)
+                        android.util.Log.d(DoomscrollConfig.TAG, "MethodChannel saveTargetPackages -> saved ${newMap.size} packages")
+                        result.success(true)
+                    } catch (e: Exception) {
+                        android.util.Log.e(DoomscrollConfig.TAG, "MethodChannel saveTargetPackages error: ${e.localizedMessage}")
+                        result.error("SAVE_TARGET_PACKAGES_ERROR", e.localizedMessage, null)
+                    }
+                }
+                "resetTargetPackagesToDefault" -> {
+                    try {
+                        DoomscrollConfig.resetToDefaults(this)
+                        val targets = DoomscrollConfig.TARGET_PACKAGES
+                        val list = targets.map { entry ->
+                            mapOf(
+                                "packageName" to entry.key,
+                                "appName" to entry.value,
+                                "isMonitored" to true
+                            )
+                        }
+                        result.success(list)
+                    } catch (e: Exception) {
+                        android.util.Log.e(DoomscrollConfig.TAG, "MethodChannel resetTargetPackagesToDefault error: ${e.localizedMessage}")
+                        result.error("RESET_TARGET_PACKAGES_ERROR", e.localizedMessage, null)
                     }
                 }
                 else -> result.notImplemented()
@@ -352,6 +445,105 @@ class MainActivity : FlutterActivity() {
                         result.success(info)
                     } catch (e: Exception) {
                         result.error("DEVICE_INFO_ERROR", e.localizedMessage, null)
+                    }
+                }
+                "checkBatteryOptimization" -> {
+                    try {
+                        val isIgnoring = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+                            val powerManager = getSystemService(Context.POWER_SERVICE) as? PowerManager
+                            powerManager?.isIgnoringBatteryOptimizations(packageName) ?: true
+                        } else {
+                            true
+                        }
+                        result.success(isIgnoring)
+                    } catch (e: Exception) {
+                        result.error("CHECK_BATTERY_OPT_ERROR", e.localizedMessage, null)
+                    }
+                }
+                "requestIgnoreBatteryOptimization" -> {
+                    try {
+                        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+                            val intent = Intent(Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS).apply {
+                                data = Uri.parse("package:$packageName")
+                                flags = Intent.FLAG_ACTIVITY_NEW_TASK
+                            }
+                            if (intent.resolveActivity(packageManager) != null) {
+                                startActivity(intent)
+                                result.success(true)
+                            } else {
+                                val fallbackIntent = Intent(Settings.ACTION_IGNORE_BATTERY_OPTIMIZATION_SETTINGS).apply {
+                                    flags = Intent.FLAG_ACTIVITY_NEW_TASK
+                                }
+                                startActivity(fallbackIntent)
+                                result.success(true)
+                            }
+                        } else {
+                            result.success(true)
+                        }
+                    } catch (e: Exception) {
+                        result.error("REQUEST_BATTERY_OPT_ERROR", e.localizedMessage, null)
+                    }
+                }
+                "openOemAutoStartSettings" -> {
+                    try {
+                        val manufacturer = Build.MANUFACTURER.lowercase()
+                        val intents = mutableListOf<Intent>()
+
+                        when {
+                            manufacturer.contains("xiaomi") || manufacturer.contains("redmi") || manufacturer.contains("poco") -> {
+                                intents.add(Intent().setComponent(ComponentName("com.miui.securitycenter", "com.miui.permcenter.autostart.AutoStartManagementActivity")))
+                                intents.add(Intent("miui.intent.action.OP_AUTO_START").addCategory(Intent.CATEGORY_DEFAULT))
+                            }
+                            manufacturer.contains("oppo") || manufacturer.contains("realme") -> {
+                                intents.add(Intent().setComponent(ComponentName("com.coloros.safecenter", "com.coloros.safecenter.permission.startup.StartupAppListActivity")))
+                                intents.add(Intent().setComponent(ComponentName("com.oppo.safe", "com.oppo.safe.permission.startup.StartupAppListActivity")))
+                                intents.add(Intent().setComponent(ComponentName("com.coloros.safecenter", "com.coloros.safecenter.startupapp.StartupAppListActivity")))
+                            }
+                            manufacturer.contains("vivo") || manufacturer.contains("iqoo") -> {
+                                intents.add(Intent().setComponent(ComponentName("com.iqoo.secure", "com.iqoo.secure.ui.phoneoptimize.AddWhiteListActivity")))
+                                intents.add(Intent().setComponent(ComponentName("com.vivo.permissionmanager", "com.vivo.permissionmanager.activity.BgStartUpManagerActivity")))
+                                intents.add(Intent().setComponent(ComponentName("com.iqoo.secure", "com.iqoo.secure.ui.phoneoptimize.BgStartUpManager")))
+                            }
+                            manufacturer.contains("samsung") -> {
+                                intents.add(Intent().setComponent(ComponentName("com.samsung.android.lool", "com.samsung.android.sm.ui.battery.BatteryActivity")))
+                                intents.add(Intent().setComponent(ComponentName("com.samsung.android.sm", "com.samsung.android.sm.ui.battery.BatteryActivity")))
+                            }
+                            manufacturer.contains("huawei") || manufacturer.contains("honor") -> {
+                                intents.add(Intent().setComponent(ComponentName("com.huawei.systemmanager", "com.huawei.systemmanager.optimize.process.ProtectActivity")))
+                                intents.add(Intent().setComponent(ComponentName("com.huawei.systemmanager", "com.huawei.systemmanager.startupmgr.ui.StartupNormalAppListActivity")))
+                            }
+                            manufacturer.contains("asus") -> {
+                                intents.add(Intent().setComponent(ComponentName("com.asus.mobilemanager", "com.asus.mobilemanager.entry.FunctionActivity")))
+                                intents.add(Intent().setComponent(ComponentName("com.asus.mobilemanager", "com.asus.mobilemanager.autostart.AutoStartActivity")))
+                            }
+                        }
+
+                        intents.add(Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS).apply {
+                            data = Uri.parse("package:$packageName")
+                        })
+
+                        var launched = false
+                        for (intent in intents) {
+                            try {
+                                intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK
+                                if (intent.resolveActivity(packageManager) != null) {
+                                    startActivity(intent)
+                                    launched = true
+                                    break
+                                }
+                            } catch (_: Exception) {}
+                        }
+
+                        if (!launched) {
+                            val generalSettingsIntent = Intent(Settings.ACTION_SETTINGS).apply {
+                                flags = Intent.FLAG_ACTIVITY_NEW_TASK
+                            }
+                            startActivity(generalSettingsIntent)
+                            launched = true
+                        }
+                        result.success(launched)
+                    } catch (e: Exception) {
+                        result.error("OPEN_OEM_SETTINGS_ERROR", e.localizedMessage, null)
                     }
                 }
                 else -> result.notImplemented()
@@ -684,18 +876,30 @@ class MainActivity : FlutterActivity() {
             }
         }
 
-        // Secondary check: uji langsung apakah UsageStatsManager mengembalikan data interval terkini tanpa error
+        // Secondary check: uji langsung apakah UsageStatsManager mengembalikan data event/interval terkini tanpa error
         try {
             val usageStatsManager = getSystemService(Context.USAGE_STATS_SERVICE) as? UsageStatsManager
             val now = System.currentTimeMillis()
+
+            // 1. Check UsageEvents in recent hours
+            val events = usageStatsManager?.queryEvents(now - (2 * 60 * 60 * 1000L), now)
+            if (events != null && events.hasNextEvent()) {
+                android.util.Log.d(TAG_USAGE, "hasUsageStatsPermission fallback check: queryEvents returned active events -> true")
+                return true
+            }
+
+            // 2. Check queryUsageStats over last 7 days
             val stats = usageStatsManager?.queryUsageStats(
-                UsageStatsManager.INTERVAL_DAILY,
-                now - (1000 * 60 * 60 * 24),
+                UsageStatsManager.INTERVAL_BEST,
+                now - (1000L * 60 * 60 * 24 * 7),
                 now
             )
             if (stats != null && stats.isNotEmpty()) {
-                android.util.Log.d(TAG_USAGE, "hasUsageStatsPermission fallback check: queryUsageStats returned ${stats.size} items -> true")
-                return true
+                val hasUsedApps = stats.any { it.totalTimeInForeground > 0 || it.lastTimeUsed > 0 }
+                if (hasUsedApps) {
+                    android.util.Log.d(TAG_USAGE, "hasUsageStatsPermission fallback check: queryUsageStats returned ${stats.size} items with active usage -> true")
+                    return true
+                }
             }
         } catch (e: Exception) {
             android.util.Log.d(TAG_USAGE, "hasUsageStatsPermission fallback check error: ${e.localizedMessage}")
@@ -763,8 +967,9 @@ class MainActivity : FlutterActivity() {
      * Menangani kondisi:
      * - Direct Boot / device restart sebelum user unlock
      * - UsageStatsManager kosong atau null
-     * - API level backward-compatibility (API 24 sampai API 35+)
-     * - Package visibility fallback
+     * - API level backward-compatibility (API 21 sampai API 35+)
+     * - Package visibility & friendly label resolution
+     * - Non-overlapping event intervals and multi-bucket aggregation
      */
     private fun getTodayUsage(customStartTime: Long? = null, customEndTime: Long? = null): Map<String, Any> {
         val usageStatsManager = getSystemService(Context.USAGE_STATS_SERVICE) as? UsageStatsManager
@@ -798,28 +1003,69 @@ class MainActivity : FlutterActivity() {
 
         android.util.Log.d(TAG_USAGE, "Query UsageStats START: startTime=$startTime, endTime=$endTime (range=${(endTime - startTime) / 1000}s)")
 
-        // 1. Ekstraksi interval penggunaan spesifik via UsageEvents untuk pembagian segmen waktu dan non-overlapping total
+        val maxTodayMillis = maxOf(0L, endTime - startTime)
+        val pm = packageManager
+
+        // 1. Deteksi dinamis seluruh launcher packages (Home screen) & system packages untuk diexclude
+        val homeIntent = Intent(Intent.ACTION_MAIN).addCategory(Intent.CATEGORY_HOME)
+        val launcherPackages = try {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                pm.queryIntentActivities(homeIntent, PackageManager.ResolveInfoFlags.of(0))
+            } else {
+                @Suppress("DEPRECATION")
+                pm.queryIntentActivities(homeIntent, 0)
+            }.mapNotNull { it.activityInfo?.packageName }.toSet()
+        } catch (e: Exception) {
+            emptySet<String>()
+        }
+
+        val defaultExcluded = setOf(
+            "android",
+            "com.android.systemui",
+            "com.android.settings.intelligence",
+            "com.google.android.permissioncontroller",
+            "com.android.permissioncontroller",
+            "com.google.android.packageinstaller",
+            "com.android.packageinstaller",
+            "com.google.android.apps.nexuslauncher",
+            "com.google.android.apps.wellbeing",
+            "com.miui.home",
+            "com.sec.android.app.launcher",
+            "com.oppo.launcher",
+            "com.bbk.launcher2",
+            "com.vivo.launcher",
+            "com.transsion.launcher",
+            "com.android.launcher3",
+            "com.google.android.googlequicksearchbox"
+        )
+
+        val allExcludedPackages = launcherPackages + defaultExcluded
+
+        // 2. Ekstraksi interval penggunaan spesifik via UsageEvents state machine (Sumber Kebenaran Utama & Presisi)
         val intervalsList = mutableListOf<Map<String, Any>>()
-        val intervalUsageByPackage = mutableMapOf<String, Long>()
+        val eventUsageByPackage = mutableMapOf<String, Long>()
+
         try {
-            val usageEvents = usageStatsManager.queryEvents(startTime, endTime)
+            // Query strictly dari startTime (00:00:00 hari ini) sampai endTime (saat ini) agar tidak ada ghost session dari kemarin malam
+            val eventQueryStart = startTime
+            val usageEvents = usageStatsManager.queryEvents(eventQueryStart, endTime)
             val event = android.app.usage.UsageEvents.Event()
-            val openTimestamps = mutableMapOf<String, Long>()
 
-            while (usageEvents.hasNextEvent()) {
-                usageEvents.getNextEvent(event)
-                val pkg = event.packageName ?: continue
-                val time = event.timeStamp
+            var currentActivePkg: String? = null
+            var currentActiveCls: String? = null
+            var currentSessionStart: Long = 0L
 
-                if (event.eventType == android.app.usage.UsageEvents.Event.ACTIVITY_RESUMED) {
-                    openTimestamps[pkg] = time
-                } else if (event.eventType == android.app.usage.UsageEvents.Event.ACTIVITY_PAUSED) {
-                    val sTime = openTimestamps.remove(pkg) ?: startTime
-                    val clampedStart = maxOf(startTime, sTime)
-                    val clampedEnd = minOf(endTime, time)
-                    if (clampedEnd > clampedStart) {
-                        val dur = clampedEnd - clampedStart
-                        intervalUsageByPackage[pkg] = (intervalUsageByPackage[pkg] ?: 0L) + dur
+            fun closeActiveSession(sessionEndTime: Long) {
+                val pkg = currentActivePkg ?: return
+                if (currentSessionStart <= 0L) return
+
+                val clampedStart = maxOf(startTime, currentSessionStart)
+                val clampedEnd = minOf(endTime, sessionEndTime)
+
+                if (clampedEnd > clampedStart) {
+                    val dur = clampedEnd - clampedStart
+                    if (!allExcludedPackages.contains(pkg)) {
+                        eventUsageByPackage[pkg] = (eventUsageByPackage[pkg] ?: 0L) + dur
                         intervalsList.add(
                             mapOf(
                                 "packageName" to pkg,
@@ -829,119 +1075,125 @@ class MainActivity : FlutterActivity() {
                         )
                     }
                 }
+                currentActivePkg = null
+                currentActiveCls = null
+                currentSessionStart = 0L
             }
-            // Selesaikan sesi yang masih aktif saat query berakhir
-            for ((pkg, sTime) in openTimestamps) {
-                val clampedStart = maxOf(startTime, sTime)
-                val clampedEnd = endTime
-                if (clampedEnd > clampedStart) {
-                    val dur = clampedEnd - clampedStart
-                    intervalUsageByPackage[pkg] = (intervalUsageByPackage[pkg] ?: 0L) + dur
-                    intervalsList.add(
-                        mapOf(
-                            "packageName" to pkg,
-                            "startTime" to clampedStart,
-                            "endTime" to clampedEnd
-                        )
-                    )
+
+            while (usageEvents.hasNextEvent()) {
+                usageEvents.getNextEvent(event)
+                val time = event.timeStamp
+                val eventType = event.eventType
+                val pkg = event.packageName
+                val cls = event.className
+
+                when (eventType) {
+                    android.app.usage.UsageEvents.Event.ACTIVITY_RESUMED,
+                    android.app.usage.UsageEvents.Event.MOVE_TO_FOREGROUND,
+                    1 -> {
+                        if (pkg.isNullOrBlank()) continue
+                        if (currentActivePkg != null && currentActivePkg != pkg) {
+                            // User berpindah ke aplikasi lain atau kembali ke Home Launcher
+                            closeActiveSession(time)
+                            currentSessionStart = time
+                        } else if (currentActivePkg == null) {
+                            currentSessionStart = time
+                        }
+                        currentActivePkg = pkg
+                        currentActiveCls = cls
+                    }
+                    android.app.usage.UsageEvents.Event.SCREEN_NON_INTERACTIVE,
+                    android.app.usage.UsageEvents.Event.KEYGUARD_SHOWN,
+                    16, 18 -> {
+                        // Layar mati / terkunci: SEMUA event layar (dengan atau tanpa packageName) akan menutup sesi aktif!
+                        if (currentActivePkg != null && currentSessionStart > 0L) {
+                            closeActiveSession(time)
+                        }
+                    }
+                    android.app.usage.UsageEvents.Event.DEVICE_SHUTDOWN,
+                    android.app.usage.UsageEvents.Event.DEVICE_STARTUP,
+                    26, 27 -> {
+                        if (currentActivePkg != null && currentSessionStart > 0L) {
+                            closeActiveSession(time)
+                        }
+                    }
                 }
+            }
+
+            // Selesaikan sesi yang masih aktif saat query berakhir (endTime)
+            if (currentActivePkg != null && currentSessionStart > 0L) {
+                closeActiveSession(endTime)
             }
         } catch (e: Exception) {
             android.util.Log.w(TAG_USAGE, "Gagal mengekstrak interval via UsageEvents: ${e.localizedMessage}")
         }
 
-        // 2. Query aggregate stats Android
-        val usageByPackage = mutableMapOf<String, Long>()
-        var rawStatsCount = 0
+        // 3. Fallback HANYA jika eventUsageByPackage kosong sama sekali (misal ROM terbatas)
+        val aggregatedUsageByPackage = mutableMapOf<String, Long>()
+        if (eventUsageByPackage.isEmpty()) {
+            try {
+                val aggregated = usageStatsManager.queryAndAggregateUsageStats(startTime, endTime)
+                if (aggregated != null && aggregated.isNotEmpty()) {
+                    for ((pkg, stats) in aggregated) {
+                        if (allExcludedPackages.contains(pkg)) continue
+                        if (stats.lastTimeUsed < startTime && stats.lastTimeStamp < startTime) continue
+                        val rawTime = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                            maxOf(stats.totalTimeInForeground, stats.totalTimeVisible)
+                        } else {
+                            stats.totalTimeInForeground
+                        }
+                        val time = minOf(maxTodayMillis, rawTime)
+                        if (time > 0) {
+                            aggregatedUsageByPackage[pkg] = maxOf(aggregatedUsageByPackage[pkg] ?: 0L, time)
+                        }
+                    }
+                }
+            } catch (e: Exception) {
+                android.util.Log.w(TAG_USAGE, "queryAndAggregateUsageStats fallback: ${e.localizedMessage}")
+            }
 
-        try {
-            val aggregated = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+            if (aggregatedUsageByPackage.isEmpty()) {
                 try {
-                    usageStatsManager.queryAndAggregateUsageStats(startTime, endTime)
+                    val statsList = usageStatsManager.queryUsageStats(
+                        UsageStatsManager.INTERVAL_DAILY,
+                        startTime,
+                        endTime
+                    ) ?: emptyList()
+                    for (stats in statsList) {
+                        if (allExcludedPackages.contains(stats.packageName)) continue
+                        if (stats.lastTimeUsed >= startTime || stats.lastTimeStamp >= startTime) {
+                            val rawTime = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                                maxOf(stats.totalTimeInForeground, stats.totalTimeVisible)
+                            } else {
+                                stats.totalTimeInForeground
+                            }
+                            val time = minOf(maxTodayMillis, rawTime)
+                            if (time > 0) {
+                                aggregatedUsageByPackage[stats.packageName] = maxOf(
+                                    aggregatedUsageByPackage[stats.packageName] ?: 0L,
+                                    time
+                                )
+                            }
+                        }
+                    }
                 } catch (e: Exception) {
-                    android.util.Log.w(TAG_USAGE, "queryAndAggregateUsageStats gagal, mencoba fallback: ${e.localizedMessage}")
-                    null
+                    android.util.Log.w(TAG_USAGE, "queryUsageStats fallback: ${e.localizedMessage}")
                 }
-            } else {
-                null
-            }
-
-            if (aggregated != null && aggregated.isNotEmpty()) {
-                rawStatsCount = aggregated.size
-                for ((pkg, stats) in aggregated) {
-                    val time = stats.totalTimeInForeground
-                    if (time > 0) {
-                        usageByPackage[pkg] = (usageByPackage[pkg] ?: 0L) + time
-                    }
-                }
-            } else {
-                val statsList = usageStatsManager.queryUsageStats(
-                    UsageStatsManager.INTERVAL_BEST,
-                    startTime,
-                    endTime
-                ) ?: emptyList()
-                rawStatsCount = statsList.size
-                for (stats in statsList) {
-                    val time = stats.totalTimeInForeground
-                    if (time > 0) {
-                        usageByPackage[stats.packageName] = maxOf(usageByPackage[stats.packageName] ?: 0L, time)
-                    }
-                }
-            }
-        } catch (e: Exception) {
-            android.util.Log.e(TAG_USAGE, "Exception saat query UsageStatsManager: ${e.localizedMessage}", e)
-        }
-
-        // Jika query aggregate kosong atau bernilai 0 tapi intervalUsageByPackage ada, gunakan data interval
-        for ((pkg, dur) in intervalUsageByPackage) {
-            if (dur > 0) {
-                usageByPackage[pkg] = maxOf(usageByPackage[pkg] ?: 0L, dur)
             }
         }
 
-        // 3. Hitung non-overlapping total screen time dari interval untuk mencegah double counting
-        val totalUsageMillis = if (intervalsList.isNotEmpty()) {
-            val sortedIntervals = intervalsList.map {
-                Pair((it["startTime"] as Long), (it["endTime"] as Long))
-            }.sortedBy { it.first }
-
-            var mergedTotal = 0L
-            var currentStart = -1L
-            var currentEnd = -1L
-
-            for (interval in sortedIntervals) {
-                if (currentStart == -1L) {
-                    currentStart = interval.first
-                    currentEnd = interval.second
-                } else if (interval.first <= currentEnd) {
-                    currentEnd = maxOf(currentEnd, interval.second)
-                } else {
-                    mergedTotal += (currentEnd - currentStart)
-                    currentStart = interval.first
-                    currentEnd = interval.second
-                }
-            }
-            if (currentStart != -1L) {
-                mergedTotal += (currentEnd - currentStart)
-            }
-            mergedTotal
+        // 4. Sumber kebenaran utama: eventUsageByPackage (100% presisi untuk hari ini)
+        val finalUsageByPackage = if (eventUsageByPackage.isNotEmpty()) {
+            eventUsageByPackage
         } else {
-            usageByPackage.values.sum()
+            aggregatedUsageByPackage
         }
 
-        android.util.Log.d(
-            TAG_USAGE,
-            "Query retrieved rawItems=$rawStatsCount, activePackagesCount=${usageByPackage.size}, packagesFound=${usageByPackage.keys.toList()}"
-        )
-
-        val pm = packageManager
         val appList = mutableListOf<Map<String, Any>>()
+        val targetPackages = DoomscrollConfig.loadTargetPackages(this)
 
-        // Filter proses internal sistem seperti com.android.systemui dan android
-        val excludedPackages = setOf("com.android.systemui", "android")
-
-        for ((pkgName, usageMillis) in usageByPackage) {
-            if (usageMillis <= 0 || excludedPackages.contains(pkgName)) continue
+        for ((pkgName, usageMillis) in finalUsageByPackage) {
+            if (usageMillis < 1000L || allExcludedPackages.contains(pkgName)) continue
 
             val appName = try {
                 val appInfo = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
@@ -952,9 +1204,20 @@ class MainActivity : FlutterActivity() {
                 }
                 pm.getApplicationLabel(appInfo).toString()
             } catch (e: Exception) {
-                // Fallback aman jika package tidak terlihat atau uninstalled: gunakan segmen nama package
-                val segments = pkgName.split(".")
-                if (segments.isNotEmpty()) segments.last().replaceFirstChar { it.uppercase() } else pkgName
+                // Fallback cerdas: cek targetPackages atau format segmen
+                targetPackages[pkgName] ?: run {
+                    val segments = pkgName.split(".")
+                    if (segments.isNotEmpty()) {
+                        val candidate = segments.last().replaceFirstChar { it.uppercase() }
+                        if (candidate.equals("android", ignoreCase = true) && segments.size > 1) {
+                            segments[segments.size - 2].replaceFirstChar { it.uppercase() }
+                        } else {
+                            candidate
+                        }
+                    } else {
+                        pkgName
+                    }
+                }
             }
 
             appList.add(
@@ -968,6 +1231,9 @@ class MainActivity : FlutterActivity() {
 
         // Urutkan berdasarkan durasi penggunaan terbanyak (DESC)
         appList.sortByDescending { (it["usageMillis"] as? Long) ?: 0L }
+
+        // Hitung total screen time yang sepenuhnya konsisten dengan daftar app
+        val totalUsageMillis = appList.sumOf { (it["usageMillis"] as? Long) ?: 0L }
 
         android.util.Log.d(
             TAG_USAGE,

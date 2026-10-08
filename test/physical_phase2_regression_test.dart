@@ -141,7 +141,7 @@ void main() {
       expect(result.apps.first.appName, 'Instagram');
     });
 
-    test('4. today usage calculation: persisted to SQLite local storage', () async {
+    test('4. today usage calculation: persisted to SQLite local storage on daily snapshot', () async {
       mockProvider.usageAccess = true;
       mockProvider.mockUsage = const UsageStatsModel(
         totalUsageMillis: 1800000,
@@ -150,7 +150,7 @@ void main() {
         ],
       );
 
-      await usageRepo.getTodayUsage();
+      await usageRepo.saveDailySnapshot();
       final local = await usageRepo.getLocalTodayUsage();
 
       expect(local, isNotNull);

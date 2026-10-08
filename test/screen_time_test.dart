@@ -47,6 +47,9 @@ class FakeScreenTimeRepository implements UsageStatsRepository {
   }
 
   @override
+  Future<void> saveDailySnapshot({UsageStatsModel? stats, DateTime? date}) async {}
+
+  @override
   Future<int> claimLocalUsage(String authenticatedUserId) async => 0;
 }
 

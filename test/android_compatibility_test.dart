@@ -10,6 +10,7 @@ import 'package:mind_drji/app/data/local/tables/sync_queue.dart';
 import 'package:mind_drji/app/data/models/app_usage_model.dart';
 import 'package:mind_drji/app/data/models/doomscroll_live_session.dart';
 import 'package:mind_drji/app/data/models/doomscroll_session_model.dart';
+import 'package:mind_drji/app/data/models/target_app_model.dart';
 import 'package:mind_drji/app/data/models/eye_monitoring_live_event.dart';
 import 'package:mind_drji/app/data/models/eye_monitoring_session_model.dart';
 import 'package:mind_drji/app/data/providers/doomscroll_native_provider.dart';
@@ -92,6 +93,18 @@ class MockDoomscrollProvider implements DoomscrollNativeProvider {
   @override
   Stream<DoomscrollLiveSession> liveSessionStream() =>
       const Stream<DoomscrollLiveSession>.empty();
+
+  @override
+  Future<List<TargetAppModel>> getInstalledApps() async => [];
+
+  @override
+  Future<List<TargetAppModel>> getTargetPackages() async => [];
+
+  @override
+  Future<bool> saveTargetPackages(List<TargetAppModel> targetApps) async => true;
+
+  @override
+  Future<List<TargetAppModel>> resetTargetPackagesToDefault() async => [];
 }
 
 class MockEyeMonitoringProvider implements EyeMonitoringNativeProvider {
@@ -261,7 +274,8 @@ void main() {
       expect(controller.appUsages.length, 2);
       expect(controller.appUsages.first.appName, 'TikTok');
 
-      // Verifikasi tersimpan di Drift lokal
+      // Verifikasi tersimpan di Drift lokal saat snapshot harian / 23:59
+      await usageRepo.saveDailySnapshot();
       final nowStr = DateTime.now().toIso8601String().substring(0, 10);
       final savedScreenTime = await localUsageRepo.getScreenTime('local_user', nowStr);
       expect(savedScreenTime, isNotNull);

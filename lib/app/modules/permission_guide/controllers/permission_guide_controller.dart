@@ -3,6 +3,7 @@ import 'package:get/get.dart';
 import '../../../data/providers/doomscroll_native_provider.dart';
 import '../../../data/providers/eye_monitoring_native_provider.dart';
 import '../../../data/providers/usage_stats_provider.dart';
+import '../../../data/services/device_service.dart';
 import '../../../routes/app_routes.dart';
 
 class PermissionGuideController extends GetxController
@@ -10,20 +11,25 @@ class PermissionGuideController extends GetxController
   final UsageStatsProvider _usageStatsProvider;
   final DoomscrollNativeProvider _doomscrollProvider;
   final EyeMonitoringNativeProvider _eyeMonitoringProvider;
+  final DeviceService _deviceService;
 
   PermissionGuideController({
     UsageStatsProvider? usageStatsProvider,
     DoomscrollNativeProvider? doomscrollProvider,
     EyeMonitoringNativeProvider? eyeMonitoringProvider,
+    DeviceService? deviceService,
   })  : _usageStatsProvider = usageStatsProvider ?? UsageStatsProvider(),
         _doomscrollProvider = doomscrollProvider ?? DoomscrollNativeProvider(),
         _eyeMonitoringProvider =
-            eyeMonitoringProvider ?? EyeMonitoringNativeProvider();
+            eyeMonitoringProvider ?? EyeMonitoringNativeProvider(),
+        _deviceService = deviceService ?? DeviceService();
 
   final usageAccessGranted = false.obs;
   final accessibilityGranted = false.obs;
   final cameraGranted = false.obs;
   final notificationGranted = false.obs;
+  final batteryOptimizationIgnored = false.obs;
+  final deviceManufacturer = ''.obs;
   final isLoading = false.obs;
 
   int get totalPermission => 4;
@@ -97,6 +103,19 @@ class PermissionGuideController extends GetxController
       } catch (_) {
         notificationGranted.value = false;
       }
+
+      // 5. Battery Optimization & Device Manufacturer
+      try {
+        batteryOptimizationIgnored.value =
+            await _deviceService.checkBatteryOptimization();
+      } catch (_) {
+        batteryOptimizationIgnored.value = true;
+      }
+
+      try {
+        final info = await _deviceService.getDeviceInfo();
+        deviceManufacturer.value = info.manufacturer;
+      } catch (_) {}
     } finally {
       isLoading.value = false;
     }
@@ -132,6 +151,21 @@ class PermissionGuideController extends GetxController
       await _eyeMonitoringProvider.requestNotificationPermission();
     } catch (_) {}
     await checkAllPermissions();
+  }
+
+  /// Meminta pengguna untuk menonaktifkan pembatasan baterai (Unrestricted Battery)
+  Future<void> requestBatteryOptimization() async {
+    try {
+      await _deviceService.requestIgnoreBatteryOptimization();
+    } catch (_) {}
+    await checkAllPermissions();
+  }
+
+  /// Membuka halaman pengaturan Auto-Start / Background Start khusus vendor HP
+  Future<void> openOemAutoStart() async {
+    try {
+      await _deviceService.openOemAutoStartSettings();
+    } catch (_) {}
   }
 
   /// Navigasi ke halaman Monitoring existing

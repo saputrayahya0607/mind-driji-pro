@@ -1,6 +1,7 @@
 import 'package:flutter/services.dart';
 import '../models/doomscroll_live_session.dart';
 import '../models/doomscroll_session_model.dart';
+import '../models/target_app_model.dart';
 
 /// Provider native yang berinteraksi dengan Android via MethodChannel com.hn.minddriji/doomscroll
 class DoomscrollNativeProvider {
@@ -92,6 +93,76 @@ class DoomscrollNativeProvider {
           .whereType<Map<dynamic, dynamic>>()
           .map((map) => DoomscrollSessionModel.fromMap(map, defaultUserId: defaultUserId))
           .where((s) => s.swipeCount > 0)
+          .toList();
+    } on PlatformException catch (_) {
+      return [];
+    } catch (_) {
+      return [];
+    }
+  }
+
+  /// Mengambil daftar aplikasi yang terpasang pada perangkat beserta status pemantauannya
+  Future<List<TargetAppModel>> getInstalledApps() async {
+    try {
+      final rawList =
+          await _channel.invokeListMethod<dynamic>('getInstalledApps');
+      if (rawList == null) return [];
+
+      return rawList
+          .whereType<Map<dynamic, dynamic>>()
+          .map((map) => TargetAppModel.fromMap(map))
+          .toList();
+    } on PlatformException catch (_) {
+      return [];
+    } catch (_) {
+      return [];
+    }
+  }
+
+  /// Mengambil daftar package aplikasi target yang sedang aktif dipantau
+  Future<List<TargetAppModel>> getTargetPackages() async {
+    try {
+      final rawList =
+          await _channel.invokeListMethod<dynamic>('getTargetPackages');
+      if (rawList == null) return [];
+
+      return rawList
+          .whereType<Map<dynamic, dynamic>>()
+          .map((map) => TargetAppModel.fromMap(map))
+          .toList();
+    } on PlatformException catch (_) {
+      return [];
+    } catch (_) {
+      return [];
+    }
+  }
+
+  /// Menyimpan daftar aplikasi target yang dipilih oleh pengguna ke native SharedPreferences
+  Future<bool> saveTargetPackages(List<TargetAppModel> targetApps) async {
+    try {
+      final payload = targetApps.map((e) => e.toMap()).toList();
+      final success = await _channel.invokeMethod<bool>(
+        'saveTargetPackages',
+        {'targetApps': payload},
+      );
+      return success ?? false;
+    } on PlatformException catch (_) {
+      return false;
+    } catch (_) {
+      return false;
+    }
+  }
+
+  /// Mereset daftar aplikasi target ke konfigurasi default (TikTok, IG, YT, Snapchat, X, FB)
+  Future<List<TargetAppModel>> resetTargetPackagesToDefault() async {
+    try {
+      final rawList = await _channel
+          .invokeListMethod<dynamic>('resetTargetPackagesToDefault');
+      if (rawList == null) return [];
+
+      return rawList
+          .whereType<Map<dynamic, dynamic>>()
+          .map((map) => TargetAppModel.fromMap(map))
           .toList();
     } on PlatformException catch (_) {
       return [];

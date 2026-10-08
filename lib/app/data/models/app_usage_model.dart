@@ -92,8 +92,12 @@ class UsageStatsModel {
         .where((interval) => interval.durationMillis > 0)
         .toList();
 
+    final rawTotal = (map['totalUsageMillis'] as num?)?.toInt() ?? 0;
+    final appsTotal = apps.fold<int>(0, (sum, a) => sum + a.usageMillis);
+    final totalUsage = rawTotal > 0 ? (appsTotal > rawTotal ? appsTotal : rawTotal) : appsTotal;
+
     return UsageStatsModel(
-      totalUsageMillis: (map['totalUsageMillis'] as num?)?.toInt() ?? 0,
+      totalUsageMillis: totalUsage,
       apps: apps,
       intervals: intervals,
       startTime: (map['startTime'] as num?)?.toInt(),

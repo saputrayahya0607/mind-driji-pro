@@ -1,9 +1,7 @@
-import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../data/local/app_database.dart';
-import '../../../data/local/tables/sync_queue.dart';
 import '../controllers/eye_monitoring_controller.dart';
 
 class EyeMonitoringView extends GetView<EyeMonitoringController> {
@@ -28,30 +26,6 @@ class EyeMonitoringView extends GetView<EyeMonitoringController> {
           onPressed: () => Get.back(),
           tooltip: 'Kembali',
         ),
-        actions: [
-          Obx(() {
-            final isSyncing = controller.syncManager.isSyncing.value;
-            return IconButton(
-              icon: isSyncing
-                  ? const SizedBox(
-                      width: 18,
-                      height: 18,
-                      child: CircularProgressIndicator(
-                        strokeWidth: 2,
-                        color: AppColors.primary,
-                      ),
-                    )
-                  : const Icon(
-                      Icons.sync_rounded,
-                      color: AppColors.textPrimary,
-                      size: 22,
-                    ),
-              tooltip: 'Sinkronisasi Cloud',
-              onPressed: isSyncing ? null : () => controller.manualSync(),
-            );
-          }),
-          const SizedBox(width: 8),
-        ],
       ),
       body: Obx(() {
         if (controller.isLoading.value && !controller.isMonitoring.value) {
@@ -92,7 +66,7 @@ class EyeMonitoringView extends GetView<EyeMonitoringController> {
               children: [
                 _buildHeader(),
                 const SizedBox(height: 14),
-                _buildSyncStatusBanner(),
+                _buildSyncInfoCard(),
                 const SizedBox(height: 16),
                 _buildMonitoringStatusCard(),
                 const SizedBox(height: 16),
@@ -134,192 +108,66 @@ class EyeMonitoringView extends GetView<EyeMonitoringController> {
     );
   }
 
-  /// Banner status sinkronisasi ke Supabase
-  Widget _buildSyncStatusBanner() {
-    return Obx(() {
-      final syncMgr = controller.syncManager;
-      final isSyncing = syncMgr.isSyncing.value;
-      final isOnline = syncMgr.isOnline.value;
-      final queuePending = syncMgr.pendingCount.value;
-
-      final localSessions = controller.storedSessions;
-      final localPendingCount =
-          localSessions.where((s) => s.syncStatus == 'pending').length;
-      final localFailedCount =
-          localSessions.where((s) => s.syncStatus == 'failed').length;
-
-      final hasFailed =
-          localFailedCount > 0 || syncMgr.syncStatus.value == SyncStatus.failed;
-      final hasPending = localPendingCount > 0 || queuePending > 0;
-      final totalPending = math.max(queuePending, localPendingCount);
-
-      Color badgeBg;
-      Color badgeBorder;
-      Color iconColor;
-      IconData iconData;
-      String statusTitle;
-      String statusSubtitle;
-      Widget? actionButton;
-
-      if (isSyncing) {
-        badgeBg = const Color(0xFFE6FFFA);
-        badgeBorder = const Color(0xFF81E6D9);
-        iconColor = AppColors.primary;
-        iconData = Icons.sync_rounded;
-        statusTitle = 'Menyinkronkan sesi ke Cloud...';
-        statusSubtitle = 'Menghubungkan ke Supabase';
-      } else if (!isOnline) {
-        badgeBg = const Color(0xFFF1F5F9);
-        badgeBorder = const Color(0xFFCBD5E1);
-        iconColor = const Color(0xFF64748B);
-        iconData = Icons.cloud_off_rounded;
-        statusTitle = 'Mode Offline (SQLite Aktif)';
-        statusSubtitle = (hasPending || hasFailed)
-            ? '$totalPending sesi tersimpan lokal, siap sync saat online'
-            : 'Data sesi tersimpan aman di database lokal';
-      } else if (hasFailed) {
-        badgeBg = const Color(0xFFFEF2F2);
-        badgeBorder = const Color(0xFFFECACA);
-        iconColor = const Color(0xFFDC2626);
-        iconData = Icons.sync_problem_rounded;
-        statusTitle = 'Sinkronisasi Bermasalah';
-        statusSubtitle = localFailedCount > 0
-            ? '$localFailedCount sesi gagal dikirim. Ketuk untuk coba lagi.'
-            : 'Gagal mengirim sebagian data ke server.';
-        actionButton = InkWell(
-          onTap: () => controller.manualSync(),
-          borderRadius: BorderRadius.circular(8),
-          child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+  /// Kartu informasi penyimpanan lokal & jadwal sinkronisasi otomatis
+  Widget _buildSyncInfoCard() {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+      decoration: BoxDecoration(
+        color: const Color(0xFFF0FDF4),
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: const Color(0xFFBBF7D0), width: 1),
+      ),
+      child: Row(
+        children: [
+          Container(
+            width: 36,
+            height: 36,
             decoration: BoxDecoration(
-              color: const Color(0xFFDC2626),
-              borderRadius: BorderRadius.circular(8),
+              color: Colors.white,
+              shape: BoxShape.circle,
+              boxShadow: [
+                BoxShadow(
+                  color: const Color(0xFF16A34A).withValues(alpha: 0.12),
+                  blurRadius: 6,
+                  offset: const Offset(0, 2),
+                ),
+              ],
             ),
-            child: const Row(
-              mainAxisSize: MainAxisSize.min,
+            child: const Icon(
+              Icons.schedule_rounded,
+              size: 20,
+              color: Color(0xFF16A34A),
+            ),
+          ),
+          const SizedBox(width: 12),
+          const Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Icon(Icons.refresh, size: 13, color: Colors.white),
-                SizedBox(width: 4),
                 Text(
-                  'Retry',
+                  'Penyimpanan Lokal Aktif',
+                  style: TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600,
+                    color: AppColors.textPrimary,
+                  ),
+                ),
+                SizedBox(height: 2),
+                Text(
+                  'Data pemantauan mata tersimpan aman di perangkat. Sinkronisasi otomatis ke cloud berjalan setiap pukul 23:59 WIB.',
                   style: TextStyle(
                     fontSize: 11,
-                    fontWeight: FontWeight.w600,
-                    color: Colors.white,
+                    color: AppColors.textSecondary,
+                    height: 1.3,
                   ),
                 ),
               ],
             ),
           ),
-        );
-      } else if (hasPending) {
-        badgeBg = const Color(0xFFFFFBEB);
-        badgeBorder = const Color(0xFFFDE68A);
-        iconColor = const Color(0xFFD97706);
-        iconData = Icons.cloud_queue_rounded;
-        statusTitle = 'Menunggu Sinkronisasi';
-        statusSubtitle = '$totalPending sesi lokal siap disinkronkan';
-        actionButton = InkWell(
-          onTap: () => controller.manualSync(),
-          borderRadius: BorderRadius.circular(8),
-          child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-            decoration: BoxDecoration(
-              color: AppColors.primary,
-              borderRadius: BorderRadius.circular(8),
-            ),
-            child: const Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Icon(Icons.sync, size: 13, color: Colors.white),
-                SizedBox(width: 4),
-                Text(
-                  'Sync',
-                  style: TextStyle(
-                    fontSize: 11,
-                    fontWeight: FontWeight.w600,
-                    color: Colors.white,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        );
-      } else {
-        badgeBg = const Color(0xFFF0FDF4);
-        badgeBorder = const Color(0xFFBBF7D0);
-        iconColor = const Color(0xFF16A34A);
-        iconData = Icons.cloud_done_rounded;
-        statusTitle = 'Tersinkronisasi Penuh';
-        statusSubtitle = 'Data sesi lokal & Supabase Cloud telah sinkron';
-      }
-
-      return Container(
-        width: double.infinity,
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 11),
-        decoration: BoxDecoration(
-          color: badgeBg,
-          borderRadius: BorderRadius.circular(14),
-          border: Border.all(color: badgeBorder, width: 1),
-        ),
-        child: Row(
-          children: [
-            Container(
-              width: 34,
-              height: 34,
-              decoration: BoxDecoration(
-                color: Colors.white,
-                shape: BoxShape.circle,
-                boxShadow: [
-                  BoxShadow(
-                    color: iconColor.withValues(alpha: 0.15),
-                    blurRadius: 6,
-                    offset: const Offset(0, 2),
-                  ),
-                ],
-              ),
-              child: isSyncing
-                  ? Padding(
-                      padding: const EdgeInsets.all(8.0),
-                      child: CircularProgressIndicator(
-                        strokeWidth: 2,
-                        color: iconColor,
-                      ),
-                    )
-                  : Icon(iconData, size: 18, color: iconColor),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    statusTitle,
-                    style: const TextStyle(
-                      fontSize: 13,
-                      fontWeight: FontWeight.w600,
-                      color: AppColors.textPrimary,
-                    ),
-                  ),
-                  const SizedBox(height: 2),
-                  Text(
-                    statusSubtitle,
-                    style: const TextStyle(
-                      fontSize: 11,
-                      color: AppColors.textSecondary,
-                    ),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                ],
-              ),
-            ),
-            if (!isSyncing && isOnline && actionButton != null)
-              actionButton,
-          ],
-        ),
-      );
-    });
+        ],
+      ),
+    );
   }
 
   /// Kartu utama pemantauan mata (Belum Aktif / Aktif Berjalan Otomatis / Sedang Memantau)
@@ -900,26 +748,6 @@ class EyeMonitoringView extends GetView<EyeMonitoringController> {
         ? '$durationSeconds dtk'
         : '${durationSeconds ~/ 60}m ${durationSeconds % 60}d';
 
-    final isSynced = session.syncStatus == 'synced';
-    final isFailed = session.syncStatus == 'failed';
-    final Color badgeColor;
-    final IconData badgeIcon;
-    final String badgeText;
-
-    if (isSynced) {
-      badgeColor = const Color(0xFF16A34A);
-      badgeIcon = Icons.cloud_done_rounded;
-      badgeText = 'Synced';
-    } else if (isFailed) {
-      badgeColor = const Color(0xFFDC2626);
-      badgeIcon = Icons.error_outline_rounded;
-      badgeText = 'Failed';
-    } else {
-      badgeColor = const Color(0xFFD97706);
-      badgeIcon = Icons.cloud_upload_outlined;
-      badgeText = 'Pending';
-    }
-
     return Container(
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
@@ -1018,18 +846,18 @@ class EyeMonitoringView extends GetView<EyeMonitoringController> {
                       ),
                     ),
                     const Spacer(),
-                    Icon(
-                      badgeIcon,
+                    const Icon(
+                      Icons.check_circle_outline_rounded,
                       size: 13,
-                      color: badgeColor,
+                      color: Color(0xFF16A34A),
                     ),
                     const SizedBox(width: 3),
-                    Text(
-                      badgeText,
+                    const Text(
+                      'Tersimpan',
                       style: TextStyle(
                         fontSize: 10,
                         fontWeight: FontWeight.w600,
-                        color: badgeColor,
+                        color: Color(0xFF16A34A),
                       ),
                     ),
                   ],

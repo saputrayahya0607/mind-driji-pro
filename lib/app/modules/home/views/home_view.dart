@@ -8,6 +8,14 @@ import '../../../data/models/intervention_model.dart';
 import '../../../routes/app_routes.dart';
 import '../controllers/home_controller.dart';
 
+/// Halaman Utama (Dashboard) MIND DRIJI
+/// Didesain dengan tata letak & estetika aplikasi Digital Wellbeing modern:
+/// - AppBar & Branding dengan akses cepat ke Target Apps dan Refresh
+/// - Sapaan ramah personal & tanggal hari ini
+/// - Banner Intervensi Aktif jika sedang berjalan
+/// - Pusat Aksi Cepat: Fokus & Intervensi Digital (Digital Detox)
+/// - Tiga Pilar Digital Wellbeing: Screen Time, Pola Scrolling, Monitoring Mata
+/// - Smart AI Insight & Rekomendasi Perilaku Harian
 class HomeView extends GetView<HomeController> {
   const HomeView({super.key});
 
@@ -15,39 +23,7 @@ class HomeView extends GetView<HomeController> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppColors.background,
-      appBar: AppBar(
-        title: Row(
-          children: [
-            Container(
-              width: 32,
-              height: 32,
-              decoration: BoxDecoration(
-                color: AppColors.primary.withValues(alpha: 0.15),
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: const Icon(
-                Icons.spa_rounded,
-                size: 18,
-                color: AppColors.primary,
-              ),
-            ),
-            const SizedBox(width: 10),
-            const Text(
-              AppStrings.appName,
-              style: TextStyle(
-                fontSize: 17,
-                fontWeight: FontWeight.w800,
-                color: AppColors.secondary,
-                letterSpacing: 0.5,
-              ),
-            ),
-          ],
-        ),
-        centerTitle: false,
-        backgroundColor: AppColors.background,
-        elevation: 0,
-        scrolledUnderElevation: 0,
-      ),
+      appBar: _buildAppBar(),
       body: Obx(() {
         if (controller.isLoading.value && controller.profile.value == null) {
           return _buildLoadingState();
@@ -61,6 +37,89 @@ class HomeView extends GetView<HomeController> {
         return _buildHomeContent();
       }),
       bottomNavigationBar: const AppBottomNavigation(currentIndex: 0),
+    );
+  }
+
+  /// AppBar dengan branding MIND DRIJI & aksi cepat
+  PreferredSizeWidget _buildAppBar() {
+    return AppBar(
+      title: Row(
+        children: [
+          Container(
+            width: 34,
+            height: 34,
+            decoration: BoxDecoration(
+              gradient: const LinearGradient(
+                colors: [AppColors.primary, Color(0xFF14B8A6)],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+              ),
+              borderRadius: BorderRadius.circular(10),
+              boxShadow: [
+                BoxShadow(
+                  color: AppColors.primary.withValues(alpha: 0.25),
+                  blurRadius: 8,
+                  offset: const Offset(0, 2),
+                ),
+              ],
+            ),
+            child: const Icon(
+              Icons.spa_rounded,
+              size: 20,
+              color: Colors.white,
+            ),
+          ),
+          const SizedBox(width: 10),
+          const Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                AppStrings.appName,
+                style: TextStyle(
+                  fontSize: 17,
+                  fontWeight: FontWeight.w800,
+                  color: AppColors.secondary,
+                  letterSpacing: 0.6,
+                ),
+              ),
+              Text(
+                'Digital Wellbeing Companion',
+                style: TextStyle(
+                  fontSize: 10,
+                  fontWeight: FontWeight.w500,
+                  color: AppColors.textSecondary,
+                  letterSpacing: 0.2,
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+      centerTitle: false,
+      backgroundColor: AppColors.background,
+      elevation: 0,
+      scrolledUnderElevation: 0,
+      actions: [
+        IconButton(
+          icon: const Icon(
+            Icons.tune_rounded,
+            color: AppColors.secondary,
+            size: 22,
+          ),
+          tooltip: 'Target Aplikasi',
+          onPressed: () => Get.toNamed(Routes.targetApps),
+        ),
+        IconButton(
+          icon: const Icon(
+            Icons.refresh_rounded,
+            color: AppColors.secondary,
+            size: 22,
+          ),
+          tooltip: 'Perbarui Data',
+          onPressed: () => controller.loadHomeData(),
+        ),
+        const SizedBox(width: 6),
+      ],
     );
   }
 
@@ -139,7 +198,7 @@ class HomeView extends GetView<HomeController> {
     );
   }
 
-  /// Konten utama Dashboard Home
+  /// Konten utama Dashboard Home Digital Wellbeing
   Widget _buildHomeContent() {
     return RefreshIndicator(
       color: AppColors.primary,
@@ -151,20 +210,29 @@ class HomeView extends GetView<HomeController> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            // 1. Sapaan Ramah & Tanggal Hari Ini
             _buildUserGreeting(),
             const SizedBox(height: 16),
+
+            // 2. Banner Intervensi Aktif (jika ada sesi berjalan)
             if (controller.isInterventionActive) ...[
               _buildActiveInterventionBanner(),
               const SizedBox(height: 16),
             ],
+
+            // 3. Fokus & Intervensi Digital (Digital Detox Shortcut Center)
             _buildInterventionShortcutBanner(),
             const SizedBox(height: 20),
+
+            // 4. Pilar Digital Wellbeing: Screen Time, Pola Scrolling, Monitoring Mata
             _buildScreenTimeCard(),
-            const SizedBox(height: 16),
+            const SizedBox(height: 14),
             _buildDoomscrollingCard(),
-            const SizedBox(height: 16),
+            const SizedBox(height: 14),
             _buildEyeMonitoringCard(),
             const SizedBox(height: 20),
+
+            // 5. Section AI Insight Hari Ini
             _buildInsightSection(),
             const SizedBox(height: 28),
           ],
@@ -173,33 +241,85 @@ class HomeView extends GetView<HomeController> {
     );
   }
 
-  /// Sapaan ramah kepada user berdasarkan data profil
+  /// Sapaan ramah kepada user dan indikator tanggal
   Widget _buildUserGreeting() {
     return Obx(() {
-      return Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+      final formattedDate = _getFormattedDate();
+
+      return Row(
+        crossAxisAlignment: CrossAxisAlignment.center,
         children: [
-          Text(
-            controller.greetingText,
-            style: const TextStyle(
-              fontSize: 22,
-              fontWeight: FontWeight.w700,
-              color: AppColors.textPrimary,
-              letterSpacing: -0.3,
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  controller.greetingText,
+                  style: const TextStyle(
+                    fontSize: 22,
+                    fontWeight: FontWeight.w700,
+                    color: AppColors.textPrimary,
+                    letterSpacing: -0.3,
+                  ),
+                ),
+                const SizedBox(height: 3),
+                const Text(
+                  'Bagaimana penggunaan digitalmu hari ini?',
+                  style: TextStyle(
+                    fontSize: 13,
+                    color: AppColors.textSecondary,
+                    fontWeight: FontWeight.w400,
+                  ),
+                ),
+              ],
             ),
           ),
-          const SizedBox(height: 4),
-          const Text(
-            'Bagaimana penggunaan digitalmu hari ini?',
-            style: TextStyle(
-              fontSize: 14,
-              color: AppColors.textSecondary,
-              fontWeight: FontWeight.w400,
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 6),
+            decoration: BoxDecoration(
+              color: AppColors.primary.withValues(alpha: 0.1),
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(
+                color: AppColors.primary.withValues(alpha: 0.2),
+                width: 1,
+              ),
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Icon(
+                  Icons.calendar_today_rounded,
+                  size: 12,
+                  color: AppColors.primary,
+                ),
+                const SizedBox(width: 5),
+                Text(
+                  formattedDate,
+                  style: const TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w600,
+                    color: AppColors.primary,
+                  ),
+                ),
+              ],
             ),
           ),
         ],
       );
     });
+  }
+
+  /// Format tanggal hari ini dalam Bahasa Indonesia
+  String _getFormattedDate() {
+    final now = DateTime.now();
+    const days = ['Minggu', 'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu'];
+    const months = [
+      'Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun',
+      'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des'
+    ];
+    final dayName = days[now.weekday % 7];
+    final monthName = months[now.month - 1];
+    return '$dayName, ${now.day} $monthName';
   }
 
   /// Banner Intervensi Aktif jika sedang berjalan
@@ -209,19 +329,26 @@ class HomeView extends GetView<HomeController> {
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: const Color(0xFFF0FDF4),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: const Color(0xFFBBF7D0)),
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: const Color(0xFFBBF7D0), width: 1.5),
+        boxShadow: [
+          BoxShadow(
+            color: const Color(0xFF16A34A).withValues(alpha: 0.08),
+            blurRadius: 14,
+            offset: const Offset(0, 4),
+          ),
+        ],
       ),
       child: Row(
         children: [
           Container(
             padding: const EdgeInsets.all(10),
             decoration: BoxDecoration(
-              color: AppColors.primary.withValues(alpha: 0.15),
+              color: AppColors.primary.withValues(alpha: 0.18),
               shape: BoxShape.circle,
             ),
             child: const Icon(
-              Icons.spa_outlined,
+              Icons.spa_rounded,
               color: AppColors.primary,
               size: 22,
             ),
@@ -253,7 +380,8 @@ class HomeView extends GetView<HomeController> {
           ),
           ElevatedButton(
             onPressed: () {
-              final activeType = controller.interventionService?.activeIntervention.value?.type;
+              final activeType =
+                  controller.interventionService?.activeIntervention.value?.type;
               if (activeType == InterventionType.focusMode) {
                 Get.toNamed(Routes.focusMode);
               } else if (activeType == InterventionType.eyeRelaxation) {
@@ -269,8 +397,9 @@ class HomeView extends GetView<HomeController> {
               minimumSize: Size.zero,
               tapTargetSize: MaterialTapTargetSize.shrinkWrap,
               shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(8),
+                borderRadius: BorderRadius.circular(10),
               ),
+              elevation: 0,
             ),
             child: const Text(
               'Lihat',
@@ -282,14 +411,14 @@ class HomeView extends GetView<HomeController> {
     );
   }
 
-  /// Banner Aksi Cepat / Shortcut Intervensi Utama
+  /// Banner Aksi Cepat / Shortcut Intervensi Utama (Digital Detox Tools)
   Widget _buildInterventionShortcutBanner() {
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
         color: AppColors.card,
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: BorderRadius.circular(22),
         border: Border.all(color: AppColors.border, width: 1),
         boxShadow: [
           BoxShadow(
@@ -305,11 +434,11 @@ class HomeView extends GetView<HomeController> {
           Row(
             children: [
               Container(
-                width: 36,
-                height: 36,
+                width: 38,
+                height: 38,
                 decoration: BoxDecoration(
-                  color: AppColors.primary.withValues(alpha: 0.12),
-                  borderRadius: BorderRadius.circular(10),
+                  color: AppColors.primary.withValues(alpha: 0.14),
+                  borderRadius: BorderRadius.circular(12),
                 ),
                 child: const Icon(
                   Icons.shield_outlined,
@@ -319,27 +448,34 @@ class HomeView extends GetView<HomeController> {
               ),
               const SizedBox(width: 12),
               const Expanded(
-                child: Text(
-                  'Fokus & Intervensi Digital',
-                  style: TextStyle(
-                    fontSize: 15,
-                    fontWeight: FontWeight.w700,
-                    color: AppColors.textPrimary,
-                  ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Fokus & Intervensi Digital',
+                      style: TextStyle(
+                        fontSize: 15,
+                        fontWeight: FontWeight.w700,
+                        color: AppColors.textPrimary,
+                      ),
+                    ),
+                    SizedBox(height: 2),
+                    Text(
+                      'Kendalikan scrolling impulsif dan istirahatkan mata dengan intervensi mandiri terarah.',
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: AppColors.textSecondary,
+                        height: 1.35,
+                      ),
+                    ),
+                  ],
                 ),
               ),
             ],
           ),
-          const SizedBox(height: 10),
-          const Text(
-            'Kendalikan scrolling impulsif dan istirahatkan mata dengan intervensi mandiri terarah.',
-            style: TextStyle(
-              fontSize: 13,
-              color: AppColors.textSecondary,
-              height: 1.4,
-            ),
-          ),
           const SizedBox(height: 14),
+
+          // Tombol Aksi Utama
           Row(
             children: [
               Expanded(
@@ -374,7 +510,72 @@ class HomeView extends GetView<HomeController> {
               ),
             ],
           ),
+          const SizedBox(height: 12),
+
+          // Shortcut Chips Alat Bantu Digital
+          SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            child: Row(
+              children: [
+                _buildToolChip(
+                  icon: Icons.visibility_rounded,
+                  label: 'Jeda Mata 20-20-20',
+                  onTap: () => Get.toNamed(Routes.eyeRelaxation),
+                ),
+                const SizedBox(width: 8),
+                _buildToolChip(
+                  icon: Icons.app_blocking_rounded,
+                  label: 'Target Apps',
+                  onTap: () => Get.toNamed(Routes.targetApps),
+                ),
+                const SizedBox(width: 8),
+                _buildToolChip(
+                  icon: Icons.history_rounded,
+                  label: 'Riwayat Jeda',
+                  onTap: () => Get.toNamed(Routes.interventionHistory),
+                ),
+              ],
+            ),
+          ),
         ],
+      ),
+    );
+  }
+
+  /// Chip alat bantu digital cepat
+  Widget _buildToolChip({
+    required IconData icon,
+    required String label,
+    required VoidCallback onTap,
+  }) {
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(10),
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+          decoration: BoxDecoration(
+            color: AppColors.background,
+            borderRadius: BorderRadius.circular(10),
+            border: Border.all(color: AppColors.border, width: 0.8),
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(icon, size: 14, color: AppColors.textSecondary),
+              const SizedBox(width: 5),
+              Text(
+                label,
+                style: const TextStyle(
+                  fontSize: 11,
+                  fontWeight: FontWeight.w600,
+                  color: AppColors.textPrimary,
+                ),
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }
@@ -403,6 +604,11 @@ class HomeView extends GetView<HomeController> {
               : 'Belum ada data penggunaan yang tersedia.')
           : 'Data penggunaan perangkat akan muncul setelah monitoring diaktifkan.';
 
+      // Progress bar proporsional jika data tersedia (target harian: 6 jam)
+      final progress = hasAccess && totalMillis > 0
+          ? (totalMillis / (6 * 3600 * 1000)).clamp(0.05, 1.0)
+          : 0.0;
+
       return _buildWellnessCard(
         title: 'Screen Time',
         icon: Icons.smartphone_rounded,
@@ -411,6 +617,8 @@ class HomeView extends GetView<HomeController> {
         badgeTextColor: badgeTextColor,
         mainStatus: mainStatus,
         description: description,
+        progress: hasAccess && totalMillis > 0 ? progress : null,
+        progressColor: AppColors.primary,
         onTap: () async {
           await Get.toNamed(Routes.screenTime);
           controller.loadScreenTimeSummary();
@@ -472,7 +680,7 @@ class HomeView extends GetView<HomeController> {
     });
   }
 
-  /// Template Kartu Wellness Digital Seragam & Minimalis
+  /// Template Kartu Wellness Digital Seragam & Elegan
   Widget _buildWellnessCard({
     required String title,
     required IconData icon,
@@ -481,6 +689,8 @@ class HomeView extends GetView<HomeController> {
     required Color badgeTextColor,
     required String mainStatus,
     required String description,
+    double? progress,
+    Color? progressColor,
     VoidCallback? onTap,
   }) {
     return Container(
@@ -552,14 +762,25 @@ class HomeView extends GetView<HomeController> {
                   ],
                 ),
                 const SizedBox(height: 14),
-                Text(
-                  mainStatus,
-                  style: const TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.w800,
-                    color: AppColors.textPrimary,
-                    letterSpacing: -0.2,
-                  ),
+                Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        mainStatus,
+                        style: const TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.w800,
+                          color: AppColors.textPrimary,
+                          letterSpacing: -0.2,
+                        ),
+                      ),
+                    ),
+                    const Icon(
+                      Icons.chevron_right_rounded,
+                      size: 20,
+                      color: AppColors.textSecondary,
+                    ),
+                  ],
                 ),
                 const SizedBox(height: 4),
                 Text(
@@ -570,6 +791,20 @@ class HomeView extends GetView<HomeController> {
                     height: 1.4,
                   ),
                 ),
+                if (progress != null) ...[
+                  const SizedBox(height: 12),
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(6),
+                    child: LinearProgressIndicator(
+                      value: progress,
+                      minHeight: 5,
+                      backgroundColor: const Color(0xFFE2E8F0),
+                      valueColor: AlwaysStoppedAnimation<Color>(
+                        progressColor ?? AppColors.primary,
+                      ),
+                    ),
+                  ),
+                ],
               ],
             ),
           ),
@@ -578,7 +813,7 @@ class HomeView extends GetView<HomeController> {
     );
   }
 
-  /// Section: Insight Hari Ini (Empty state bersih)
+  /// Section: Insight Hari Ini (Smart AI Behavioral Insight)
   Widget _buildInsightSection() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
