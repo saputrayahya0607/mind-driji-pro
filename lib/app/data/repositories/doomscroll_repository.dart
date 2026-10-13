@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:get/get.dart';
 import '../local/app_database.dart';
 import '../local/repositories/doomscroll_local_repository.dart';
@@ -9,6 +10,7 @@ import '../providers/doomscroll_native_provider.dart';
 class DoomscrollRepository {
   final DoomscrollNativeProvider _provider;
   final DoomscrollLocalRepository _localRepository;
+  Future<void> _flushLock = Future.value();
 
   DoomscrollRepository({
     DoomscrollNativeProvider? provider,
@@ -35,18 +37,56 @@ class DoomscrollRepository {
   }
 
   /// Mengambil antrean sesi dari native SharedPreferences,
-  /// menyimpannya secara transactional ke SQLite lokal (Drift),
-  /// dan mengosongkan antrean native jika penyimpanan berhasil.
+  /// memvalidasi payload dan ID, menyimpannya ke Drift SQLite secara aman,
+  /// dan hanya meng-acknowledge ID sesi yang berhasil disimpan ke native queue.
+  /// Operasi serial aman dari pemanggilan konkruen.
   Future<int> collectAndPersistPendingSessions() async {
+    final prevLock = _flushLock;
+    final completer = Completer<void>();
+    _flushLock = completer.future;
+
+    try {
+      await prevLock;
+    } catch (_) {}
+
+    try {
+      return await _doCollectAndPersistPendingSessions();
+    } finally {
+      completer.complete();
+    }
+  }
+
+  Future<int> _doCollectAndPersistPendingSessions() async {
     try {
       final nativeSessions = await _provider.flushCurrentDoomscrollSession();
       if (nativeSessions.isEmpty) return 0;
 
-      await _localRepository.insertSessions(nativeSessions);
-      await _provider.clearPendingDoomscrollSessions();
-      return nativeSessions.length;
+      final acknowledgedIds = <String>[];
+      for (final session in nativeSessions) {
+        // Validasi payload dan ID
+        if (session.id.isEmpty ||
+            session.packageName.isEmpty ||
+            session.swipeCount <= 0) {
+          continue;
+        }
+
+        try {
+          await _localRepository.insertSession(session);
+          acknowledgedIds.add(session.id);
+        } catch (_) {
+          // Gagal persist lokal: jangan acknowledge ID ini agar bisa dicoba ulang
+        }
+      }
+
+      if (acknowledgedIds.isNotEmpty) {
+        await _provider.clearPendingDoomscrollSessions(
+          sessionIds: acknowledgedIds,
+        );
+      }
+
+      return acknowledgedIds.length;
     } catch (e) {
-      // Jika insert ke Drift gagal, JANGAN hapus native queue
+      // Jika terjadi exception tak terduga, jangan hapus native queue
       return 0;
     }
   }

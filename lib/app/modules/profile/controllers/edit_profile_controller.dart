@@ -136,6 +136,8 @@ class EditProfileController extends GetxController {
   }
 
   Future<void> saveProfile() async {
+    if (isSaving.value) return;
+
     if (!formKey.currentState!.validate()) {
       return;
     }

@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:get/get.dart';
@@ -10,11 +11,15 @@ import 'package:mind_drji/app/data/local/repositories/intervention_history_local
 import 'package:mind_drji/app/data/models/intervention_model.dart';
 import 'package:mind_drji/app/data/models/profile_model.dart';
 import 'package:mind_drji/app/data/repositories/profile_repository.dart';
+import 'package:mind_drji/app/data/services/auth_service.dart';
 import 'package:mind_drji/app/modules/login/controllers/login_controller.dart';
 import 'package:mind_drji/app/modules/profile/controllers/profile_controller.dart';
 import 'package:mind_drji/app/modules/profile/views/profile_view.dart';
+import 'package:mind_drji/app/modules/register/controllers/register_controller.dart';
 import 'package:mind_drji/app/modules/splash/controllers/splash_controller.dart';
 import 'package:mind_drji/app/routes/app_routes.dart';
+import 'package:mind_drji/main.dart';
+import 'package:mind_drji/supabase_config.dart';
 
 Session createFakeSession({
   required String userId,
@@ -44,8 +49,14 @@ Session createFakeSession({
 class FakeGoTrueClient implements GoTrueClient {
   Session? _session;
   bool signOutCalled = false;
+  String? lastSignUpEmailRedirectTo;
+  Uri? lastSessionUrl;
+  final _authStateController = StreamController<AuthState>.broadcast();
 
   FakeGoTrueClient({Session? initialSession}) : _session = initialSession;
+
+  @override
+  Stream<AuthState> get onAuthStateChange => _authStateController.stream;
 
   @override
   Session? get currentSession => _session;
@@ -57,6 +68,49 @@ class FakeGoTrueClient implements GoTrueClient {
   Future<void> signOut({SignOutScope scope = SignOutScope.global}) async {
     signOutCalled = true;
     _session = null;
+    _authStateController.add(const AuthState(AuthChangeEvent.signedOut, null));
+  }
+
+  @override
+  Future<AuthResponse> signUp({
+    String? email,
+    String? phone,
+    required String password,
+    String? emailRedirectTo,
+    Map<String, dynamic>? data,
+    String? captchaToken,
+    OtpChannel channel = OtpChannel.sms,
+  }) async {
+    lastSignUpEmailRedirectTo = emailRedirectTo;
+    final user = User(
+      id: 'new_user_1',
+      appMetadata: {},
+      userMetadata: data ?? {},
+      aud: 'authenticated',
+      email: email,
+      createdAt: DateTime.now().toIso8601String(),
+    );
+    return AuthResponse(user: user);
+  }
+
+  @override
+  Future<AuthSessionUrlResponse> getSessionFromUrl(
+    Uri originUrl, {
+    bool storeSession = true,
+  }) async {
+    lastSessionUrl = originUrl;
+    final errorDesc = originUrl.queryParameters['error_description'];
+    final error = originUrl.queryParameters['error'];
+    if (error != null || errorDesc != null) {
+      throw AuthException(errorDesc ?? error ?? 'Invalid link');
+    }
+    final session = createFakeSession(
+      userId: 'user_verified_123',
+      email: 'verified@minddrji.com',
+    );
+    _session = session;
+    _authStateController.add(AuthState(AuthChangeEvent.signedIn, session));
+    return AuthSessionUrlResponse(session: session, redirectType: 'signup');
   }
 
   @override
@@ -535,6 +589,91 @@ void main() {
       expect(leakedData, isEmpty);
 
       await db.close();
+    });
+
+    // -------------------------------------------------------------------------
+    // 11. determineInitialRoute (Single Splash Navigation)
+    // -------------------------------------------------------------------------
+    test('11. determineInitialRoute mengembalikan Routes.login jika tidak ada sesi', () async {
+      final fakeClient = FakeSupabaseClient();
+      final route = await determineInitialRoute(fakeClient);
+      expect(route, Routes.login);
+    });
+
+    test('12. determineInitialRoute mengembalikan Routes.home jika sesi aktif dan valid', () async {
+      final validSession = createFakeSession(
+        userId: 'user_active_direct',
+        email: 'direct@minddrji.com',
+        isExpired: false,
+      );
+      final fakeClient = FakeSupabaseClient(
+        auth: FakeGoTrueClient(initialSession: validSession),
+      );
+      final route = await determineInitialRoute(fakeClient);
+      expect(route, Routes.home);
+    });
+
+    // -------------------------------------------------------------------------
+    // 13. RegisterController emailRedirectTo (Supabase Auth Deep Link)
+    // -------------------------------------------------------------------------
+    test('13. RegisterController mengirim emailRedirectTo dengan skema minddriji://auth-callback', () async {
+      final fakeAuth = FakeGoTrueClient();
+      final fakeClient = FakeSupabaseClient(auth: fakeAuth);
+      final controller = RegisterController(supabaseClient: fakeClient);
+
+      controller.nameController.text = 'Yahya Saputra';
+      controller.emailController.text = 'yahya@minddrji.com';
+      controller.passwordController.text = 'password123';
+      controller.confirmPasswordController.text = 'password123';
+
+      await controller.register();
+
+      expect(fakeAuth.lastSignUpEmailRedirectTo, SupabaseConfig.authCallbackUrl);
+      expect(fakeAuth.lastSignUpEmailRedirectTo, 'minddriji://auth-callback');
+    });
+
+    // -------------------------------------------------------------------------
+    // 14. AuthService Deep Link & Email Callback Handling
+    // -------------------------------------------------------------------------
+    test('14. AuthService memproses deep link callback yang valid dan mengupdate session', () async {
+      final fakeAuth = FakeGoTrueClient();
+      final fakeClient = FakeSupabaseClient(auth: fakeAuth);
+      final authService = AuthService(supabase: fakeClient);
+
+      final callbackUri = Uri.parse('minddriji://auth-callback?code=mock_auth_code_123');
+      await authService.handleDeepLink(callbackUri);
+
+      expect(fakeAuth.lastSessionUrl, callbackUri);
+      expect(fakeClient.auth.currentSession, isNotNull);
+      expect(fakeClient.auth.currentSession!.user.id, 'user_verified_123');
+    });
+
+    test('15. AuthService mengabaikan URI dengan skema atau host berbeda', () async {
+      final fakeAuth = FakeGoTrueClient();
+      final fakeClient = FakeSupabaseClient(auth: fakeAuth);
+      final authService = AuthService(supabase: fakeClient);
+
+      final otherUri = Uri.parse('https://example.com/other-page');
+      await authService.handleDeepLink(otherUri);
+
+      expect(fakeAuth.lastSessionUrl, isNull);
+      expect(fakeClient.auth.currentSession, isNull);
+    });
+
+    test('16. AuthService menangani error deep link callback tanpa menganggap terverifikasi', () async {
+      final fakeAuth = FakeGoTrueClient();
+      final fakeClient = FakeSupabaseClient(auth: fakeAuth);
+      final authService = AuthService(supabase: fakeClient);
+
+      final errorUri = Uri.parse(
+          'minddriji://auth-callback?error=access_denied&error_description=Email+link+is+invalid+or+has+expired');
+      await authService.handleDeepLink(errorUri);
+
+      expect(fakeAuth.lastSessionUrl, isNull);
+      expect(fakeClient.auth.currentSession, isNull);
+      expect(authService.isHandlingAuthCallback, isFalse);
+      expect(authService.lastFeedbackTitle, 'Verifikasi Gagal');
+      expect(authService.lastFeedbackMessage, contains('invalid or has expired'));
     });
   });
 }

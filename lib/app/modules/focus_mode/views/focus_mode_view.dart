@@ -54,10 +54,12 @@ class FocusModeView extends GetView<FocusModeController> {
           Icons.arrow_back_rounded,
           color: AppColors.textPrimary,
         ),
+        constraints: const BoxConstraints(minWidth: 48, minHeight: 48),
         onPressed: () => Get.back(),
         tooltip: 'Kembali',
       ),
-      backgroundColor: AppColors.background,
+      backgroundColor: AppColors.surface,
+      surfaceTintColor: Colors.transparent,
       elevation: 0,
       scrolledUnderElevation: 0,
       centerTitle: false,
@@ -69,7 +71,7 @@ class FocusModeView extends GetView<FocusModeController> {
   // ===========================================================================
   Widget _buildPreStartState(BuildContext context) {
     return SingleChildScrollView(
-      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -81,18 +83,18 @@ class FocusModeView extends GetView<FocusModeController> {
               height: 1.4,
             ),
           ),
-          const SizedBox(height: 20),
+          const SizedBox(height: 16),
 
           // Hero Card
           Container(
             width: double.infinity,
-            padding: const EdgeInsets.all(22),
+            padding: const EdgeInsets.all(20),
             decoration: BoxDecoration(
-              color: AppColors.card,
-              borderRadius: BorderRadius.circular(22),
+              color: AppColors.surface,
+              borderRadius: BorderRadius.circular(16),
               border: Border.all(
-                color: AppColors.primary.withValues(alpha: 0.35),
-                width: 1.5,
+                color: AppColors.primary.withValues(alpha: 0.3),
+                width: 1.2,
               ),
               boxShadow: [
                 BoxShadow(
@@ -111,7 +113,7 @@ class FocusModeView extends GetView<FocusModeController> {
                       width: 44,
                       height: 44,
                       decoration: BoxDecoration(
-                        color: const Color(0xFFE6F8F5),
+                        color: AppColors.primary.withValues(alpha: 0.12),
                         borderRadius: BorderRadius.circular(12),
                       ),
                       child: const Icon(
@@ -121,13 +123,15 @@ class FocusModeView extends GetView<FocusModeController> {
                       ),
                     ),
                     const SizedBox(width: 14),
-                    const Text(
-                      'Mode Fokus',
-                      style: TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.w800,
-                        color: AppColors.textPrimary,
-                        letterSpacing: -0.3,
+                    const Expanded(
+                      child: Text(
+                        'Mode Fokus',
+                        style: TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.w800,
+                          color: AppColors.textPrimary,
+                          letterSpacing: -0.3,
+                        ),
                       ),
                     ),
                   ],
@@ -145,7 +149,7 @@ class FocusModeView extends GetView<FocusModeController> {
             ),
           ),
 
-          const SizedBox(height: 26),
+          const SizedBox(height: 24),
 
           // Pemilihan Durasi
           const Text(
@@ -170,11 +174,13 @@ class FocusModeView extends GetView<FocusModeController> {
                       borderRadius: BorderRadius.circular(14),
                       child: AnimatedContainer(
                         duration: const Duration(milliseconds: 200),
+                        constraints: const BoxConstraints(minHeight: 48),
+                        alignment: Alignment.center,
                         padding: const EdgeInsets.symmetric(vertical: 14),
                         decoration: BoxDecoration(
                           color: isSelected
                               ? AppColors.primary
-                              : AppColors.card,
+                              : AppColors.surface,
                           borderRadius: BorderRadius.circular(14),
                           border: Border.all(
                             color: isSelected
@@ -221,10 +227,10 @@ class FocusModeView extends GetView<FocusModeController> {
             width: double.infinity,
             padding: const EdgeInsets.all(14),
             decoration: BoxDecoration(
-              color: const Color(0xFFE6F8F5),
-              borderRadius: BorderRadius.circular(14),
+              color: AppColors.primary.withValues(alpha: 0.08),
+              borderRadius: BorderRadius.circular(12),
               border: Border.all(
-                color: AppColors.primary.withValues(alpha: 0.25),
+                color: AppColors.primary.withValues(alpha: 0.22),
                 width: 1,
               ),
             ),
@@ -269,7 +275,7 @@ class FocusModeView extends GetView<FocusModeController> {
                 foregroundColor: Colors.white,
                 elevation: 0,
                 shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(16),
+                  borderRadius: BorderRadius.circular(14),
                 ),
               ),
               child: controller.isStarting.value
@@ -329,7 +335,7 @@ class FocusModeView extends GetView<FocusModeController> {
   // ===========================================================================
   Widget _buildActiveState(BuildContext context) {
     return SingleChildScrollView(
-      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.center,
         children: [
@@ -344,12 +350,12 @@ class FocusModeView extends GetView<FocusModeController> {
               alignment: Alignment.center,
               children: [
                 SizedBox(
-                  width: 230,
-                  height: 230,
+                  width: 220,
+                  height: 220,
                   child: CircularProgressIndicator(
                     value: prog,
                     strokeWidth: 10,
-                    backgroundColor: const Color(0xFFE2E8F0),
+                    backgroundColor: AppColors.border,
                     valueColor:
                         const AlwaysStoppedAnimation<Color>(AppColors.primary),
                   ),
@@ -394,15 +400,15 @@ class FocusModeView extends GetView<FocusModeController> {
             ),
           ),
 
-          const SizedBox(height: 22),
+          const SizedBox(height: 20),
 
           // Card Kecil: Yang sedang aktif
           Container(
             width: double.infinity,
             padding: const EdgeInsets.all(18),
             decoration: BoxDecoration(
-              color: AppColors.card,
-              borderRadius: BorderRadius.circular(18),
+              color: AppColors.surface,
+              borderRadius: BorderRadius.circular(16),
               border: Border.all(color: AppColors.border, width: 1),
             ),
             child: Column(
@@ -421,7 +427,7 @@ class FocusModeView extends GetView<FocusModeController> {
                   children: [
                     Icon(
                       Icons.check_circle_rounded,
-                      color: Color(0xFF22C55E),
+                      color: AppColors.success,
                       size: 18,
                     ),
                     SizedBox(width: 10),
@@ -440,7 +446,7 @@ class FocusModeView extends GetView<FocusModeController> {
                   children: [
                     Icon(
                       Icons.check_circle_rounded,
-                      color: Color(0xFF22C55E),
+                      color: AppColors.success,
                       size: 18,
                     ),
                     SizedBox(width: 10),
@@ -458,7 +464,7 @@ class FocusModeView extends GetView<FocusModeController> {
             ),
           ),
 
-          const SizedBox(height: 32),
+          const SizedBox(height: 28),
 
           // CTA: Akhiri Focus Mode
           SizedBox(
@@ -467,10 +473,10 @@ class FocusModeView extends GetView<FocusModeController> {
             child: OutlinedButton(
               onPressed: () => _showCancelConfirmationDialog(context),
               style: OutlinedButton.styleFrom(
-                foregroundColor: const Color(0xFFEF4444),
+                foregroundColor: AppColors.error,
                 side: const BorderSide(color: Color(0xFFFCA5A5), width: 1.2),
                 shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(16),
+                  borderRadius: BorderRadius.circular(14),
                 ),
               ),
               child: const Text(
@@ -493,8 +499,10 @@ class FocusModeView extends GetView<FocusModeController> {
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
+        backgroundColor: AppColors.surface,
+        surfaceTintColor: Colors.transparent,
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(20),
+          borderRadius: BorderRadius.circular(18),
         ),
         title: const Text(
           'Sudahi Focus Mode?',
@@ -516,6 +524,9 @@ class FocusModeView extends GetView<FocusModeController> {
         actions: [
           TextButton(
             onPressed: () => Navigator.of(ctx).pop(),
+            style: TextButton.styleFrom(
+              minimumSize: const Size(64, 48),
+            ),
             child: const Text(
               'Batal',
               style: TextStyle(
@@ -530,7 +541,8 @@ class FocusModeView extends GetView<FocusModeController> {
               await controller.cancelFocusMode();
             },
             style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFFEF4444),
+              minimumSize: const Size(80, 48),
+              backgroundColor: AppColors.error,
               foregroundColor: Colors.white,
               elevation: 0,
               shape: RoundedRectangleBorder(
@@ -552,7 +564,7 @@ class FocusModeView extends GetView<FocusModeController> {
   // ===========================================================================
   Widget _buildCompletedState(BuildContext context) {
     return SingleChildScrollView(
-      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
+      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.center,
         children: [
@@ -560,16 +572,16 @@ class FocusModeView extends GetView<FocusModeController> {
 
           // Icon Success
           Container(
-            width: 80,
-            height: 80,
-            decoration: const BoxDecoration(
-              color: Color(0xFFDCFCE7),
+            width: 76,
+            height: 76,
+            decoration: BoxDecoration(
+              color: AppColors.successContainer,
               shape: BoxShape.circle,
             ),
             child: const Icon(
               Icons.check_circle_rounded,
-              color: Color(0xFF22C55E),
-              size: 48,
+              color: AppColors.success,
+              size: 44,
             ),
           ),
 
@@ -595,15 +607,15 @@ class FocusModeView extends GetView<FocusModeController> {
             ),
           ),
 
-          const SizedBox(height: 28),
+          const SizedBox(height: 24),
 
           // Detail Card
           Container(
             width: double.infinity,
             padding: const EdgeInsets.all(20),
             decoration: BoxDecoration(
-              color: AppColors.card,
-              borderRadius: BorderRadius.circular(20),
+              color: AppColors.surface,
+              borderRadius: BorderRadius.circular(16),
               border: Border.all(color: AppColors.border, width: 1),
             ),
             child: Column(
@@ -648,7 +660,7 @@ class FocusModeView extends GetView<FocusModeController> {
                       padding: const EdgeInsets.symmetric(
                           horizontal: 10, vertical: 4),
                       decoration: BoxDecoration(
-                        color: const Color(0xFFDCFCE7),
+                        color: AppColors.successContainer,
                         borderRadius: BorderRadius.circular(8),
                       ),
                       child: const Text(
@@ -656,7 +668,7 @@ class FocusModeView extends GetView<FocusModeController> {
                         style: TextStyle(
                           fontSize: 12,
                           fontWeight: FontWeight.w700,
-                          color: Color(0xFF15803D),
+                          color: AppColors.onSuccessContainer,
                         ),
                       ),
                     ),
@@ -666,7 +678,7 @@ class FocusModeView extends GetView<FocusModeController> {
             ),
           ),
 
-          const SizedBox(height: 36),
+          const SizedBox(height: 32),
 
           // CTA: Kembali
           SizedBox(
@@ -682,7 +694,7 @@ class FocusModeView extends GetView<FocusModeController> {
                 foregroundColor: Colors.white,
                 elevation: 0,
                 shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(16),
+                  borderRadius: BorderRadius.circular(14),
                 ),
               ),
               child: const Text(
@@ -707,7 +719,7 @@ class FocusModeView extends GetView<FocusModeController> {
                 foregroundColor: AppColors.primary,
                 side: const BorderSide(color: AppColors.primary, width: 1.2),
                 shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(16),
+                  borderRadius: BorderRadius.circular(14),
                 ),
               ),
               child: const Text(

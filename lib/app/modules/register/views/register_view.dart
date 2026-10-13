@@ -34,7 +34,7 @@ class RegisterView extends GetView<RegisterController> {
                             width: 56,
                             height: 56,
                             decoration: BoxDecoration(
-                              color: AppColors.primary.withAlpha(26),
+                              color: AppColors.primary.withValues(alpha: 0.1),
                               borderRadius: BorderRadius.circular(16),
                             ),
                             child: const Icon(
@@ -159,10 +159,19 @@ class RegisterView extends GetView<RegisterController> {
                             onPressed: controller.isLoading.value
                                 ? null
                                 : controller.register,
+                            style: ElevatedButton.styleFrom(
+                              minimumSize: const Size.fromHeight(48),
+                              backgroundColor: AppColors.primary,
+                              foregroundColor: Colors.white,
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              elevation: 0,
+                            ),
                             child: controller.isLoading.value
                                 ? const SizedBox(
-                                    width: 20,
-                                    height: 20,
+                                    width: 22,
+                                    height: 22,
                                     child: CircularProgressIndicator(
                                       strokeWidth: 2.2,
                                       valueColor: AlwaysStoppedAnimation<Color>(
@@ -172,15 +181,19 @@ class RegisterView extends GetView<RegisterController> {
                                   )
                                 : const Text(
                                     'Daftar Sekarang',
-                                    style: TextStyle(fontSize: 16),
+                                    style: TextStyle(
+                                      fontSize: 16,
+                                      fontWeight: FontWeight.w700,
+                                    ),
                                   ),
                           ),
                         ),
                         const SizedBox(height: 16),
 
                         // Link Kembali ke Login
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
+                        Wrap(
+                          alignment: WrapAlignment.center,
+                          crossAxisAlignment: WrapCrossAlignment.center,
                           children: [
                             const Text(
                               'Sudah memiliki akun? ',
@@ -191,6 +204,9 @@ class RegisterView extends GetView<RegisterController> {
                             ),
                             TextButton(
                               onPressed: controller.navigateToLogin,
+                              style: TextButton.styleFrom(
+                                minimumSize: const Size(48, 48),
+                              ),
                               child: const Text(
                                 'Masuk',
                                 style: TextStyle(

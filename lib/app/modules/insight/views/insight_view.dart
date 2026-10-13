@@ -32,40 +32,52 @@ class InsightView extends GetView<InsightController> {
         actions: [
           IconButton(
             icon: Container(
-              padding: const EdgeInsets.all(6),
+              width: 38,
+              height: 38,
               decoration: BoxDecoration(
                 color: AppColors.card,
                 shape: BoxShape.circle,
                 border: Border.all(color: AppColors.border, width: 1),
+                boxShadow: [
+                  BoxShadow(
+                    color: AppColors.secondary.withValues(alpha: 0.04),
+                    blurRadius: 6,
+                    offset: const Offset(0, 2),
+                  ),
+                ],
               ),
               child: const Icon(
                 Icons.refresh_rounded,
-                size: 18,
+                size: 20,
                 color: AppColors.secondary,
               ),
             ),
+            constraints: const BoxConstraints(minWidth: 48, minHeight: 48),
             onPressed: () => controller.loadInsights(),
             tooltip: 'Segarkan',
           ),
           const SizedBox(width: 8),
         ],
       ),
-      body: Column(
-        children: [
-          _buildPeriodSelector(),
-          _buildDateNavigator(),
-          Expanded(
-            child: Obx(() {
-              if (controller.isLoading.value) {
-                return _buildLoadingState();
-              }
-              if (!controller.hasInsights && !controller.hasRecommendations) {
-                return _buildEmptyState();
-              }
-              return _buildInsightContent();
-            }),
-          ),
-        ],
+      body: SafeArea(
+        top: false,
+        child: Column(
+          children: [
+            _buildPeriodSelector(),
+            _buildDateNavigator(),
+            Expanded(
+              child: Obx(() {
+                if (controller.isLoading.value) {
+                  return _buildLoadingState();
+                }
+                if (!controller.hasInsights && !controller.hasRecommendations) {
+                  return _buildEmptyState();
+                }
+                return _buildInsightContent();
+              }),
+            ),
+          ],
+        ),
       ),
       bottomNavigationBar: const AppBottomNavigation(currentIndex: 2),
     );
@@ -103,22 +115,26 @@ class InsightView extends GetView<InsightController> {
   ) {
     final isSelected = period == selected;
     return Expanded(
-      child: GestureDetector(
-        onTap: () => controller.setPeriod(period),
-        child: AnimatedContainer(
-          duration: const Duration(milliseconds: 200),
-          padding: const EdgeInsets.symmetric(vertical: 8),
-          decoration: BoxDecoration(
-            color: isSelected ? AppColors.primary : Colors.transparent,
-            borderRadius: BorderRadius.circular(12),
-          ),
-          alignment: Alignment.center,
-          child: Text(
-            label,
-            style: TextStyle(
-              fontSize: 13,
-              fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
-              color: isSelected ? Colors.white : AppColors.textSecondary,
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          borderRadius: BorderRadius.circular(12),
+          onTap: () => controller.setPeriod(period),
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 200),
+            padding: const EdgeInsets.symmetric(vertical: 10),
+            decoration: BoxDecoration(
+              color: isSelected ? AppColors.primary : Colors.transparent,
+              borderRadius: BorderRadius.circular(12),
+            ),
+            alignment: Alignment.center,
+            child: Text(
+              label,
+              style: TextStyle(
+                fontSize: 13,
+                fontWeight: isSelected ? FontWeight.w700 : FontWeight.w600,
+                color: isSelected ? Colors.white : AppColors.textSecondary,
+              ),
             ),
           ),
         ),
@@ -134,11 +150,18 @@ class InsightView extends GetView<InsightController> {
       final canGoNext = controller.canGoNext;
       return Container(
         margin: const EdgeInsets.symmetric(horizontal: 20, vertical: 4),
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
         decoration: BoxDecoration(
           color: AppColors.card,
           borderRadius: BorderRadius.circular(14),
           border: Border.all(color: AppColors.border, width: 1),
+          boxShadow: [
+            BoxShadow(
+              color: AppColors.secondary.withValues(alpha: 0.02),
+              blurRadius: 8,
+              offset: const Offset(0, 2),
+            ),
+          ],
         ),
         child: Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -146,8 +169,7 @@ class InsightView extends GetView<InsightController> {
             IconButton(
               icon: const Icon(Icons.chevron_left_rounded, size: 24),
               color: AppColors.secondary,
-              padding: EdgeInsets.zero,
-              constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
+              constraints: const BoxConstraints(minWidth: 48, minHeight: 48),
               onPressed: () => controller.previousPeriod(),
               tooltip: 'Periode Sebelumnya',
             ),
@@ -166,9 +188,8 @@ class InsightView extends GetView<InsightController> {
               icon: const Icon(Icons.chevron_right_rounded, size: 24),
               color: canGoNext
                   ? AppColors.secondary
-                  : AppColors.textSecondary.withValues(alpha: 0.2),
-              padding: EdgeInsets.zero,
-              constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
+                  : AppColors.textSecondary.withValues(alpha: 0.25),
+              constraints: const BoxConstraints(minWidth: 48, minHeight: 48),
               onPressed: canGoNext ? () => controller.nextPeriod() : null,
               tooltip: 'Periode Berikutnya',
             ),
@@ -225,23 +246,23 @@ class InsightView extends GetView<InsightController> {
         ? 'Selesai'
         : (item.status == InterventionStatus.cancelled ? 'Dibatalkan' : 'Aktif');
     final statusBg = isCompleted
-        ? const Color(0xFFDCFCE7)
-        : const Color(0xFFF3F4F6);
+        ? AppColors.successContainer
+        : AppColors.surfaceContainer;
     final statusColor = isCompleted
-        ? const Color(0xFF15803D)
-        : const Color(0xFF4B5563);
+        ? AppColors.onSuccessContainer
+        : AppColors.textSecondary;
 
     IconData icon;
     Color iconColor;
     if (item.type == InterventionType.eyeRelaxation) {
       icon = Icons.visibility_rounded;
-      iconColor = const Color(0xFF0EA5E9);
+      iconColor = AppColors.primary;
     } else if (item.type == InterventionType.focusMode) {
       icon = Icons.center_focus_strong_rounded;
-      iconColor = const Color(0xFFF59E0B);
+      iconColor = AppColors.warning;
     } else {
       icon = Icons.spa_rounded;
-      iconColor = const Color(0xFF10B981);
+      iconColor = AppColors.success;
     }
 
     return Container(
@@ -266,14 +287,18 @@ class InsightView extends GetView<InsightController> {
                   color: AppColors.textPrimary,
                 ),
               ),
-              GestureDetector(
+              InkWell(
+                borderRadius: BorderRadius.circular(6),
                 onTap: () => Get.toNamed(Routes.interventionHistory),
-                child: const Text(
-                  'Lihat Semua →',
-                  style: TextStyle(
-                    fontSize: 12,
-                    fontWeight: FontWeight.w600,
-                    color: AppColors.primary,
+                child: const Padding(
+                  padding: EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+                  child: Text(
+                    'Lihat Semua →',
+                    style: TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w600,
+                      color: AppColors.primary,
+                    ),
                   ),
                 ),
               ),
@@ -325,7 +350,7 @@ class InsightView extends GetView<InsightController> {
                   statusText,
                   style: TextStyle(
                     fontSize: 11,
-                    fontWeight: FontWeight.w600,
+                    fontWeight: FontWeight.w700,
                     color: statusColor,
                   ),
                 ),
@@ -386,7 +411,7 @@ class InsightView extends GetView<InsightController> {
                       padding: const EdgeInsets.symmetric(
                           horizontal: 8, vertical: 2),
                       decoration: BoxDecoration(
-                        color: const Color(0xFFE6F8F5),
+                        color: AppColors.primaryContainer,
                         borderRadius: BorderRadius.circular(6),
                       ),
                       child: Text(
@@ -394,7 +419,7 @@ class InsightView extends GetView<InsightController> {
                         style: const TextStyle(
                           fontSize: 10,
                           fontWeight: FontWeight.w700,
-                          color: AppColors.primary,
+                          color: AppColors.primaryDark,
                         ),
                       ),
                     ),
@@ -513,7 +538,7 @@ class InsightView extends GetView<InsightController> {
         return Container(
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
           decoration: BoxDecoration(
-            color: AppColors.background,
+            color: AppColors.surfaceContainerLow,
             borderRadius: BorderRadius.circular(12),
             border: Border.all(color: AppColors.border, width: 0.8),
           ),
@@ -530,12 +555,15 @@ class InsightView extends GetView<InsightController> {
                 ),
               ),
               const SizedBox(height: 2),
-              Text(
-                e.value,
-                style: const TextStyle(
-                  fontSize: 14,
-                  fontWeight: FontWeight.w800,
-                  color: AppColors.secondary,
+              FittedBox(
+                fit: BoxFit.scaleDown,
+                child: Text(
+                  e.value,
+                  style: const TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w800,
+                    color: AppColors.secondary,
+                  ),
                 ),
               ),
             ],
@@ -596,7 +624,7 @@ class InsightView extends GetView<InsightController> {
       width: double.infinity,
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: const Color(0xFFE6F8F5),
+        color: AppColors.primaryContainer.withValues(alpha: 0.5),
         borderRadius: BorderRadius.circular(12),
       ),
       child: Row(
@@ -636,11 +664,10 @@ class InsightView extends GetView<InsightController> {
               backgroundColor: AppColors.primary,
               foregroundColor: Colors.white,
               elevation: 0,
-              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
-              minimumSize: Size.zero,
-              tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+              minimumSize: const Size(64, 36),
               shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(8),
+                borderRadius: BorderRadius.circular(10),
               ),
             ),
             child: const Text(
@@ -666,12 +693,14 @@ class InsightView extends GetView<InsightController> {
             const Icon(Icons.self_improvement_rounded,
                 color: AppColors.primary, size: 24),
             const SizedBox(width: 10),
-            Text(
-              action,
-              style: const TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.w700,
-                color: AppColors.textPrimary,
+            Expanded(
+              child: Text(
+                action,
+                style: const TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w700,
+                  color: AppColors.textPrimary,
+                ),
               ),
             ),
           ],
@@ -847,7 +876,7 @@ class InsightView extends GetView<InsightController> {
             width: double.infinity,
             padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
             decoration: BoxDecoration(
-              color: AppColors.background,
+              color: AppColors.surfaceContainerLow,
               borderRadius: BorderRadius.circular(10),
             ),
             child: Row(
@@ -938,9 +967,9 @@ class InsightView extends GetView<InsightController> {
                 backgroundColor: AppColors.primary,
                 foregroundColor: Colors.white,
                 elevation: 0,
-                padding: const EdgeInsets.symmetric(vertical: 10),
+                minimumSize: const Size.fromHeight(48),
                 shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(10),
+                  borderRadius: BorderRadius.circular(12),
                 ),
               ),
             ),
@@ -1000,7 +1029,7 @@ class InsightView extends GetView<InsightController> {
             Container(
               padding: const EdgeInsets.all(10),
               decoration: BoxDecoration(
-                color: const Color(0xFFE6F8F5),
+                color: AppColors.primaryContainer.withValues(alpha: 0.5),
                 borderRadius: BorderRadius.circular(10),
               ),
               child: const Row(
@@ -1008,7 +1037,7 @@ class InsightView extends GetView<InsightController> {
                   Icon(
                     Icons.check_circle_outline_rounded,
                     size: 16,
-                    color: AppColors.primary,
+                    color: AppColors.primaryDark,
                   ),
                   SizedBox(width: 8),
                   Expanded(
@@ -1016,7 +1045,7 @@ class InsightView extends GetView<InsightController> {
                       'Pilihan ini disimpan sebagai pengingat sadar pribadimu.',
                       style: TextStyle(
                         fontSize: 11,
-                        color: AppColors.primary,
+                        color: AppColors.primaryDark,
                         fontWeight: FontWeight.w600,
                       ),
                     ),
@@ -1123,8 +1152,8 @@ class InsightView extends GetView<InsightController> {
 
   Widget _buildEmptyState() {
     return Center(
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 32),
+      child: SingleChildScrollView(
+        padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [

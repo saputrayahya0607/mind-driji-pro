@@ -187,6 +187,43 @@ object DoomscrollSessionQueue {
         }
     }
 
+    fun clearSessionsByIds(context: Context, ids: Set<String>): Boolean {
+        if (ids.isEmpty()) {
+            Log.d(DoomscrollConfig.TAG, "NATIVE QUEUE CLEAR BY IDS: empty ID set, queue untouched")
+            return false
+        }
+        synchronized(lock) {
+            try {
+                val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+                val currentJson = prefs.getString(KEY_SESSIONS, "[]") ?: "[]"
+                val jsonArray = try {
+                    JSONArray(currentJson)
+                } catch (e: Exception) {
+                    JSONArray()
+                }
+
+                val remainingArray = JSONArray()
+                for (i in 0 until jsonArray.length()) {
+                    val obj = jsonArray.optJSONObject(i) ?: continue
+                    val sessionId = obj.optString("id", "")
+                    if (!ids.contains(sessionId)) {
+                        remainingArray.put(obj)
+                    }
+                }
+
+                val saved = prefs.edit().putString(KEY_SESSIONS, remainingArray.toString()).commit()
+                Log.d(
+                    DoomscrollConfig.TAG,
+                    "NATIVE QUEUE CLEAR BY IDS: acked=${ids.size} remaining=${remainingArray.length()} saved=$saved"
+                )
+                return saved
+            } catch (e: Exception) {
+                Log.e(DoomscrollConfig.TAG, "NATIVE QUEUE CLEAR BY IDS ERROR: ${e.localizedMessage}", e)
+                return false
+            }
+        }
+    }
+
     fun clearPendingSessions(context: Context): Boolean {
         synchronized(lock) {
             val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)

@@ -7,5 +7,8 @@ class SupabaseConfig {
       'sb_publishable_5EynBK2FMBudPmqB-zd6uQ_9Lu9TES_';
 
   static const String supabasePublishableKey = supabaseAnonKey;
+
+  /// Skema deep link callback untuk Supabase Auth email confirmation
+  static const String authCallbackUrl = 'minddriji://auth-callback';
 }
 

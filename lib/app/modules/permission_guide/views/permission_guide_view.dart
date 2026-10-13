@@ -449,55 +449,52 @@ class PermissionGuideView extends GetView<PermissionGuideController> {
             'Aktifkan izin "Mulai Otomatis" (Auto-start / Background Start).',
           ),
           const SizedBox(height: 14),
-          Row(
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               if (!controller.batteryOptimizationIgnored.value) ...[
-                Expanded(
-                  child: OutlinedButton(
-                    key: const Key('btn_matikan_hemat_baterai'),
-                    onPressed: () => controller.requestBatteryOptimization(),
-                    style: OutlinedButton.styleFrom(
-                      foregroundColor: const Color(0xFF92400E),
-                      side: const BorderSide(color: Color(0xFFD97706), width: 1.2),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(10),
-                      ),
-                      backgroundColor: Colors.white.withValues(alpha: 0.7),
-                      padding: const EdgeInsets.symmetric(vertical: 10),
-                    ),
-                    child: const Text(
-                      'Matikan Hemat Baterai',
-                      style: TextStyle(
-                        fontSize: 12,
-                        fontWeight: FontWeight.w700,
-                      ),
-                    ),
-                  ),
-                ),
-                const SizedBox(width: 8),
-              ],
-              Expanded(
-                child: ElevatedButton.icon(
-                  key: const Key('btn_buka_pengaturan_oem'),
-                  onPressed: () => controller.openOemAutoStart(),
-                  icon: const Icon(Icons.settings_suggest_rounded,
-                      size: 16, color: Colors.white),
-                  label: Text(
-                    'Buka Pengaturan $brand',
-                    style: const TextStyle(
-                      fontSize: 12,
-                      fontWeight: FontWeight.w700,
-                      color: Colors.white,
-                    ),
-                  ),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFFD97706),
-                    elevation: 0,
+                OutlinedButton(
+                  key: const Key('btn_matikan_hemat_baterai'),
+                  onPressed: () => controller.requestBatteryOptimization(),
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: const Color(0xFF92400E),
+                    side: const BorderSide(color: Color(0xFFD97706), width: 1.2),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(10),
                     ),
-                    padding: const EdgeInsets.symmetric(vertical: 10),
+                    backgroundColor: Colors.white.withValues(alpha: 0.7),
+                    minimumSize: const Size.fromHeight(44),
                   ),
+                  child: const Text(
+                    'Matikan Hemat Baterai',
+                    style: TextStyle(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 8),
+              ],
+              ElevatedButton.icon(
+                key: const Key('btn_buka_pengaturan_oem'),
+                onPressed: () => controller.openOemAutoStart(),
+                icon: const Icon(Icons.settings_suggest_rounded,
+                    size: 16, color: Colors.white),
+                label: Text(
+                  'Buka Pengaturan $brand',
+                  style: const TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w700,
+                    color: Colors.white,
+                  ),
+                ),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFFD97706),
+                  elevation: 0,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  minimumSize: const Size.fromHeight(44),
                 ),
               ),
             ],

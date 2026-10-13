@@ -142,8 +142,13 @@ class MainActivity : FlutterActivity() {
                 }
                 "clearPendingDoomscrollSessions" -> {
                     try {
-                        val cleared = DoomscrollSessionQueue.clearPendingSessions(this)
-                        android.util.Log.d(DoomscrollConfig.TAG, "MethodChannel clearPendingDoomscrollSessions -> cleared=$cleared")
+                        val sessionIds = call.argument<List<String>>("sessionIds")
+                        val cleared = if (sessionIds != null) {
+                            DoomscrollSessionQueue.clearSessionsByIds(this, sessionIds.toSet())
+                        } else {
+                            DoomscrollSessionQueue.clearPendingSessions(this)
+                        }
+                        android.util.Log.d(DoomscrollConfig.TAG, "MethodChannel clearPendingDoomscrollSessions -> cleared=$cleared, idsCount=${sessionIds?.size ?: "all"}")
                         result.success(cleared)
                     } catch (e: Exception) {
                         android.util.Log.e(DoomscrollConfig.TAG, "MethodChannel clearPendingDoomscrollSessions error: ${e.localizedMessage}")
@@ -357,7 +362,12 @@ class MainActivity : FlutterActivity() {
                 }
                 "clearPendingSessions" -> {
                     try {
-                        val cleared = EyeMonitoringSessionQueue.clearPendingSessions(this)
+                        val sessionIds = call.argument<List<String>>("sessionIds")
+                        val cleared = if (sessionIds != null) {
+                            EyeMonitoringSessionQueue.clearSessionsByIds(this, sessionIds.toSet())
+                        } else {
+                            EyeMonitoringSessionQueue.clearPendingSessions(this)
+                        }
                         result.success(cleared)
                     } catch (e: Exception) {
                         result.error("CLEAR_PENDING_SESSIONS_ERROR", e.localizedMessage, null)

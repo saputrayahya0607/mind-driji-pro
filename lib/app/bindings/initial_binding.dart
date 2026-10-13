@@ -6,6 +6,7 @@ import '../data/local/repositories/intervention_history_local_repository.dart';
 import '../data/local/repositories/local_usage_repository.dart';
 import '../data/providers/intervention_native_provider.dart';
 import '../data/repositories/eye_monitoring_repository.dart';
+import '../data/services/auth_service.dart';
 import '../data/services/device_service.dart';
 import '../data/services/eye_monitoring_service.dart';
 import '../data/services/intervention_service.dart';
@@ -14,6 +15,10 @@ import '../data/sync/sync_manager.dart';
 class InitialBinding extends Bindings {
   @override
   void dependencies() {
+    // Autentikasi dan deep link listener
+    if (!Get.isRegistered<AuthService>()) {
+      Get.put<AuthService>(AuthService(), permanent: true);
+    }
     // Database and device identity services (lazy)
     if (!Get.isRegistered<AppDatabase>()) {
       Get.lazyPut<AppDatabase>(() => AppDatabase(), fenix: true);

@@ -319,8 +319,8 @@ void main() {
         findsOneWidget,
       );
 
-      // 7. Bottom Navigation Bar (5 tabs)
-      expect(find.byType(BottomNavigationBar), findsOneWidget);
+      // 7. Bottom Navigation Bar Material 3 (5 tabs)
+      expect(find.byType(NavigationBar), findsOneWidget);
       expect(find.text('Home'), findsOneWidget);
       expect(find.text('Monitoring'), findsOneWidget);
       expect(find.text('Insight'), findsOneWidget);

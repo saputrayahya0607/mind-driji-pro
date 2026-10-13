@@ -56,6 +56,15 @@ class DoomscrollLocalRepository {
     final devId = _resolveDeviceId(session.deviceId);
 
     await _db.transaction(() async {
+      final existing = await (_db.select(_db.doomscrollSessions)
+            ..where((tbl) => tbl.id.equals(sessionId)))
+          .getSingleOrNull();
+
+      if (existing != null) {
+        // Sesi sudah tersimpan sebelumnya, operasi idempotent
+        return;
+      }
+
       await _db.into(_db.doomscrollSessions).insert(
             DoomscrollSessionsCompanion.insert(
               id: sessionId,

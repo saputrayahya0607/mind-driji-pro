@@ -9,11 +9,10 @@ import '../controllers/intervention_controller.dart';
 /// Halaman Pusat Intervensi (MIND DRIJI).
 ///
 /// Tempat terpusat untuk semua aksi digital wellness:
-/// 1. Jeda Digital (5m, 15m, 30m)
-/// 2. Mode Fokus (15m, 30m, 60m, custom)
+/// 1. Jeda Digital (5m, 15m, 30m, 60m)
+/// 2. Mode Fokus (15m, 30m, 45m, 60m, custom)
 /// 3. Pomodoro (25m fokus, 5m jeda)
-/// 4. Intervensi Kustom (durasi fleksibel dengan validasi)
-/// Serta shortcut ke Panduan Relaksasi Mata dan Riwayat Intervensi.
+/// 4. Shortcut ke Panduan Relaksasi Mata dan Riwayat Intervensi.
 class InterventionView extends GetView<InterventionController> {
   const InterventionView({super.key});
 
@@ -40,24 +39,29 @@ class InterventionView extends GetView<InterventionController> {
               Icons.history_rounded,
               color: AppColors.textPrimary,
             ),
+            constraints: const BoxConstraints(minWidth: 48, minHeight: 48),
             tooltip: 'Riwayat Intervensi',
             onPressed: () => Get.toNamed(Routes.interventionHistory),
           ),
+          const SizedBox(width: 4),
         ],
       ),
-      body: Obx(() {
-        final active = controller.activeIntervention;
-        final isActive = controller.isActive;
+      body: SafeArea(
+        top: false,
+        child: Obx(() {
+          final active = controller.activeIntervention;
+          final isActive = controller.isActive;
 
-        if (isActive && active != null && active.status == InterventionStatus.active) {
-          if (active.type == InterventionType.eyeRelaxation) {
-            return _buildEyeRelaxationShortcut(context);
+          if (isActive && active != null && active.status == InterventionStatus.active) {
+            if (active.type == InterventionType.eyeRelaxation) {
+              return _buildEyeRelaxationShortcut(context);
+            }
+            return _buildActiveInterventionState(context, active);
           }
-          return _buildActiveInterventionState(context, active);
-        }
 
-        return _buildInterventionHub(context);
-      }),
+          return _buildInterventionHub(context);
+        }),
+      ),
       bottomNavigationBar: const AppBottomNavigation(currentIndex: 3),
     );
   }
@@ -67,27 +71,18 @@ class InterventionView extends GetView<InterventionController> {
   // ===========================================================================
   Widget _buildInterventionHub(BuildContext context) {
     return SingleChildScrollView(
-      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Banner Pengantar
           _buildHubHeader(),
-          const SizedBox(height: 20),
-
-          // 1. Jeda Digital
+          const SizedBox(height: 18),
           _buildDigitalBreakSection(context),
           const SizedBox(height: 18),
-
-          // 2. Mode Fokus
           _buildFocusModeSection(context),
           const SizedBox(height: 18),
-
-          // 3. Pomodoro Flow
           _buildPomodoroSection(context),
           const SizedBox(height: 20),
-
-          // Shortcut ke Relaksasi Mata & Riwayat
           _buildAdditionalActions(context),
           const SizedBox(height: 32),
         ],
@@ -101,16 +96,23 @@ class InterventionView extends GetView<InterventionController> {
       padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
         color: AppColors.card,
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(18),
         border: Border.all(color: AppColors.border),
+        boxShadow: [
+          BoxShadow(
+            color: AppColors.secondary.withValues(alpha: 0.03),
+            blurRadius: 10,
+            offset: const Offset(0, 2),
+          ),
+        ],
       ),
       child: Row(
         children: [
           Container(
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
-              color: AppColors.primary.withValues(alpha: 0.12),
-              borderRadius: BorderRadius.circular(12),
+              color: AppColors.primaryContainer,
+              borderRadius: BorderRadius.circular(14),
             ),
             child: const Icon(
               Icons.spa_rounded,
@@ -148,7 +150,7 @@ class InterventionView extends GetView<InterventionController> {
     );
   }
 
-  // 1. JEDA DIGITAL (5, 15, 30 Menit)
+  // 1. JEDA DIGITAL (5, 15, 30, 60 Menit)
   Widget _buildDigitalBreakSection(BuildContext context) {
     final selectedBreak = 15.obs;
 
@@ -156,8 +158,15 @@ class InterventionView extends GetView<InterventionController> {
       padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
         color: AppColors.card,
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(18),
         border: Border.all(color: AppColors.border),
+        boxShadow: [
+          BoxShadow(
+            color: AppColors.secondary.withValues(alpha: 0.02),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -166,12 +175,14 @@ class InterventionView extends GetView<InterventionController> {
             children: [
               Icon(Icons.coffee_rounded, size: 20, color: AppColors.primary),
               SizedBox(width: 8),
-              Text(
-                'Jeda Digital',
-                style: TextStyle(
-                  fontSize: 15,
-                  fontWeight: FontWeight.w700,
-                  color: AppColors.textPrimary,
+              Expanded(
+                child: Text(
+                  'Jeda Digital',
+                  style: TextStyle(
+                    fontSize: 15,
+                    fontWeight: FontWeight.w700,
+                    color: AppColors.textPrimary,
+                  ),
                 ),
               ),
             ],
@@ -183,41 +194,36 @@ class InterventionView extends GetView<InterventionController> {
           ),
           const SizedBox(height: 14),
           Obx(() {
-            return Row(
+            return Wrap(
+              spacing: 8,
+              runSpacing: 8,
               children: [5, 15, 30, 60].map((mins) {
                 final isSelected = selectedBreak.value == mins;
-                return Expanded(
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 3),
-                    child: ChoiceChip(
-                      label: Center(
-                        child: Text(
-                          '$mins mnt',
-                          style: TextStyle(
-                            fontSize: 12,
-                            fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
-                            color: isSelected ? Colors.white : AppColors.textPrimary,
-                          ),
-                        ),
-                      ),
-                      selected: isSelected,
-                      selectedColor: AppColors.primary,
-                      backgroundColor: AppColors.background,
-                      onSelected: (_) => selectedBreak.value = mins,
-                      showCheckmark: false,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(10),
-                        side: BorderSide(
-                          color: isSelected ? AppColors.primary : AppColors.border,
-                        ),
-                      ),
+                return ChoiceChip(
+                  label: Text(
+                    '$mins mnt',
+                    style: TextStyle(
+                      fontSize: 12,
+                      fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
+                      color: isSelected ? Colors.white : AppColors.textPrimary,
+                    ),
+                  ),
+                  selected: isSelected,
+                  selectedColor: AppColors.primary,
+                  backgroundColor: AppColors.surfaceContainerLow,
+                  onSelected: (_) => selectedBreak.value = mins,
+                  showCheckmark: false,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(10),
+                    side: BorderSide(
+                      color: isSelected ? AppColors.primary : AppColors.border,
                     ),
                   ),
                 );
               }).toList(),
             );
           }),
-          const SizedBox(height: 14),
+          const SizedBox(height: 16),
           SizedBox(
             width: double.infinity,
             child: ElevatedButton.icon(
@@ -227,7 +233,7 @@ class InterventionView extends GetView<InterventionController> {
               style: ElevatedButton.styleFrom(
                 backgroundColor: AppColors.primary,
                 foregroundColor: Colors.white,
-                padding: const EdgeInsets.symmetric(vertical: 12),
+                minimumSize: const Size.fromHeight(48),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(12),
                 ),
@@ -250,39 +256,34 @@ class InterventionView extends GetView<InterventionController> {
       padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
         color: AppColors.card,
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(18),
         border: Border.all(color: AppColors.border),
+        boxShadow: [
+          BoxShadow(
+            color: AppColors.secondary.withValues(alpha: 0.02),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
+          const Row(
             children: [
-              const Icon(Icons.do_not_disturb_on_total_silence_rounded,
-                  size: 20, color: Color(0xFF2563EB)),
-              const SizedBox(width: 8),
-              const Expanded(
+              Icon(
+                Icons.do_not_disturb_on_total_silence_rounded,
+                size: 20,
+                color: AppColors.primary,
+              ),
+              SizedBox(width: 8),
+              Expanded(
                 child: Text(
                   'Mode Fokus',
                   style: TextStyle(
                     fontSize: 15,
                     fontWeight: FontWeight.w700,
                     color: AppColors.textPrimary,
-                  ),
-                ),
-              ),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                decoration: BoxDecoration(
-                  color: const Color(0xFFDBEAFE),
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: const Text(
-                  'Active Restriction',
-                  style: TextStyle(
-                    fontSize: 10,
-                    fontWeight: FontWeight.w700,
-                    color: Color(0xFF1E40AF),
                   ),
                 ),
               ),
@@ -311,8 +312,8 @@ class InterventionView extends GetView<InterventionController> {
                       ),
                     ),
                     selected: isSelected,
-                    selectedColor: const Color(0xFF2563EB),
-                    backgroundColor: AppColors.background,
+                    selectedColor: AppColors.primary,
+                    backgroundColor: AppColors.surfaceContainerLow,
                     onSelected: (_) {
                       isCustom.value = false;
                       selectedFocus.value = mins;
@@ -321,7 +322,7 @@ class InterventionView extends GetView<InterventionController> {
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(10),
                       side: BorderSide(
-                        color: isSelected ? const Color(0xFF2563EB) : AppColors.border,
+                        color: isSelected ? AppColors.primary : AppColors.border,
                       ),
                     ),
                   );
@@ -336,8 +337,8 @@ class InterventionView extends GetView<InterventionController> {
                     ),
                   ),
                   selected: isCustom.value,
-                  selectedColor: const Color(0xFF2563EB),
-                  backgroundColor: AppColors.background,
+                  selectedColor: AppColors.primary,
+                  backgroundColor: AppColors.surfaceContainerLow,
                   onSelected: (_) {
                     isCustom.value = true;
                   },
@@ -345,7 +346,7 @@ class InterventionView extends GetView<InterventionController> {
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(10),
                     side: BorderSide(
-                      color: isCustom.value ? const Color(0xFF2563EB) : AppColors.border,
+                      color: isCustom.value ? AppColors.primary : AppColors.border,
                     ),
                   ),
                 ),
@@ -371,7 +372,7 @@ class InterventionView extends GetView<InterventionController> {
               ),
             );
           }),
-          const SizedBox(height: 14),
+          const SizedBox(height: 16),
           SizedBox(
             width: double.infinity,
             child: ElevatedButton.icon(
@@ -384,6 +385,8 @@ class InterventionView extends GetView<InterventionController> {
                     'Durasi Tidak Valid',
                     'Durasi harus antara 1 sampai 180 menit.',
                     snackPosition: SnackPosition.BOTTOM,
+                    backgroundColor: AppColors.card,
+                    colorText: AppColors.textPrimary,
                   );
                   return;
                 }
@@ -392,9 +395,9 @@ class InterventionView extends GetView<InterventionController> {
               icon: const Icon(Icons.shield_outlined, size: 18),
               label: const Text('Mulai Mode Fokus'),
               style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFF2563EB),
+                backgroundColor: AppColors.primary,
                 foregroundColor: Colors.white,
-                padding: const EdgeInsets.symmetric(vertical: 12),
+                minimumSize: const Size.fromHeight(48),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(12),
                 ),
@@ -413,15 +416,22 @@ class InterventionView extends GetView<InterventionController> {
       padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
         color: AppColors.card,
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(18),
         border: Border.all(color: AppColors.border),
+        boxShadow: [
+          BoxShadow(
+            color: AppColors.secondary.withValues(alpha: 0.02),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
             children: [
-              const Icon(Icons.timer_outlined, size: 20, color: Color(0xFFEA580C)),
+              const Icon(Icons.timer_outlined, size: 20, color: AppColors.warning),
               const SizedBox(width: 8),
               const Expanded(
                 child: Text(
@@ -433,18 +443,21 @@ class InterventionView extends GetView<InterventionController> {
                   ),
                 ),
               ),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                decoration: BoxDecoration(
-                  color: const Color(0xFFFFEDD5),
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: const Text(
-                  '25m + 5m',
-                  style: TextStyle(
-                    fontSize: 10,
-                    fontWeight: FontWeight.w700,
-                    color: Color(0xFFC2410C),
+              FittedBox(
+                fit: BoxFit.scaleDown,
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                  decoration: BoxDecoration(
+                    color: AppColors.warningContainer,
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: const Text(
+                    '25m + 5m',
+                    style: TextStyle(
+                      fontSize: 10,
+                      fontWeight: FontWeight.w700,
+                      color: AppColors.onWarningContainer,
+                    ),
                   ),
                 ),
               ),
@@ -455,7 +468,7 @@ class InterventionView extends GetView<InterventionController> {
             'Siklus produktivitas: 25 menit sesi fokus intensif dengan blocking, dilanjutkan 5 menit jeda penyegaran.',
             style: TextStyle(fontSize: 12, color: AppColors.textSecondary),
           ),
-          const SizedBox(height: 14),
+          const SizedBox(height: 16),
           SizedBox(
             width: double.infinity,
             child: ElevatedButton.icon(
@@ -463,9 +476,9 @@ class InterventionView extends GetView<InterventionController> {
               icon: const Icon(Icons.play_circle_outline_rounded, size: 18),
               label: const Text('Mulai Siklus Pomodoro'),
               style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFFEA580C),
+                backgroundColor: AppColors.warning,
                 foregroundColor: Colors.white,
-                padding: const EdgeInsets.symmetric(vertical: 12),
+                minimumSize: const Size.fromHeight(48),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(12),
                 ),
@@ -482,72 +495,92 @@ class InterventionView extends GetView<InterventionController> {
     return Row(
       children: [
         Expanded(
-          child: InkWell(
-            onTap: () => Get.toNamed(Routes.eyeRelaxation),
-            borderRadius: BorderRadius.circular(14),
-            child: Container(
-              padding: const EdgeInsets.all(14),
-              decoration: BoxDecoration(
-                color: AppColors.card,
-                borderRadius: BorderRadius.circular(14),
-                border: Border.all(color: AppColors.border),
-              ),
-              child: const Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Icon(Icons.remove_red_eye_outlined,
-                      size: 22, color: AppColors.primary),
-                  SizedBox(height: 8),
-                  Text(
-                    'Relaksasi Mata',
-                    style: TextStyle(
-                      fontSize: 13,
-                      fontWeight: FontWeight.w700,
-                      color: AppColors.textPrimary,
+          child: Material(
+            color: Colors.transparent,
+            child: InkWell(
+              onTap: () => Get.toNamed(Routes.eyeRelaxation),
+              borderRadius: BorderRadius.circular(16),
+              child: Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: AppColors.card,
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(color: AppColors.border),
+                  boxShadow: [
+                    BoxShadow(
+                      color: AppColors.secondary.withValues(alpha: 0.02),
+                      blurRadius: 8,
+                      offset: const Offset(0, 2),
                     ),
-                  ),
-                  SizedBox(height: 2),
-                  Text(
-                    'Panduan rileks',
-                    style: TextStyle(fontSize: 11, color: AppColors.textSecondary),
-                  ),
-                ],
+                  ],
+                ),
+                child: const Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Icon(Icons.remove_red_eye_outlined,
+                        size: 24, color: AppColors.primary),
+                    SizedBox(height: 10),
+                    Text(
+                      'Relaksasi Mata',
+                      style: TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w700,
+                        color: AppColors.textPrimary,
+                      ),
+                    ),
+                    SizedBox(height: 2),
+                    Text(
+                      'Panduan rileks',
+                      style: TextStyle(fontSize: 12, color: AppColors.textSecondary),
+                    ),
+                  ],
+                ),
               ),
             ),
           ),
         ),
         const SizedBox(width: 12),
         Expanded(
-          child: InkWell(
-            onTap: () => Get.toNamed(Routes.interventionHistory),
-            borderRadius: BorderRadius.circular(14),
-            child: Container(
-              padding: const EdgeInsets.all(14),
-              decoration: BoxDecoration(
-                color: AppColors.card,
-                borderRadius: BorderRadius.circular(14),
-                border: Border.all(color: AppColors.border),
-              ),
-              child: const Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Icon(Icons.history_rounded,
-                      size: 22, color: AppColors.secondary),
-                  SizedBox(height: 8),
-                  Text(
-                    'Riwayat Sesi',
-                    style: TextStyle(
-                      fontSize: 13,
-                      fontWeight: FontWeight.w700,
-                      color: AppColors.textPrimary,
+          child: Material(
+            color: Colors.transparent,
+            child: InkWell(
+              onTap: () => Get.toNamed(Routes.interventionHistory),
+              borderRadius: BorderRadius.circular(16),
+              child: Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: AppColors.card,
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(color: AppColors.border),
+                  boxShadow: [
+                    BoxShadow(
+                      color: AppColors.secondary.withValues(alpha: 0.02),
+                      blurRadius: 8,
+                      offset: const Offset(0, 2),
                     ),
-                  ),
-                  SizedBox(height: 2),
-                  Text(
-                    'Daftar catatan',
-                    style: TextStyle(fontSize: 11, color: AppColors.textSecondary),
-                  ),
-                ],
+                  ],
+                ),
+                child: const Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Icon(Icons.history_rounded,
+                        size: 24, color: AppColors.secondary),
+                    SizedBox(height: 10),
+                    Text(
+                      'Riwayat Sesi',
+                      style: TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w700,
+                        color: AppColors.textPrimary,
+                      ),
+                    ),
+                    SizedBox(height: 2),
+                    Text(
+                      'Daftar catatan',
+                      style: TextStyle(fontSize: 12, color: AppColors.textSecondary),
+                    ),
+                  ],
+                ),
               ),
             ),
           ),
@@ -562,14 +595,14 @@ class InterventionView extends GetView<InterventionController> {
   Widget _buildActiveInterventionState(BuildContext context, InterventionModel active) {
     final isFocus = active.type == InterventionType.focusMode ||
         active.type == InterventionType.pomodoro;
-    final primaryColor = isFocus ? const Color(0xFF2563EB) : AppColors.primary;
+    final primaryColor = isFocus ? AppColors.primary : AppColors.primary;
 
     return SingleChildScrollView(
       padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.center,
         children: [
-          const SizedBox(height: 20),
+          const SizedBox(height: 16),
           // Timer Ring Visualization
           Center(
             child: Stack(
@@ -579,7 +612,7 @@ class InterventionView extends GetView<InterventionController> {
                   width: 220,
                   height: 220,
                   child: CircularProgressIndicator(
-                    value: 1.0 - controller.progress,
+                    value: (1.0 - controller.progress).clamp(0.0, 1.0),
                     strokeWidth: 10,
                     backgroundColor: AppColors.border,
                     valueColor: AlwaysStoppedAnimation<Color>(primaryColor),
@@ -594,13 +627,16 @@ class InterventionView extends GetView<InterventionController> {
                       color: primaryColor,
                     ),
                     const SizedBox(height: 8),
-                    Text(
-                      controller.formattedRemainingTime,
-                      style: const TextStyle(
-                        fontSize: 42,
-                        fontWeight: FontWeight.bold,
-                        color: AppColors.textPrimary,
-                        letterSpacing: 2,
+                    FittedBox(
+                      fit: BoxFit.scaleDown,
+                      child: Text(
+                        controller.formattedRemainingTime,
+                        style: const TextStyle(
+                          fontSize: 42,
+                          fontWeight: FontWeight.bold,
+                          color: AppColors.textPrimary,
+                          letterSpacing: 2,
+                        ),
                       ),
                     ),
                     const SizedBox(height: 4),
@@ -617,7 +653,7 @@ class InterventionView extends GetView<InterventionController> {
               ],
             ),
           ),
-          const SizedBox(height: 36),
+          const SizedBox(height: 32),
 
           // Title & Subtext
           Text(
@@ -640,13 +676,13 @@ class InterventionView extends GetView<InterventionController> {
               height: 1.4,
             ),
           ),
-          const SizedBox(height: 32),
+          const SizedBox(height: 30),
 
           // Tips Card
           Container(
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
-              color: Colors.white,
+              color: AppColors.card,
               borderRadius: BorderRadius.circular(16),
               border: Border.all(color: AppColors.border),
             ),
@@ -678,7 +714,7 @@ class InterventionView extends GetView<InterventionController> {
               ],
             ),
           ),
-          const SizedBox(height: 36),
+          const SizedBox(height: 32),
 
           // Action Buttons
           Row(
@@ -687,10 +723,10 @@ class InterventionView extends GetView<InterventionController> {
                 child: OutlinedButton(
                   onPressed: () => _confirmCancel(context),
                   style: OutlinedButton.styleFrom(
-                    padding: const EdgeInsets.symmetric(vertical: 14),
+                    minimumSize: const Size.fromHeight(48),
                     side: const BorderSide(color: AppColors.border),
                     shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
+                      borderRadius: BorderRadius.circular(14),
                     ),
                   ),
                   child: const Text(
@@ -708,15 +744,16 @@ class InterventionView extends GetView<InterventionController> {
                   onPressed: () => controller.complete(),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: primaryColor,
-                    padding: const EdgeInsets.symmetric(vertical: 14),
+                    foregroundColor: Colors.white,
+                    minimumSize: const Size.fromHeight(48),
                     shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
+                      borderRadius: BorderRadius.circular(14),
                     ),
+                    elevation: 0,
                   ),
                   child: const Text(
                     'Selesai',
                     style: TextStyle(
-                      color: Colors.white,
                       fontWeight: FontWeight.w600,
                     ),
                   ),
@@ -775,6 +812,14 @@ class InterventionView extends GetView<InterventionController> {
             const SizedBox(height: 24),
             ElevatedButton(
               onPressed: () => Get.toNamed(Routes.eyeRelaxation),
+              style: ElevatedButton.styleFrom(
+                minimumSize: const Size(180, 48),
+                backgroundColor: AppColors.primary,
+                foregroundColor: Colors.white,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+              ),
               child: const Text('Buka Panduan Relaksasi'),
             ),
           ],
@@ -787,6 +832,7 @@ class InterventionView extends GetView<InterventionController> {
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
         title: const Text('Batalkan Intervensi?'),
         content: const Text('Apakah kamu yakin ingin mengakhiri sesi lebih awal?'),
         actions: [
@@ -799,7 +845,7 @@ class InterventionView extends GetView<InterventionController> {
               Navigator.of(ctx).pop();
               controller.cancel();
             },
-            child: const Text('Ya, Batalkan', style: TextStyle(color: Colors.red)),
+            child: const Text('Ya, Batalkan', style: TextStyle(color: AppColors.error)),
           ),
         ],
       ),

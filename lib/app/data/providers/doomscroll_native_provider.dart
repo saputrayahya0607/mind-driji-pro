@@ -68,11 +68,14 @@ class DoomscrollNativeProvider {
     }
   }
 
-  /// Menghapus native queue setelah berhasil disimpan ke Drift
-  Future<bool> clearPendingDoomscrollSessions() async {
+  /// Menghapus native queue setelah berhasil disimpan ke Drift.
+  /// Jika [sessionIds] diberikan, hanya sesi dengan ID tersebut yang dihapus.
+  Future<bool> clearPendingDoomscrollSessions({List<String>? sessionIds}) async {
     try {
-      final cleared =
-          await _channel.invokeMethod<bool>('clearPendingDoomscrollSessions');
+      final cleared = await _channel.invokeMethod<bool>(
+        'clearPendingDoomscrollSessions',
+        sessionIds != null ? {'sessionIds': sessionIds} : null,
+      );
       return cleared ?? false;
     } on PlatformException catch (_) {
       return false;

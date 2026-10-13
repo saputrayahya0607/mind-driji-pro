@@ -439,17 +439,19 @@ class ProfileView extends GetView<ProfileController> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Row(
+        Row(
           children: [
-            Text('📱', style: TextStyle(fontSize: 18)),
-            SizedBox(width: 8),
-            Text(
-              'Perangkat Ini',
-              style: TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.w700,
-                color: AppColors.textPrimary,
-                letterSpacing: -0.2,
+            const Text('📱', style: TextStyle(fontSize: 18)),
+            const SizedBox(width: 8),
+            const Expanded(
+              child: Text(
+                'Perangkat Ini',
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w700,
+                  color: AppColors.textPrimary,
+                  letterSpacing: -0.2,
+                ),
               ),
             ),
           ],

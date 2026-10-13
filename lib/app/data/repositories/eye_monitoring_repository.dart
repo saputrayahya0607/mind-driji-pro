@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:get/get.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../local/app_database.dart';
@@ -12,6 +13,7 @@ class EyeMonitoringRepository {
   final EyeMonitoringNativeProvider _provider;
   final EyeMonitoringLocalRepository _localRepository;
   final SupabaseClient? _supabase;
+  Future<void> _flushLock = Future.value();
 
   EyeMonitoringRepository({
     EyeMonitoringNativeProvider? provider,
@@ -85,20 +87,54 @@ class EyeMonitoringRepository {
     return _provider.isForegroundServiceRunning();
   }
 
-  /// Mengambil antrean sesi dari native, menyimpannya ke Drift SQLite, dan membersihkan antrean native
+  /// Mengambil antrean sesi dari native, memvalidasi payload dan ID,
+  /// menyimpannya ke Drift SQLite secara aman dan idempotent,
+  /// lalu hanya meng-acknowledge ID sesi yang berhasil disimpan ke native queue.
+  /// Operasi serial aman dari pemanggilan konkruen.
   Future<List<EyeMonitoringSessionModel>> flushPendingSessions() async {
+    final prevLock = _flushLock;
+    final completer = Completer<void>();
+    _flushLock = completer.future;
+
+    try {
+      await prevLock;
+    } catch (_) {}
+
+    try {
+      return await _doFlushPendingSessions();
+    } finally {
+      completer.complete();
+    }
+  }
+
+  Future<List<EyeMonitoringSessionModel>> _doFlushPendingSessions() async {
     final pending =
         await _provider.getPendingSessions(defaultUserId: _currentUserId);
     if (pending.isEmpty) return [];
 
+    final acknowledgedIds = <String>[];
+    final successfullyPersisted = <EyeMonitoringSessionModel>[];
+
     for (final session in pending) {
-      if (session.durationMillis > 0) {
+      // Validasi payload dan ID
+      if (session.id.isEmpty || session.durationMillis <= 0) {
+        continue;
+      }
+
+      try {
         await _localRepository.insertSession(session);
+        acknowledgedIds.add(session.id);
+        successfullyPersisted.add(session);
+      } catch (e) {
+        // Gagal simpan ke Drift: jangan acknowledge ID ini agar dapat dicoba ulang
       }
     }
 
-    await _provider.clearPendingSessions();
-    return pending;
+    if (acknowledgedIds.isNotEmpty) {
+      await _provider.clearPendingSessions(sessionIds: acknowledgedIds);
+    }
+
+    return successfullyPersisted;
   }
 
   /// Memulai monitoring mata secara lokal di native (direct mode)

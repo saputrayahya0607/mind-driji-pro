@@ -77,9 +77,14 @@ class MockDoomscrollProvider implements DoomscrollNativeProvider {
   }
 
   @override
-  Future<bool> clearPendingDoomscrollSessions() async {
+  Future<bool> clearPendingDoomscrollSessions({List<String>? sessionIds}) async {
     clearCalled = true;
-    pendingSessions = [];
+    if (sessionIds != null) {
+      if (sessionIds.isEmpty) return false;
+      pendingSessions.removeWhere((m) => sessionIds.contains(m['id']));
+    } else {
+      pendingSessions = [];
+    }
     return true;
   }
 
@@ -175,7 +180,7 @@ class MockEyeMonitoringProvider implements EyeMonitoringNativeProvider {
       [];
 
   @override
-  Future<bool> clearPendingSessions() async => true;
+  Future<bool> clearPendingSessions({List<String>? sessionIds}) async => true;
 
   @override
   Stream<EyeMonitoringLiveEvent> liveEventStream() =>

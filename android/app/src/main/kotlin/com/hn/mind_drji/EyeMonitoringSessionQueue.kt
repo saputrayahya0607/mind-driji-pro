@@ -33,10 +33,10 @@ object EyeMonitoringSessionQueue {
                 }
                 jsonArray.put(jsonObject)
 
-                prefs.edit().putString(KEY_SESSIONS, jsonArray.toString()).apply()
+                val saved = prefs.edit().putString(KEY_SESSIONS, jsonArray.toString()).commit()
                 Log.d(
                     TAG,
-                    "NATIVE QUEUE SAVE: id=${session["id"]} duration=${session["durationMillis"]}ms totalQueued=${jsonArray.length()}"
+                    "NATIVE QUEUE SAVE: id=${session["id"]} duration=${session["durationMillis"]}ms totalQueued=${jsonArray.length()} saved=$saved"
                 )
             } catch (e: Exception) {
                 Log.e(TAG, "NATIVE QUEUE SAVE ERROR: ${e.localizedMessage}", e)
@@ -68,6 +68,43 @@ object EyeMonitoringSessionQueue {
             }
 
             return result
+        }
+    }
+
+    fun clearSessionsByIds(context: Context, ids: Set<String>): Boolean {
+        if (ids.isEmpty()) {
+            Log.d(TAG, "NATIVE QUEUE CLEAR BY IDS: empty ID set, queue untouched")
+            return false
+        }
+        synchronized(lock) {
+            try {
+                val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+                val currentJson = prefs.getString(KEY_SESSIONS, "[]") ?: "[]"
+                val jsonArray = try {
+                    JSONArray(currentJson)
+                } catch (e: Exception) {
+                    JSONArray()
+                }
+
+                val remainingArray = JSONArray()
+                for (i in 0 until jsonArray.length()) {
+                    val obj = jsonArray.optJSONObject(i) ?: continue
+                    val sessionId = obj.optString("id", "")
+                    if (!ids.contains(sessionId)) {
+                        remainingArray.put(obj)
+                    }
+                }
+
+                val saved = prefs.edit().putString(KEY_SESSIONS, remainingArray.toString()).commit()
+                Log.d(
+                    TAG,
+                    "NATIVE QUEUE CLEAR BY IDS: acked=${ids.size} remaining=${remainingArray.length()} saved=$saved"
+                )
+                return saved
+            } catch (e: Exception) {
+                Log.e(TAG, "NATIVE QUEUE CLEAR BY IDS ERROR: ${e.localizedMessage}", e)
+                return false
+            }
         }
     }
 

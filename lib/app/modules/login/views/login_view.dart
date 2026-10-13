@@ -34,7 +34,7 @@ class LoginView extends GetView<LoginController> {
                             width: 56,
                             height: 56,
                             decoration: BoxDecoration(
-                              color: AppColors.primary.withAlpha(26),
+                              color: AppColors.primary.withValues(alpha: 0.1),
                               borderRadius: BorderRadius.circular(16),
                             ),
                             child: const Icon(
@@ -138,10 +138,19 @@ class LoginView extends GetView<LoginController> {
                             onPressed: controller.isLoading.value
                                 ? null
                                 : controller.login,
+                            style: ElevatedButton.styleFrom(
+                              minimumSize: const Size.fromHeight(48),
+                              backgroundColor: AppColors.primary,
+                              foregroundColor: Colors.white,
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              elevation: 0,
+                            ),
                             child: controller.isLoading.value
                                 ? const SizedBox(
-                                    width: 20,
-                                    height: 20,
+                                    width: 22,
+                                    height: 22,
                                     child: CircularProgressIndicator(
                                       strokeWidth: 2.2,
                                       valueColor: AlwaysStoppedAnimation<Color>(
@@ -151,15 +160,19 @@ class LoginView extends GetView<LoginController> {
                                   )
                                 : const Text(
                                     'Masuk',
-                                    style: TextStyle(fontSize: 16),
+                                    style: TextStyle(
+                                      fontSize: 16,
+                                      fontWeight: FontWeight.w700,
+                                    ),
                                   ),
                           ),
                         ),
                         const SizedBox(height: 16),
 
                         // Link Belum Punya Akun? Daftar
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
+                        Wrap(
+                          alignment: WrapAlignment.center,
+                          crossAxisAlignment: WrapCrossAlignment.center,
                           children: [
                             const Text(
                               'Belum punya akun? ',
@@ -170,6 +183,9 @@ class LoginView extends GetView<LoginController> {
                             ),
                             TextButton(
                               onPressed: controller.goToRegister,
+                              style: TextButton.styleFrom(
+                                minimumSize: const Size(48, 48),
+                              ),
                               child: const Text(
                                 'Daftar',
                                 style: TextStyle(

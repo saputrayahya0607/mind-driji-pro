@@ -303,12 +303,15 @@ class EditProfileView extends GetView<EditProfileController> {
                   color: AppColors.secondary,
                 ),
                 const SizedBox(width: 12),
-                Text(
-                  'Pilih jenis kelamin',
-                  style: TextStyle(
-                    fontSize: 14,
-                    color: AppColors.textSecondary.withValues(alpha: 0.7),
-                    fontStyle: FontStyle.italic,
+                Expanded(
+                  child: Text(
+                    'Pilih jenis kelamin',
+                    style: TextStyle(
+                      fontSize: 14,
+                      color: AppColors.textSecondary.withValues(alpha: 0.7),
+                      fontStyle: FontStyle.italic,
+                    ),
+                    overflow: TextOverflow.ellipsis,
                   ),
                 ),
               ],
@@ -328,12 +331,15 @@ class EditProfileView extends GetView<EditProfileController> {
                       color: AppColors.secondary,
                     ),
                     SizedBox(width: 12),
-                    Text(
-                      'Laki-laki',
-                      style: TextStyle(
-                        fontSize: 14,
-                        fontWeight: FontWeight.w600,
-                        color: AppColors.textPrimary,
+                    Expanded(
+                      child: Text(
+                        'Laki-laki',
+                        style: TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w600,
+                          color: AppColors.textPrimary,
+                        ),
+                        overflow: TextOverflow.ellipsis,
                       ),
                     ),
                   ],
@@ -349,12 +355,15 @@ class EditProfileView extends GetView<EditProfileController> {
                       color: AppColors.secondary,
                     ),
                     SizedBox(width: 12),
-                    Text(
-                      'Perempuan',
-                      style: TextStyle(
-                        fontSize: 14,
-                        fontWeight: FontWeight.w600,
-                        color: AppColors.textPrimary,
+                    Expanded(
+                      child: Text(
+                        'Perempuan',
+                        style: TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w600,
+                          color: AppColors.textPrimary,
+                        ),
+                        overflow: TextOverflow.ellipsis,
                       ),
                     ),
                   ],

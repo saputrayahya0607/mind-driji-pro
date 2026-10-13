@@ -143,11 +143,14 @@ class EyeMonitoringNativeProvider {
     }
   }
 
-  /// Menghapus antrean sesi native setelah berhasil disimpan ke SQLite Drift
-  Future<bool> clearPendingSessions() async {
+  /// Menghapus antrean sesi native setelah berhasil disimpan ke SQLite Drift.
+  /// Jika [sessionIds] diberikan, hanya sesi dengan ID tersebut yang dihapus.
+  Future<bool> clearPendingSessions({List<String>? sessionIds}) async {
     try {
-      final cleared =
-          await _channel.invokeMethod<bool>('clearPendingSessions');
+      final cleared = await _channel.invokeMethod<bool>(
+        'clearPendingSessions',
+        sessionIds != null ? {'sessionIds': sessionIds} : null,
+      );
       return cleared ?? false;
     } on PlatformException catch (_) {
       return false;

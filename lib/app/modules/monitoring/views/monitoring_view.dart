@@ -32,7 +32,7 @@ class MonitoringView extends GetView<MonitoringController> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // Header
+                // Header Ringkasan
                 const Text(
                   'Visualisasi Monitoring',
                   style: TextStyle(
@@ -54,11 +54,11 @@ class MonitoringView extends GetView<MonitoringController> {
 
                 // Periode Tabs: [ Hari ] [ Minggu ] [ Bulan ]
                 _buildPeriodTabs(),
-                const SizedBox(height: 14),
+                const SizedBox(height: 12),
 
                 // Date Navigation Bar: ‹ 29 Sep 2026 ›
                 _buildDateNavigationBar(),
-                const SizedBox(height: 18),
+                const SizedBox(height: 16),
 
                 // Loading Indicator Ringan
                 Obx(() {
@@ -115,8 +115,9 @@ class MonitoringView extends GetView<MonitoringController> {
     return Container(
       padding: const EdgeInsets.all(4),
       decoration: BoxDecoration(
-        color: const Color(0xFFE2E8F0).withValues(alpha: 0.5),
-        borderRadius: BorderRadius.circular(14),
+        color: AppColors.surfaceContainer,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: AppColors.border, width: 1),
       ),
       child: Obx(() {
         final current = controller.selectedPeriod.value;
@@ -183,7 +184,7 @@ class MonitoringView extends GetView<MonitoringController> {
       final canNext = controller.canGoNext;
 
       return Container(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
         decoration: BoxDecoration(
           color: AppColors.card,
           borderRadius: BorderRadius.circular(14),
@@ -198,31 +199,37 @@ class MonitoringView extends GetView<MonitoringController> {
               color: AppColors.textPrimary,
               onPressed: controller.goToPreviousPeriod,
               padding: EdgeInsets.zero,
-              constraints: const BoxConstraints(minWidth: 36, minHeight: 36),
+              constraints: const BoxConstraints(minWidth: 44, minHeight: 44),
+              tooltip: 'Sebelumnya',
             ),
-            Column(
-              children: [
-                Text(
-                  label,
-                  key: const Key('text_date_label'),
-                  style: const TextStyle(
-                    fontSize: 15,
-                    fontWeight: FontWeight.w700,
-                    color: AppColors.textPrimary,
-                  ),
-                ),
-                if (subtitle != null) ...[
-                  const SizedBox(height: 2),
+            Expanded(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
                   Text(
-                    subtitle,
+                    label,
+                    key: const Key('text_date_label'),
+                    textAlign: TextAlign.center,
                     style: const TextStyle(
-                      fontSize: 12,
-                      fontWeight: FontWeight.w500,
-                      color: AppColors.textSecondary,
+                      fontSize: 14.5,
+                      fontWeight: FontWeight.w700,
+                      color: AppColors.textPrimary,
                     ),
                   ),
+                  if (subtitle != null) ...[
+                    const SizedBox(height: 2),
+                    Text(
+                      subtitle,
+                      textAlign: TextAlign.center,
+                      style: const TextStyle(
+                        fontSize: 11.5,
+                        fontWeight: FontWeight.w500,
+                        color: AppColors.textSecondary,
+                      ),
+                    ),
+                  ],
                 ],
-              ],
+              ),
             ),
             IconButton(
               key: const Key('btn_next_date'),
@@ -235,7 +242,8 @@ class MonitoringView extends GetView<MonitoringController> {
               ),
               onPressed: canNext ? controller.goToNextPeriod : null,
               padding: EdgeInsets.zero,
-              constraints: const BoxConstraints(minWidth: 36, minHeight: 36),
+              constraints: const BoxConstraints(minWidth: 44, minHeight: 44),
+              tooltip: 'Berikutnya',
             ),
           ],
         ),
@@ -257,13 +265,13 @@ class MonitoringView extends GetView<MonitoringController> {
         padding: const EdgeInsets.all(18),
         decoration: BoxDecoration(
           color: AppColors.card,
-          borderRadius: BorderRadius.circular(20),
+          borderRadius: BorderRadius.circular(16),
           border: Border.all(color: AppColors.border, width: 1),
           boxShadow: [
             BoxShadow(
               color: AppColors.secondary.withValues(alpha: 0.02),
               blurRadius: 10,
-              offset: const Offset(0, 3),
+              offset: const Offset(0, 2),
             ),
           ],
         ),
@@ -273,25 +281,27 @@ class MonitoringView extends GetView<MonitoringController> {
             Row(
               children: [
                 Container(
-                  width: 36,
-                  height: 36,
+                  width: 38,
+                  height: 38,
                   decoration: BoxDecoration(
-                    color: AppColors.primary.withValues(alpha: 0.12),
+                    color: AppColors.primaryContainer,
                     borderRadius: BorderRadius.circular(10),
                   ),
                   child: const Icon(
                     Icons.timer_outlined,
                     size: 20,
-                    color: AppColors.primary,
+                    color: AppColors.onPrimaryContainer,
                   ),
                 ),
-                const SizedBox(width: 10),
-                const Text(
-                  'Total Screen Time',
-                  style: TextStyle(
-                    fontSize: 15,
-                    fontWeight: FontWeight.w700,
-                    color: AppColors.textPrimary,
+                const SizedBox(width: 12),
+                const Expanded(
+                  child: Text(
+                    'Total Screen Time',
+                    style: TextStyle(
+                      fontSize: 15,
+                      fontWeight: FontWeight.w700,
+                      color: AppColors.textPrimary,
+                    ),
                   ),
                 ),
               ],
@@ -315,12 +325,12 @@ class MonitoringView extends GetView<MonitoringController> {
                 ),
               ),
               if (comparison.isNotEmpty) ...[
-                const SizedBox(height: 4),
+                const SizedBox(height: 6),
                 Container(
                   padding:
                       const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                   decoration: BoxDecoration(
-                    color: AppColors.background,
+                    color: AppColors.surfaceContainerLow,
                     borderRadius: BorderRadius.circular(8),
                     border: Border.all(color: AppColors.border, width: 1),
                   ),
@@ -408,7 +418,7 @@ class MonitoringView extends GetView<MonitoringController> {
                   child: LinearProgressIndicator(
                     value: ratio.clamp(0.0, 1.0),
                     minHeight: 8,
-                    backgroundColor: AppColors.background,
+                    backgroundColor: AppColors.surfaceContainerHigh,
                     valueColor: AlwaysStoppedAnimation<Color>(
                       seg.screenTimeMillis > 0
                           ? AppColors.primary
@@ -453,25 +463,27 @@ class MonitoringView extends GetView<MonitoringController> {
             crossAxisAlignment: CrossAxisAlignment.end,
             children: days.map((day) {
               final ratio = (day.screenTimeMillis / maxMillis).clamp(0.0, 1.0);
-              final barHeight = (ratio * 90).clamp(4.0, 90.0);
+              final barHeight = (ratio * 84).clamp(4.0, 84.0);
               final hasVal = day.screenTimeMillis > 0;
 
               return Expanded(
                 child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 3),
+                  padding: const EdgeInsets.symmetric(horizontal: 2),
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.end,
                     children: [
                       if (hasVal)
-                        Text(
-                          day.screenTimeFormatted,
-                          style: const TextStyle(
-                            fontSize: 10,
-                            fontWeight: FontWeight.w600,
-                            color: AppColors.primary,
+                        FittedBox(
+                          fit: BoxFit.scaleDown,
+                          child: Text(
+                            day.screenTimeFormatted,
+                            style: const TextStyle(
+                              fontSize: 10,
+                              fontWeight: FontWeight.w700,
+                              color: AppColors.primary,
+                            ),
+                            maxLines: 1,
                           ),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
                         )
                       else
                         const SizedBox(height: 12),
@@ -482,7 +494,7 @@ class MonitoringView extends GetView<MonitoringController> {
                         decoration: BoxDecoration(
                           color: hasVal
                               ? AppColors.primary
-                              : const Color(0xFFE2E8F0),
+                              : AppColors.surfaceContainerHigh,
                           borderRadius: BorderRadius.circular(6),
                         ),
                       ),
@@ -537,25 +549,27 @@ class MonitoringView extends GetView<MonitoringController> {
             crossAxisAlignment: CrossAxisAlignment.end,
             children: weeks.map((w) {
               final ratio = (w.screenTimeMillis / maxMillis).clamp(0.0, 1.0);
-              final barHeight = (ratio * 90).clamp(4.0, 90.0);
+              final barHeight = (ratio * 84).clamp(4.0, 84.0);
               final hasVal = w.screenTimeMillis > 0;
 
               return Expanded(
                 child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 6),
+                  padding: const EdgeInsets.symmetric(horizontal: 5),
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.end,
                     children: [
                       if (hasVal)
-                        Text(
-                          w.screenTimeFormatted,
-                          style: const TextStyle(
-                            fontSize: 10,
-                            fontWeight: FontWeight.w600,
-                            color: AppColors.primary,
+                        FittedBox(
+                          fit: BoxFit.scaleDown,
+                          child: Text(
+                            w.screenTimeFormatted,
+                            style: const TextStyle(
+                              fontSize: 10,
+                              fontWeight: FontWeight.w700,
+                              color: AppColors.primary,
+                            ),
+                            maxLines: 1,
                           ),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
                         )
                       else
                         const SizedBox(height: 12),
@@ -566,7 +580,7 @@ class MonitoringView extends GetView<MonitoringController> {
                         decoration: BoxDecoration(
                           color: hasVal
                               ? AppColors.primary
-                              : const Color(0xFFE2E8F0),
+                              : AppColors.surfaceContainerHigh,
                           borderRadius: BorderRadius.circular(6),
                         ),
                       ),
@@ -604,13 +618,13 @@ class MonitoringView extends GetView<MonitoringController> {
         padding: const EdgeInsets.all(18),
         decoration: BoxDecoration(
           color: AppColors.card,
-          borderRadius: BorderRadius.circular(20),
+          borderRadius: BorderRadius.circular(16),
           border: Border.all(color: AppColors.border, width: 1),
           boxShadow: [
             BoxShadow(
               color: AppColors.secondary.withValues(alpha: 0.02),
               blurRadius: 10,
-              offset: const Offset(0, 3),
+              offset: const Offset(0, 2),
             ),
           ],
         ),
@@ -620,25 +634,27 @@ class MonitoringView extends GetView<MonitoringController> {
             Row(
               children: [
                 Container(
-                  width: 36,
-                  height: 36,
+                  width: 38,
+                  height: 38,
                   decoration: BoxDecoration(
-                    color: AppColors.secondary.withValues(alpha: 0.08),
+                    color: AppColors.secondaryContainer,
                     borderRadius: BorderRadius.circular(10),
                   ),
                   child: const Icon(
                     Icons.apps_rounded,
                     size: 20,
-                    color: AppColors.secondary,
+                    color: AppColors.onSecondaryContainer,
                   ),
                 ),
-                const SizedBox(width: 10),
-                const Text(
-                  'Penggunaan Aplikasi',
-                  style: TextStyle(
-                    fontSize: 15,
-                    fontWeight: FontWeight.w700,
-                    color: AppColors.textPrimary,
+                const SizedBox(width: 12),
+                const Expanded(
+                  child: Text(
+                    'Penggunaan Aplikasi',
+                    style: TextStyle(
+                      fontSize: 15,
+                      fontWeight: FontWeight.w700,
+                      color: AppColors.textPrimary,
+                    ),
                   ),
                 ),
               ],
@@ -660,7 +676,7 @@ class MonitoringView extends GetView<MonitoringController> {
                         width: 34,
                         height: 34,
                         decoration: BoxDecoration(
-                          color: AppColors.background,
+                          color: AppColors.surfaceContainerLow,
                           borderRadius: BorderRadius.circular(8),
                           border: Border.all(color: AppColors.border, width: 1),
                         ),
@@ -722,13 +738,13 @@ class MonitoringView extends GetView<MonitoringController> {
         padding: const EdgeInsets.all(18),
         decoration: BoxDecoration(
           color: AppColors.card,
-          borderRadius: BorderRadius.circular(20),
+          borderRadius: BorderRadius.circular(16),
           border: Border.all(color: AppColors.border, width: 1),
           boxShadow: [
             BoxShadow(
               color: AppColors.secondary.withValues(alpha: 0.02),
               blurRadius: 10,
-              offset: const Offset(0, 3),
+              offset: const Offset(0, 2),
             ),
           ],
         ),
@@ -738,25 +754,27 @@ class MonitoringView extends GetView<MonitoringController> {
             Row(
               children: [
                 Container(
-                  width: 36,
-                  height: 36,
+                  width: 38,
+                  height: 38,
                   decoration: BoxDecoration(
-                    color: const Color(0xFFFEF3C7),
+                    color: AppColors.warningContainer,
                     borderRadius: BorderRadius.circular(10),
                   ),
                   child: const Icon(
                     Icons.swipe_vertical_rounded,
                     size: 20,
-                    color: Color(0xFFD97706),
+                    color: AppColors.onWarningContainer,
                   ),
                 ),
-                const SizedBox(width: 10),
-                const Text(
-                  'Pola Scrolling',
-                  style: TextStyle(
-                    fontSize: 15,
-                    fontWeight: FontWeight.w700,
-                    color: AppColors.textPrimary,
+                const SizedBox(width: 12),
+                const Expanded(
+                  child: Text(
+                    'Pola Scrolling',
+                    style: TextStyle(
+                      fontSize: 15,
+                      fontWeight: FontWeight.w700,
+                      color: AppColors.textPrimary,
+                    ),
                   ),
                 ),
               ],
@@ -774,20 +792,20 @@ class MonitoringView extends GetView<MonitoringController> {
               Row(
                 children: [
                   _buildMetricBox('Total Sesi', '${summary.totalSessions} sesi'),
-                  const SizedBox(width: 10),
+                  const SizedBox(width: 8),
                   _buildMetricBox('Total Durasi', summary.durationFormatted),
-                  const SizedBox(width: 10),
+                  const SizedBox(width: 8),
                   _buildMetricBox('Total Scroll', '${summary.totalSwipes} kali'),
                 ],
               ),
-              const SizedBox(height: 10),
+              const SizedBox(height: 8),
               Row(
                 children: [
                   _buildMetricBox(
                     'Scroll Bawah (Next)',
                     '${summary.downwardSwipes} kali',
                   ),
-                  const SizedBox(width: 10),
+                  const SizedBox(width: 8),
                   _buildMetricBox(
                     'Scroll Atas (Back)',
                     '${summary.upwardSwipes} kali',
@@ -836,7 +854,7 @@ class MonitoringView extends GetView<MonitoringController> {
             child: Row(
               children: [
                 SizedBox(
-                  width: 70,
+                  width: 72,
                   child: Text(
                     seg.label,
                     style: const TextStyle(
@@ -852,23 +870,23 @@ class MonitoringView extends GetView<MonitoringController> {
                     child: LinearProgressIndicator(
                       value: ratio,
                       minHeight: 6,
-                      backgroundColor: AppColors.background,
+                      backgroundColor: AppColors.surfaceContainerHigh,
                       valueColor: const AlwaysStoppedAnimation<Color>(
-                        Color(0xFFD97706),
+                        AppColors.warning,
                       ),
                     ),
                   ),
                 ),
                 const SizedBox(width: 10),
                 SizedBox(
-                  width: 50,
+                  width: 54,
                   child: Text(
                     seg.doomscrollFormatted,
                     textAlign: TextAlign.end,
                     style: const TextStyle(
                       fontSize: 12,
-                      fontWeight: FontWeight.w600,
-                      color: Color(0xFFD97706),
+                      fontWeight: FontWeight.w700,
+                      color: AppColors.warning,
                     ),
                   ),
                 ),
@@ -906,12 +924,12 @@ class MonitoringView extends GetView<MonitoringController> {
             crossAxisAlignment: CrossAxisAlignment.end,
             children: days.map((d) {
               final ratio = (d.doomscrollMillis / maxMillis).clamp(0.0, 1.0);
-              final barHeight = (ratio * 60).clamp(4.0, 60.0);
+              final barHeight = (ratio * 58).clamp(4.0, 58.0);
               final hasVal = d.doomscrollMillis > 0;
 
               return Expanded(
                 child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 3),
+                  padding: const EdgeInsets.symmetric(horizontal: 2),
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.end,
                     children: [
@@ -920,8 +938,8 @@ class MonitoringView extends GetView<MonitoringController> {
                         height: barHeight,
                         decoration: BoxDecoration(
                           color: hasVal
-                              ? const Color(0xFFD97706)
-                              : const Color(0xFFE2E8F0),
+                              ? AppColors.warning
+                              : AppColors.surfaceContainerHigh,
                           borderRadius: BorderRadius.circular(4),
                         ),
                       ),
@@ -971,12 +989,12 @@ class MonitoringView extends GetView<MonitoringController> {
             crossAxisAlignment: CrossAxisAlignment.end,
             children: weeks.map((w) {
               final ratio = (w.doomscrollMillis / maxMillis).clamp(0.0, 1.0);
-              final barHeight = (ratio * 60).clamp(4.0, 60.0);
+              final barHeight = (ratio * 58).clamp(4.0, 58.0);
               final hasVal = w.doomscrollMillis > 0;
 
               return Expanded(
                 child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 6),
+                  padding: const EdgeInsets.symmetric(horizontal: 5),
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.end,
                     children: [
@@ -985,8 +1003,8 @@ class MonitoringView extends GetView<MonitoringController> {
                         height: barHeight,
                         decoration: BoxDecoration(
                           color: hasVal
-                              ? const Color(0xFFD97706)
-                              : const Color(0xFFE2E8F0),
+                              ? AppColors.warning
+                              : AppColors.surfaceContainerHigh,
                           borderRadius: BorderRadius.circular(4),
                         ),
                       ),
@@ -1022,13 +1040,13 @@ class MonitoringView extends GetView<MonitoringController> {
         padding: const EdgeInsets.all(18),
         decoration: BoxDecoration(
           color: AppColors.card,
-          borderRadius: BorderRadius.circular(20),
+          borderRadius: BorderRadius.circular(16),
           border: Border.all(color: AppColors.border, width: 1),
           boxShadow: [
             BoxShadow(
               color: AppColors.secondary.withValues(alpha: 0.02),
               blurRadius: 10,
-              offset: const Offset(0, 3),
+              offset: const Offset(0, 2),
             ),
           ],
         ),
@@ -1038,25 +1056,27 @@ class MonitoringView extends GetView<MonitoringController> {
             Row(
               children: [
                 Container(
-                  width: 36,
-                  height: 36,
+                  width: 38,
+                  height: 38,
                   decoration: BoxDecoration(
-                    color: AppColors.primary.withValues(alpha: 0.12),
+                    color: AppColors.primaryContainer,
                     borderRadius: BorderRadius.circular(10),
                   ),
                   child: const Icon(
                     Icons.visibility_outlined,
                     size: 20,
-                    color: AppColors.primary,
+                    color: AppColors.onPrimaryContainer,
                   ),
                 ),
-                const SizedBox(width: 10),
-                const Text(
-                  'Monitoring Mata',
-                  style: TextStyle(
-                    fontSize: 15,
-                    fontWeight: FontWeight.w700,
-                    color: AppColors.textPrimary,
+                const SizedBox(width: 12),
+                const Expanded(
+                  child: Text(
+                    'Monitoring Mata',
+                    style: TextStyle(
+                      fontSize: 15,
+                      fontWeight: FontWeight.w700,
+                      color: AppColors.textPrimary,
+                    ),
                   ),
                 ),
               ],
@@ -1065,18 +1085,18 @@ class MonitoringView extends GetView<MonitoringController> {
 
             if (!hasData) ...[
               _buildEmptyState(
-                message: 'Belum ada data monitoring mata pada periode ini.',
+                message: 'Belum ada data pemantauan mata.',
                 subMessage:
-                    'Kamera akan memantau kedipan secara berkala saat monitoring diaktifkan.',
+                    'Pemantauan mata otomatis menggunakan parameter EAR & kedipan untuk menjaga kesehatan mata.',
               ),
             ] else ...[
-              // Grid Data Monitoring Mata
+              // Grid Metrik
               Row(
                 children: [
                   _buildMetricBox('Jumlah Sesi', '${summary.totalSessions} sesi'),
-                  const SizedBox(width: 10),
+                  const SizedBox(width: 8),
                   _buildMetricBox('Total Durasi', summary.durationFormatted),
-                  const SizedBox(width: 10),
+                  const SizedBox(width: 8),
                   _buildMetricBox(
                     'Rata-rata EAR',
                     summary.averageEar != null
@@ -1085,19 +1105,51 @@ class MonitoringView extends GetView<MonitoringController> {
                   ),
                 ],
               ),
-              const SizedBox(height: 10),
+              const SizedBox(height: 8),
               Row(
                 children: [
                   _buildMetricBox(
                     'Indikasi Mata Terpejam',
                     '${summary.eyeClosureEvents} kali',
                   ),
-                  const SizedBox(width: 10),
+                  const SizedBox(width: 8),
                   _buildMetricBox(
                     'Total Kedipan',
                     '${summary.blinkCount} kedipan',
                   ),
                 ],
+              ),
+              const SizedBox(height: 14),
+
+              // Penjelasan Ringkas Nilai EAR
+              Container(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                decoration: BoxDecoration(
+                  color: AppColors.surfaceContainerLow,
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: AppColors.border, width: 1),
+                ),
+                child: const Row(
+                  children: [
+                    Icon(
+                      Icons.info_outline_rounded,
+                      size: 16,
+                      color: AppColors.textSecondary,
+                    ),
+                    SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        'EAR (Eye Aspect Ratio) merefleksikan keterbukaan mata melalui deteksi landmark kelopak mata.',
+                        style: TextStyle(
+                          fontSize: 11,
+                          color: AppColors.textSecondary,
+                          height: 1.3,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
               ),
             ],
           ],
@@ -1107,50 +1159,54 @@ class MonitoringView extends GetView<MonitoringController> {
   }
 
   // ===========================================================================
-  // 5. QUICK LINKS KE MODUL DETAIL
+  // 5. QUICK LINKS KE MODUL MONITORING DETAIL
   // ===========================================================================
   Widget _buildQuickLinksSection() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         const Text(
-          'Detail Modul Monitoring',
+          'Modul Monitoring',
           style: TextStyle(
-            fontSize: 15,
+            fontSize: 16,
             fontWeight: FontWeight.w700,
             color: AppColors.textPrimary,
           ),
         ),
-        const SizedBox(height: 10),
-        _buildQuickLinkTile(
+        const SizedBox(height: 12),
+        _buildQuickLinkItem(
           title: 'Screen Time & Penggunaan Aplikasi',
-          subtitle: 'Lihat rincian lengkap seluruh aplikasi hari ini',
+          subtitle: 'Lihat daftar aplikasi dan durasi lengkap hari ini',
           icon: Icons.timer_outlined,
-          onTap: () => Get.toNamed(Routes.screenTime),
+          color: AppColors.primary,
+          route: Routes.screenTime,
         ),
-        const SizedBox(height: 8),
-        _buildQuickLinkTile(
+        const SizedBox(height: 10),
+        _buildQuickLinkItem(
           title: 'Pola Scrolling & Doomscrolling',
-          subtitle: 'Lihat live session dan riwayat scrolling',
+          subtitle: 'Riwayat sesi dan metrik scrolling media sosial',
           icon: Icons.swipe_vertical_rounded,
-          onTap: () => Get.toNamed(Routes.doomscrolling),
+          color: AppColors.warning,
+          route: Routes.doomscrolling,
         ),
-        const SizedBox(height: 8),
-        _buildQuickLinkTile(
+        const SizedBox(height: 10),
+        _buildQuickLinkItem(
           title: 'Pemantauan Kondisi Mata',
-          subtitle: 'Kontrol monitoring kamera dan analisis EAR',
+          subtitle: 'Status pemantauan kamera, EAR, dan kedipan',
           icon: Icons.visibility_outlined,
-          onTap: () => Get.toNamed(Routes.eyeMonitoring),
+          color: AppColors.primary,
+          route: Routes.eyeMonitoring,
         ),
       ],
     );
   }
 
-  Widget _buildQuickLinkTile({
+  Widget _buildQuickLinkItem({
     required String title,
     required String subtitle,
     required IconData icon,
-    required VoidCallback onTap,
+    required Color color,
+    required String route,
   }) {
     return Container(
       decoration: BoxDecoration(
@@ -1158,29 +1214,56 @@ class MonitoringView extends GetView<MonitoringController> {
         borderRadius: BorderRadius.circular(14),
         border: Border.all(color: AppColors.border, width: 1),
       ),
-      child: ListTile(
-        onTap: onTap,
-        dense: true,
-        leading: Icon(icon, color: AppColors.primary, size: 22),
-        title: Text(
-          title,
-          style: const TextStyle(
-            fontSize: 13,
-            fontWeight: FontWeight.w600,
-            color: AppColors.textPrimary,
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          borderRadius: BorderRadius.circular(14),
+          onTap: () => Get.toNamed(route),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+            child: Row(
+              children: [
+                Container(
+                  width: 38,
+                  height: 38,
+                  decoration: BoxDecoration(
+                    color: color.withValues(alpha: 0.12),
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: Icon(icon, color: color, size: 20),
+                ),
+                const SizedBox(width: 14),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        title,
+                        style: const TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w700,
+                          color: AppColors.textPrimary,
+                        ),
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        subtitle,
+                        style: const TextStyle(
+                          fontSize: 12,
+                          color: AppColors.textSecondary,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const Icon(
+                  Icons.arrow_forward_ios_rounded,
+                  size: 14,
+                  color: AppColors.textSecondary,
+                ),
+              ],
+            ),
           ),
-        ),
-        subtitle: Text(
-          subtitle,
-          style: const TextStyle(
-            fontSize: 11,
-            color: AppColors.textSecondary,
-          ),
-        ),
-        trailing: const Icon(
-          Icons.arrow_forward_ios_rounded,
-          size: 14,
-          color: AppColors.textSecondary,
         ),
       ),
     );
@@ -1194,12 +1277,13 @@ class MonitoringView extends GetView<MonitoringController> {
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
         decoration: BoxDecoration(
-          color: AppColors.background,
+          color: AppColors.surfaceContainerLow,
           borderRadius: BorderRadius.circular(10),
           border: Border.all(color: AppColors.border, width: 1),
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisSize: MainAxisSize.min,
           children: [
             Text(
               label,
@@ -1212,12 +1296,17 @@ class MonitoringView extends GetView<MonitoringController> {
               overflow: TextOverflow.ellipsis,
             ),
             const SizedBox(height: 4),
-            Text(
-              value,
-              style: const TextStyle(
-                fontSize: 13,
-                fontWeight: FontWeight.w700,
-                color: AppColors.textPrimary,
+            FittedBox(
+              fit: BoxFit.scaleDown,
+              alignment: Alignment.centerLeft,
+              child: Text(
+                value,
+                style: const TextStyle(
+                  fontSize: 13.5,
+                  fontWeight: FontWeight.w700,
+                  color: AppColors.textPrimary,
+                ),
+                maxLines: 1,
               ),
             ),
           ],
@@ -1230,25 +1319,39 @@ class MonitoringView extends GetView<MonitoringController> {
     required String message,
     required String subMessage,
   }) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 8),
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(vertical: 24, horizontal: 16),
+      decoration: BoxDecoration(
+        color: AppColors.surfaceContainerLow,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: AppColors.border, width: 1),
+      ),
       child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          const Icon(
+            Icons.bar_chart_rounded,
+            size: 36,
+            color: AppColors.textTertiary,
+          ),
+          const SizedBox(height: 10),
           Text(
             message,
+            textAlign: TextAlign.center,
             style: const TextStyle(
               fontSize: 14,
               fontWeight: FontWeight.w600,
-              color: AppColors.textSecondary,
+              color: AppColors.textPrimary,
             ),
           ),
-          const SizedBox(height: 3),
+          const SizedBox(height: 4),
           Text(
             subMessage,
-            style: TextStyle(
+            textAlign: TextAlign.center,
+            style: const TextStyle(
               fontSize: 12,
-              color: AppColors.textSecondary.withValues(alpha: 0.8),
+              color: AppColors.textSecondary,
+              height: 1.35,
             ),
           ),
         ],

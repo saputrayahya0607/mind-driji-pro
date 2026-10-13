@@ -51,8 +51,13 @@ class MockDoomscrollNativeProvider extends DoomscrollNativeProvider {
   }
 
   @override
-  Future<bool> clearPendingDoomscrollSessions() async {
-    queue.clear();
+  Future<bool> clearPendingDoomscrollSessions({List<String>? sessionIds}) async {
+    if (sessionIds != null) {
+      if (sessionIds.isEmpty) return false;
+      queue.removeWhere((s) => sessionIds.contains(s.id));
+    } else {
+      queue.clear();
+    }
     return true;
   }
 }

@@ -9,13 +9,13 @@ import '../../../routes/app_routes.dart';
 import '../controllers/home_controller.dart';
 
 /// Halaman Utama (Dashboard) MIND DRIJI
-/// Didesain dengan tata letak & estetika aplikasi Digital Wellbeing modern:
-/// - AppBar & Branding dengan akses cepat ke Target Apps dan Refresh
-/// - Sapaan ramah personal & tanggal hari ini
+/// Didesain dengan estetika modern "Calm, Intelligent, Personal Digital Wellness":
+/// - Header & Branding ringkas dengan akses cepat ke Target Apps dan Refresh
+/// - Sapaan ramah personal dengan tanggal hari ini
 /// - Banner Intervensi Aktif jika sedang berjalan
 /// - Pusat Aksi Cepat: Fokus & Intervensi Digital (Digital Detox)
 /// - Tiga Pilar Digital Wellbeing: Screen Time, Pola Scrolling, Monitoring Mata
-/// - Smart AI Insight & Rekomendasi Perilaku Harian
+/// - Smart AI Insight & Rekomendasi Perilaku Harian berbasis data nyata
 class HomeView extends GetView<HomeController> {
   const HomeView({super.key});
 
@@ -24,40 +24,43 @@ class HomeView extends GetView<HomeController> {
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: _buildAppBar(),
-      body: Obx(() {
-        if (controller.isLoading.value && controller.profile.value == null) {
-          return _buildLoadingState();
-        }
+      body: SafeArea(
+        child: Obx(() {
+          if (controller.isLoading.value && controller.profile.value == null) {
+            return _buildLoadingState();
+          }
 
-        if (controller.errorMessage.value != null &&
-            controller.profile.value == null) {
-          return _buildErrorState();
-        }
+          if (controller.errorMessage.value != null &&
+              controller.profile.value == null) {
+            return _buildErrorState();
+          }
 
-        return _buildHomeContent();
-      }),
+          return _buildHomeContent();
+        }),
+      ),
       bottomNavigationBar: const AppBottomNavigation(currentIndex: 0),
     );
   }
 
-  /// AppBar dengan branding MIND DRIJI & aksi cepat
+  /// AppBar dengan branding MIND DRIJI & tombol aksi cepat
   PreferredSizeWidget _buildAppBar() {
     return AppBar(
       title: Row(
+        mainAxisSize: MainAxisSize.min,
         children: [
           Container(
-            width: 34,
-            height: 34,
+            width: 36,
+            height: 36,
             decoration: BoxDecoration(
               gradient: const LinearGradient(
-                colors: [AppColors.primary, Color(0xFF14B8A6)],
+                colors: [AppColors.primary, AppColors.primaryLight],
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
               ),
               borderRadius: BorderRadius.circular(10),
               boxShadow: [
                 BoxShadow(
-                  color: AppColors.primary.withValues(alpha: 0.25),
+                  color: AppColors.primary.withValues(alpha: 0.22),
                   blurRadius: 8,
                   offset: const Offset(0, 2),
                 ),
@@ -70,28 +73,33 @@ class HomeView extends GetView<HomeController> {
             ),
           ),
           const SizedBox(width: 10),
-          const Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                AppStrings.appName,
-                style: TextStyle(
-                  fontSize: 17,
-                  fontWeight: FontWeight.w800,
-                  color: AppColors.secondary,
-                  letterSpacing: 0.6,
+          const Flexible(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  AppStrings.appName,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    fontSize: 17,
+                    fontWeight: FontWeight.w800,
+                    color: AppColors.secondary,
+                    letterSpacing: 0.5,
+                  ),
                 ),
-              ),
-              Text(
-                'Digital Wellbeing Companion',
-                style: TextStyle(
-                  fontSize: 10,
-                  fontWeight: FontWeight.w500,
-                  color: AppColors.textSecondary,
-                  letterSpacing: 0.2,
+                Text(
+                  'Digital Wellbeing Companion',
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    fontSize: 10.5,
+                    fontWeight: FontWeight.w500,
+                    color: AppColors.textSecondary,
+                    letterSpacing: 0.2,
+                  ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
         ],
       ),
@@ -156,16 +164,16 @@ class HomeView extends GetView<HomeController> {
           mainAxisSize: MainAxisSize.min,
           children: [
             Container(
-              width: 68,
-              height: 68,
+              width: 64,
+              height: 64,
               decoration: const BoxDecoration(
-                color: Color(0xFFFEE2E2),
+                color: AppColors.errorContainer,
                 shape: BoxShape.circle,
               ),
               child: const Icon(
                 Icons.error_outline_rounded,
-                size: 34,
-                color: Color(0xFFE53E3E),
+                size: 32,
+                color: AppColors.error,
               ),
             ),
             const SizedBox(height: 16),
@@ -183,14 +191,6 @@ class HomeView extends GetView<HomeController> {
               onPressed: () => controller.loadHomeData(),
               icon: const Icon(Icons.refresh_rounded, size: 18),
               label: const Text('Coba Lagi'),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.primary,
-                foregroundColor: Colors.white,
-                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
-              ),
             ),
           ],
         ),
@@ -206,7 +206,7 @@ class HomeView extends GetView<HomeController> {
       onRefresh: () => controller.loadHomeData(),
       child: SingleChildScrollView(
         physics: const AlwaysScrollableScrollPhysics(),
-        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
+        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -222,7 +222,7 @@ class HomeView extends GetView<HomeController> {
 
             // 3. Fokus & Intervensi Digital (Digital Detox Shortcut Center)
             _buildInterventionShortcutBanner(),
-            const SizedBox(height: 20),
+            const SizedBox(height: 18),
 
             // 4. Pilar Digital Wellbeing: Screen Time, Pola Scrolling, Monitoring Mata
             _buildScreenTimeCard(),
@@ -234,7 +234,7 @@ class HomeView extends GetView<HomeController> {
 
             // 5. Section AI Insight Hari Ini
             _buildInsightSection(),
-            const SizedBox(height: 28),
+            const SizedBox(height: 24),
           ],
         ),
       ),
@@ -274,13 +274,14 @@ class HomeView extends GetView<HomeController> {
               ],
             ),
           ),
+          const SizedBox(width: 8),
           Container(
-            padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 6),
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
             decoration: BoxDecoration(
-              color: AppColors.primary.withValues(alpha: 0.1),
+              color: AppColors.surfaceContainerLow,
               borderRadius: BorderRadius.circular(12),
               border: Border.all(
-                color: AppColors.primary.withValues(alpha: 0.2),
+                color: AppColors.border,
                 width: 1,
               ),
             ),
@@ -296,9 +297,9 @@ class HomeView extends GetView<HomeController> {
                 Text(
                   formattedDate,
                   style: const TextStyle(
-                    fontSize: 12,
+                    fontSize: 11.5,
                     fontWeight: FontWeight.w600,
-                    color: AppColors.primary,
+                    color: AppColors.textPrimary,
                   ),
                 ),
               ],
@@ -328,14 +329,14 @@ class HomeView extends GetView<HomeController> {
       width: double.infinity,
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: const Color(0xFFF0FDF4),
-        borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: const Color(0xFFBBF7D0), width: 1.5),
+        color: AppColors.successContainer,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: AppColors.successBorder, width: 1.2),
         boxShadow: [
           BoxShadow(
-            color: const Color(0xFF16A34A).withValues(alpha: 0.08),
-            blurRadius: 14,
-            offset: const Offset(0, 4),
+            color: AppColors.success.withValues(alpha: 0.08),
+            blurRadius: 12,
+            offset: const Offset(0, 3),
           ),
         ],
       ),
@@ -343,14 +344,14 @@ class HomeView extends GetView<HomeController> {
         children: [
           Container(
             padding: const EdgeInsets.all(10),
-            decoration: BoxDecoration(
-              color: AppColors.primary.withValues(alpha: 0.18),
+            decoration: const BoxDecoration(
+              color: Colors.white,
               shape: BoxShape.circle,
             ),
             child: const Icon(
               Icons.spa_rounded,
-              color: AppColors.primary,
-              size: 22,
+              color: AppColors.success,
+              size: 20,
             ),
           ),
           const SizedBox(width: 14),
@@ -362,8 +363,8 @@ class HomeView extends GetView<HomeController> {
                   '${controller.activeInterventionTitle} Aktif',
                   style: const TextStyle(
                     fontSize: 15,
-                    fontWeight: FontWeight.bold,
-                    color: Color(0xFF14532D),
+                    fontWeight: FontWeight.w700,
+                    color: AppColors.onSuccessContainer,
                   ),
                 ),
                 const SizedBox(height: 2),
@@ -371,7 +372,7 @@ class HomeView extends GetView<HomeController> {
                   'Sisa waktu: ${controller.activeInterventionRemaining}',
                   style: const TextStyle(
                     fontSize: 13,
-                    color: Color(0xFF166534),
+                    color: AppColors.onSuccessContainer,
                     fontWeight: FontWeight.w500,
                   ),
                 ),
@@ -391,11 +392,10 @@ class HomeView extends GetView<HomeController> {
               }
             },
             style: ElevatedButton.styleFrom(
-              backgroundColor: AppColors.primary,
+              backgroundColor: AppColors.success,
               foregroundColor: Colors.white,
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-              minimumSize: Size.zero,
-              tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+              minimumSize: const Size(60, 36),
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(10),
               ),
@@ -418,13 +418,13 @@ class HomeView extends GetView<HomeController> {
       padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
         color: AppColors.card,
-        borderRadius: BorderRadius.circular(22),
+        borderRadius: BorderRadius.circular(16),
         border: Border.all(color: AppColors.border, width: 1),
         boxShadow: [
           BoxShadow(
             color: AppColors.secondary.withValues(alpha: 0.03),
-            blurRadius: 14,
-            offset: const Offset(0, 3),
+            blurRadius: 10,
+            offset: const Offset(0, 2),
           ),
         ],
       ),
@@ -437,13 +437,13 @@ class HomeView extends GetView<HomeController> {
                 width: 38,
                 height: 38,
                 decoration: BoxDecoration(
-                  color: AppColors.primary.withValues(alpha: 0.14),
+                  color: AppColors.primaryContainer,
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: const Icon(
                   Icons.shield_outlined,
                   size: 20,
-                  color: AppColors.primary,
+                  color: AppColors.onPrimaryContainer,
                 ),
               ),
               const SizedBox(width: 12),
@@ -479,13 +479,18 @@ class HomeView extends GetView<HomeController> {
           Row(
             children: [
               Expanded(
+                flex: 3,
                 child: ElevatedButton.icon(
                   onPressed: () => Get.toNamed(Routes.focusMode),
                   icon: const Icon(Icons.play_arrow_rounded, size: 18),
-                  label: const Text('Mulai Focus Mode'),
+                  label: const FittedBox(
+                    fit: BoxFit.scaleDown,
+                    child: Text('Mulai Focus Mode'),
+                  ),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: AppColors.primary,
                     foregroundColor: Colors.white,
+                    minimumSize: const Size(0, 48),
                     padding: const EdgeInsets.symmetric(vertical: 12),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(12),
@@ -494,19 +499,26 @@ class HomeView extends GetView<HomeController> {
                   ),
                 ),
               ),
-              const SizedBox(width: 10),
-              OutlinedButton(
-                onPressed: () => Get.toNamed(Routes.intervention),
-                style: OutlinedButton.styleFrom(
-                  foregroundColor: AppColors.secondary,
-                  side: const BorderSide(color: AppColors.border),
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
+              const SizedBox(width: 8),
+              Expanded(
+                flex: 2,
+                child: OutlinedButton(
+                  onPressed: () => Get.toNamed(Routes.intervention),
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: AppColors.secondary,
+                    minimumSize: const Size(0, 48),
+                    side: const BorderSide(color: AppColors.border, width: 1.2),
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 8, vertical: 12),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                  ),
+                  child: const FittedBox(
+                    fit: BoxFit.scaleDown,
+                    child: Text('Semua Intervensi'),
                   ),
                 ),
-                child: const Text('Semua Intervensi'),
               ),
             ],
           ),
@@ -556,7 +568,7 @@ class HomeView extends GetView<HomeController> {
         child: Container(
           padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
           decoration: BoxDecoration(
-            color: AppColors.background,
+            color: AppColors.surfaceContainerLow,
             borderRadius: BorderRadius.circular(10),
             border: Border.all(color: AppColors.border, width: 0.8),
           ),
@@ -588,10 +600,10 @@ class HomeView extends GetView<HomeController> {
 
       final badgeText = hasAccess ? 'Aktif' : 'Monitoring belum aktif';
       final badgeColor = hasAccess
-          ? const Color(0xFFDCFCE7)
+          ? AppColors.successContainer
           : AppColors.secondary.withValues(alpha: 0.08);
       final badgeTextColor =
-          hasAccess ? const Color(0xFF15803D) : AppColors.textSecondary;
+          hasAccess ? AppColors.onSuccessContainer : AppColors.textSecondary;
 
       final mainStatus = hasAccess
           ? (totalMillis > 0
@@ -635,10 +647,10 @@ class HomeView extends GetView<HomeController> {
 
       final badgeText = isMonitoringActive ? 'Aktif' : 'Monitoring tidak aktif';
       final badgeColor = isMonitoringActive
-          ? const Color(0xFFDCFCE7)
+          ? AppColors.successContainer
           : AppColors.secondary.withValues(alpha: 0.08);
       final badgeTextColor = isMonitoringActive
-          ? const Color(0xFF15803D)
+          ? AppColors.onSuccessContainer
           : AppColors.textSecondary;
 
       final mainStatus = controller.doomscrollDataStatusText;
@@ -680,7 +692,7 @@ class HomeView extends GetView<HomeController> {
     });
   }
 
-  /// Template Kartu Wellness Digital Seragam & Elegan
+  /// Template Kartu Wellness Digital Seragam, Elegan & Material 3 Compliant
   Widget _buildWellnessCard({
     required String title,
     required IconData icon,
@@ -697,13 +709,13 @@ class HomeView extends GetView<HomeController> {
       width: double.infinity,
       decoration: BoxDecoration(
         color: AppColors.card,
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: BorderRadius.circular(16),
         border: Border.all(color: AppColors.border, width: 1),
         boxShadow: [
           BoxShadow(
             color: AppColors.secondary.withValues(alpha: 0.02),
-            blurRadius: 12,
-            offset: const Offset(0, 3),
+            blurRadius: 10,
+            offset: const Offset(0, 2),
           ),
         ],
       ),
@@ -711,7 +723,7 @@ class HomeView extends GetView<HomeController> {
         color: Colors.transparent,
         child: InkWell(
           onTap: onTap,
-          borderRadius: BorderRadius.circular(20),
+          borderRadius: BorderRadius.circular(16),
           child: Padding(
             padding: const EdgeInsets.all(18),
             child: Column(
@@ -720,10 +732,10 @@ class HomeView extends GetView<HomeController> {
                 Row(
                   children: [
                     Container(
-                      width: 36,
-                      height: 36,
+                      width: 38,
+                      height: 38,
                       decoration: BoxDecoration(
-                        color: AppColors.background,
+                        color: AppColors.surfaceContainerLow,
                         borderRadius: BorderRadius.circular(10),
                       ),
                       child: Icon(
@@ -777,7 +789,7 @@ class HomeView extends GetView<HomeController> {
                     ),
                     const Icon(
                       Icons.chevron_right_rounded,
-                      size: 20,
+                      size: 22,
                       color: AppColors.textSecondary,
                     ),
                   ],
@@ -794,11 +806,11 @@ class HomeView extends GetView<HomeController> {
                 if (progress != null) ...[
                   const SizedBox(height: 12),
                   ClipRRect(
-                    borderRadius: BorderRadius.circular(6),
+                    borderRadius: BorderRadius.circular(4),
                     child: LinearProgressIndicator(
                       value: progress,
                       minHeight: 5,
-                      backgroundColor: const Color(0xFFE2E8F0),
+                      backgroundColor: AppColors.surfaceContainerHigh,
                       valueColor: AlwaysStoppedAnimation<Color>(
                         progressColor ?? AppColors.primary,
                       ),
@@ -821,9 +833,9 @@ class HomeView extends GetView<HomeController> {
         const Row(
           children: [
             Icon(
-              Icons.lightbulb_outline_rounded,
+              Icons.auto_awesome_rounded,
               size: 20,
-              color: AppColors.secondary,
+              color: AppColors.primary,
             ),
             SizedBox(width: 8),
             Text(
@@ -847,18 +859,18 @@ class HomeView extends GetView<HomeController> {
             width: double.infinity,
             decoration: BoxDecoration(
               color: AppColors.card,
-              borderRadius: BorderRadius.circular(20),
+              borderRadius: BorderRadius.circular(16),
               border: Border.all(
                 color: isDetected
-                    ? AppColors.primary.withValues(alpha: 0.3)
+                    ? AppColors.primary.withValues(alpha: 0.35)
                     : AppColors.border,
                 width: isDetected ? 1.5 : 1,
               ),
               boxShadow: [
                 BoxShadow(
                   color: AppColors.secondary.withValues(alpha: 0.02),
-                  blurRadius: 12,
-                  offset: const Offset(0, 3),
+                  blurRadius: 10,
+                  offset: const Offset(0, 2),
                 ),
               ],
             ),
@@ -866,7 +878,7 @@ class HomeView extends GetView<HomeController> {
               color: Colors.transparent,
               child: InkWell(
                 onTap: () => Get.toNamed(Routes.insight),
-                borderRadius: BorderRadius.circular(20),
+                borderRadius: BorderRadius.circular(16),
                 child: Padding(
                   padding: const EdgeInsets.all(18),
                   child: Column(
@@ -877,14 +889,14 @@ class HomeView extends GetView<HomeController> {
                           Container(
                             width: 32,
                             height: 32,
-                            decoration: BoxDecoration(
-                              color: AppColors.primary.withValues(alpha: 0.12),
+                            decoration: const BoxDecoration(
+                              color: AppColors.primaryContainer,
                               shape: BoxShape.circle,
                             ),
                             child: const Icon(
                               Icons.auto_awesome_rounded,
                               size: 16,
-                              color: AppColors.primary,
+                              color: AppColors.onPrimaryContainer,
                             ),
                           ),
                           const SizedBox(width: 10),
@@ -903,7 +915,7 @@ class HomeView extends GetView<HomeController> {
                               padding: const EdgeInsets.symmetric(
                                   horizontal: 8, vertical: 3),
                               decoration: BoxDecoration(
-                                color: AppColors.primary.withValues(alpha: 0.1),
+                                color: AppColors.primaryContainer,
                                 borderRadius: BorderRadius.circular(6),
                               ),
                               child: Text(
@@ -911,7 +923,7 @@ class HomeView extends GetView<HomeController> {
                                 style: const TextStyle(
                                   fontSize: 11,
                                   fontWeight: FontWeight.w600,
-                                  color: AppColors.primary,
+                                  color: AppColors.onPrimaryContainer,
                                 ),
                               ),
                             ),
@@ -933,7 +945,7 @@ class HomeView extends GetView<HomeController> {
                             padding: const EdgeInsets.symmetric(
                                 horizontal: 10, vertical: 6),
                             decoration: BoxDecoration(
-                              color: const Color(0xFFE6F8F5),
+                              color: AppColors.primaryContainer,
                               borderRadius: BorderRadius.circular(8),
                             ),
                             child: Row(
@@ -941,7 +953,7 @@ class HomeView extends GetView<HomeController> {
                                 const Icon(
                                   Icons.lightbulb_outline_rounded,
                                   size: 16,
-                                  color: AppColors.primary,
+                                  color: AppColors.onPrimaryContainer,
                                 ),
                                 const SizedBox(width: 6),
                                 Expanded(
@@ -950,7 +962,7 @@ class HomeView extends GetView<HomeController> {
                                     style: const TextStyle(
                                       fontSize: 12,
                                       fontWeight: FontWeight.w600,
-                                      color: AppColors.primary,
+                                      color: AppColors.onPrimaryContainer,
                                     ),
                                   ),
                                 ),
@@ -958,7 +970,7 @@ class HomeView extends GetView<HomeController> {
                                 const Icon(
                                   Icons.arrow_forward_rounded,
                                   size: 14,
-                                  color: AppColors.primary,
+                                  color: AppColors.onPrimaryContainer,
                                 ),
                               ],
                             ),

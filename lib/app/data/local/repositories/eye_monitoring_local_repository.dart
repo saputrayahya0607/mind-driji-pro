@@ -51,6 +51,15 @@ class EyeMonitoringLocalRepository {
     final devId = _resolveDeviceId(session.deviceId);
 
     await _db.transaction(() async {
+      final existing = await (_db.select(_db.eyeMonitoringSessions)
+            ..where((tbl) => tbl.id.equals(sessionId)))
+          .getSingleOrNull();
+
+      if (existing != null) {
+        // Sesi sudah tersimpan sebelumnya, operasi idempotent (hindari UNIQUE constraint failed)
+        return;
+      }
+
       await _db.into(_db.eyeMonitoringSessions).insert(
             EyeMonitoringSessionsCompanion.insert(
               id: sessionId,

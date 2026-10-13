@@ -1,9 +1,17 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import '../../../../supabase_config.dart';
 import '../../../routes/app_routes.dart';
 
 class RegisterController extends GetxController {
+  final SupabaseClient? _supabaseClient;
+
+  RegisterController({SupabaseClient? supabaseClient})
+      : _supabaseClient = supabaseClient;
+
+  SupabaseClient get _client => _supabaseClient ?? Supabase.instance.client;
+
   final nameController = TextEditingController();
   final emailController = TextEditingController();
   final passwordController = TextEditingController();
@@ -62,8 +70,19 @@ class RegisterController extends GetxController {
   }
 
   Future<void> register() async {
-    if (!formKey.currentState!.validate()) {
-      return;
+    if (isLoading.value) return;
+
+    if (formKey.currentState != null) {
+      if (!formKey.currentState!.validate()) {
+        return;
+      }
+    } else {
+      if (validateName(nameController.text) != null ||
+          validateEmail(emailController.text) != null ||
+          validatePassword(passwordController.text) != null ||
+          validateConfirmPassword(confirmPasswordController.text) != null) {
+        return;
+      }
     }
 
     final nama = nameController.text.trim();
@@ -73,9 +92,10 @@ class RegisterController extends GetxController {
     isLoading.value = true;
 
     try {
-      final response = await Supabase.instance.client.auth.signUp(
+      final response = await _client.auth.signUp(
         email: email,
         password: password,
+        emailRedirectTo: SupabaseConfig.authCallbackUrl,
         data: {
           'nama_lengkap': nama,
         },
@@ -84,30 +104,26 @@ class RegisterController extends GetxController {
       isLoading.value = false;
 
       if (response.session == null) {
-        Get.snackbar(
+        _showSnackbar(
           'Registrasi Berhasil',
           'Registrasi berhasil. Silakan periksa email untuk melakukan verifikasi sebelum login.',
-          snackPosition: SnackPosition.BOTTOM,
           backgroundColor: const Color(0xFF00BFA5),
-          colorText: Colors.white,
           duration: const Duration(seconds: 5),
-          margin: const EdgeInsets.all(16),
         );
       } else {
-        Get.snackbar(
+        _showSnackbar(
           'Registrasi Berhasil',
           'Akun berhasil dibuat. Selamat datang di MIND DRIJI!',
-          snackPosition: SnackPosition.BOTTOM,
           backgroundColor: const Color(0xFF00BFA5),
-          colorText: Colors.white,
           duration: const Duration(seconds: 4),
-          margin: const EdgeInsets.all(16),
         );
       }
 
       // Beri jeda singkat agar user dapat membaca pesan feedback sebelum kembali ke login
-      await Future.delayed(const Duration(milliseconds: 1500));
-      Get.offNamed(Routes.login);
+      if (Get.overlayContext != null || Get.context != null) {
+        await Future.delayed(const Duration(milliseconds: 1500));
+        Get.offNamed(Routes.login);
+      }
     } on AuthException catch (e) {
       isLoading.value = false;
       String errorMessage;
@@ -124,24 +140,37 @@ class RegisterController extends GetxController {
         errorMessage = e.message;
       }
 
-      Get.snackbar(
+      _showSnackbar(
         'Gagal Mendaftar',
         errorMessage,
-        snackPosition: SnackPosition.BOTTOM,
         backgroundColor: const Color(0xFFE53E3E),
-        colorText: Colors.white,
         duration: const Duration(seconds: 4),
-        margin: const EdgeInsets.all(16),
       );
     } catch (_) {
       isLoading.value = false;
-      Get.snackbar(
+      _showSnackbar(
         'Terjadi Kesalahan',
         'Tidak dapat terhubung ke layanan. Silakan periksa koneksi internet Anda dan coba lagi.',
-        snackPosition: SnackPosition.BOTTOM,
         backgroundColor: const Color(0xFFE53E3E),
-        colorText: Colors.white,
         duration: const Duration(seconds: 4),
+      );
+    }
+  }
+
+  void _showSnackbar(
+    String title,
+    String message, {
+    Color? backgroundColor,
+    Duration? duration,
+  }) {
+    if (Get.overlayContext != null || Get.context != null) {
+      Get.snackbar(
+        title,
+        message,
+        snackPosition: SnackPosition.BOTTOM,
+        backgroundColor: backgroundColor ?? const Color(0xFF00BFA5),
+        colorText: Colors.white,
+        duration: duration ?? const Duration(seconds: 4),
         margin: const EdgeInsets.all(16),
       );
     }

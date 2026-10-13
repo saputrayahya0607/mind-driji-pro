@@ -82,6 +82,7 @@ void main() {
   });
 
   tearDown(() async {
+    service.onClose();
     await db.close();
     Get.reset();
   });
@@ -238,21 +239,31 @@ void main() {
       );
       await tester.pumpAndSettle();
 
+      // Batasi finder pada Column bagian Jeda Digital untuk menghindari tabrakan dengan Mode Fokus
+      final digitalBreakSection = find.ancestor(
+        of: find.text('Mulai Jeda Digital'),
+        matching: find.byType(Column),
+      ).first;
+
       // Pastikan bagian Jeda Digital tampil dengan 4 chip pilihan
       expect(find.text('Jeda Digital'), findsOneWidget);
-      expect(find.text('5 mnt'), findsOneWidget);
-      expect(find.text('15 mnt'), findsOneWidget);
-      expect(find.text('30 mnt'), findsOneWidget);
-      expect(find.text('60 mnt'), findsOneWidget);
+      expect(find.descendant(of: digitalBreakSection, matching: find.text('5 mnt')), findsOneWidget);
+      expect(find.descendant(of: digitalBreakSection, matching: find.text('15 mnt')), findsOneWidget);
+      expect(find.descendant(of: digitalBreakSection, matching: find.text('30 mnt')), findsOneWidget);
+      expect(find.descendant(of: digitalBreakSection, matching: find.text('60 mnt')), findsOneWidget);
       expect(find.text('Mulai Jeda Digital'), findsOneWidget);
 
-      // Klik chip 5 mnt
-      await tester.tap(find.text('5 mnt'));
+      // Klik chip 5 mnt pada section Jeda Digital
+      await tester.tap(find.descendant(of: digitalBreakSection, matching: find.text('5 mnt')));
       await tester.pump();
 
       // Klik Mulai Jeda Digital
-      await tester.tap(find.text('Mulai Jeda Digital'));
-      await tester.pumpAndSettle();
+      await tester.runAsync(() async {
+        await tester.tap(find.text('Mulai Jeda Digital'));
+        await Future.delayed(const Duration(milliseconds: 50));
+      });
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 100));
 
       // Layar beralih ke state aktif
       expect(find.text('Jeda Digital Aktif'), findsOneWidget);
@@ -261,6 +272,11 @@ void main() {
       expect(find.text('Minum segelas air putih.'), findsOneWidget);
       expect(find.text('Batalkan'), findsOneWidget);
       expect(find.text('Selesai'), findsOneWidget);
+
+      // Bersihkan timer aktif agar tidak ada pending timer saat widget tree didispose
+      await tester.runAsync(() async {
+        await service.cancelIntervention();
+      });
     });
 
     testWidgets('9. UI Active: Konfirmasi dialog batal dan kembali ke hub', (tester) async {
@@ -271,32 +287,40 @@ void main() {
         tester.view.resetDevicePixelRatio();
       });
 
-      await service.startDigitalBreak(15);
+      await tester.runAsync(() async {
+        await service.startDigitalBreak(15);
+      });
 
       await tester.pumpWidget(
         const GetMaterialApp(
           home: InterventionView(),
         ),
       );
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 100));
 
       expect(find.text('Jeda Digital Aktif'), findsOneWidget);
 
       // Klik tombol Batalkan
       await tester.tap(find.text('Batalkan'));
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
 
       // Dialog konfirmasi muncul
       expect(find.text('Batalkan Intervensi?'), findsOneWidget);
       expect(find.text('Apakah kamu yakin ingin mengakhiri sesi lebih awal?'), findsOneWidget);
       expect(find.text('Lanjutkan Sesi'), findsOneWidget);
+      expect(find.text('Ya, Batalkan'), findsOneWidget);
 
-      // Klik konfirmasi batal
+      // Klik konfirmasi batal dengan label tombol yang sesuai
       final confirmCancelBtn = find.descendant(
         of: find.byType(AlertDialog),
-        matching: find.text('Batalkan'),
+        matching: find.text('Ya, Batalkan'),
       );
-      await tester.tap(confirmCancelBtn);
+      await tester.runAsync(() async {
+        await tester.tap(confirmCancelBtn);
+        await Future.delayed(const Duration(milliseconds: 50));
+      });
       await tester.pumpAndSettle();
 
       // UI kembali ke hub
@@ -313,19 +337,25 @@ void main() {
         tester.view.resetDevicePixelRatio();
       });
 
-      await service.startDigitalBreak(15);
+      await tester.runAsync(() async {
+        await service.startDigitalBreak(15);
+      });
 
       await tester.pumpWidget(
         const GetMaterialApp(
           home: InterventionView(),
         ),
       );
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 100));
 
       expect(find.text('Jeda Digital Aktif'), findsOneWidget);
 
       // Klik tombol Selesai
-      await tester.tap(find.text('Selesai'));
+      await tester.runAsync(() async {
+        await tester.tap(find.text('Selesai'));
+        await Future.delayed(const Duration(milliseconds: 50));
+      });
       await tester.pumpAndSettle();
 
       // UI kembali ke hub
