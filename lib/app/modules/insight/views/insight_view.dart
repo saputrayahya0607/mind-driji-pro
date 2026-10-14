@@ -21,12 +21,13 @@ class InsightView extends GetView<InsightController> {
           'Insight & Refleksi',
           style: TextStyle(
             fontSize: 18,
-            fontWeight: FontWeight.w700,
-            color: AppColors.textPrimary,
+            fontWeight: FontWeight.w800,
+            color: AppColors.navy,
+            letterSpacing: -0.2,
           ),
         ),
         centerTitle: false,
-        backgroundColor: AppColors.background,
+        backgroundColor: Colors.transparent,
         elevation: 0,
         scrolledUnderElevation: 0,
         actions: [
@@ -35,12 +36,12 @@ class InsightView extends GetView<InsightController> {
               width: 38,
               height: 38,
               decoration: BoxDecoration(
-                color: AppColors.card,
+                color: Colors.white,
                 shape: BoxShape.circle,
-                border: Border.all(color: AppColors.border, width: 1),
+                border: Border.all(color: const Color(0xFFE2E8F0), width: 1),
                 boxShadow: [
                   BoxShadow(
-                    color: AppColors.secondary.withValues(alpha: 0.04),
+                    color: AppColors.navy.withValues(alpha: 0.04),
                     blurRadius: 6,
                     offset: const Offset(0, 2),
                   ),
@@ -49,7 +50,7 @@ class InsightView extends GetView<InsightController> {
               child: const Icon(
                 Icons.refresh_rounded,
                 size: 20,
-                color: AppColors.secondary,
+                color: AppColors.navy,
               ),
             ),
             constraints: const BoxConstraints(minWidth: 48, minHeight: 48),
@@ -89,11 +90,18 @@ class InsightView extends GetView<InsightController> {
   Widget _buildPeriodSelector() {
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 20, vertical: 6),
-      padding: const EdgeInsets.all(4),
+      padding: const EdgeInsets.all(5),
       decoration: BoxDecoration(
-        color: AppColors.card,
+        color: Colors.white,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: AppColors.border, width: 1),
+        border: Border.all(color: const Color(0xFFE2E8F0), width: 1),
+        boxShadow: [
+          BoxShadow(
+            color: AppColors.navy.withValues(alpha: 0.03),
+            blurRadius: 10,
+            offset: const Offset(0, 2),
+          ),
+        ],
       ),
       child: Obx(() {
         final current = controller.selectedPeriod.value;
@@ -124,7 +132,7 @@ class InsightView extends GetView<InsightController> {
             duration: const Duration(milliseconds: 200),
             padding: const EdgeInsets.symmetric(vertical: 10),
             decoration: BoxDecoration(
-              color: isSelected ? AppColors.primary : Colors.transparent,
+              color: isSelected ? AppColors.softMint : Colors.transparent,
               borderRadius: BorderRadius.circular(12),
             ),
             alignment: Alignment.center,
@@ -132,8 +140,8 @@ class InsightView extends GetView<InsightController> {
               label,
               style: TextStyle(
                 fontSize: 13,
-                fontWeight: isSelected ? FontWeight.w700 : FontWeight.w600,
-                color: isSelected ? Colors.white : AppColors.textSecondary,
+                fontWeight: isSelected ? FontWeight.w800 : FontWeight.w600,
+                color: isSelected ? AppColors.navy : AppColors.textSecondary,
               ),
             ),
           ),
@@ -659,7 +667,7 @@ class InsightView extends GetView<InsightController> {
             ),
           ),
           ElevatedButton(
-            onPressed: () => _showActionDialog(action),
+            onPressed: () => Get.toNamed(Routes.intervention),
             style: ElevatedButton.styleFrom(
               backgroundColor: AppColors.primary,
               foregroundColor: Colors.white,
@@ -671,7 +679,7 @@ class InsightView extends GetView<InsightController> {
               ),
             ),
             child: const Text(
-              'Lihat Pilihan',
+              'Lihat Intervensi',
               style: TextStyle(
                 fontSize: 11,
                 fontWeight: FontWeight.w700,
@@ -683,79 +691,8 @@ class InsightView extends GetView<InsightController> {
     );
   }
 
-  /// Dialog konfirmasi tindakan pengguna (User Choice - Tidak auto-start)
-  void _showActionDialog(String action) {
-    Get.dialog(
-      AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        title: Row(
-          children: [
-            const Icon(Icons.self_improvement_rounded,
-                color: AppColors.primary, size: 24),
-            const SizedBox(width: 10),
-            Expanded(
-              child: Text(
-                action,
-                style: const TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w700,
-                  color: AppColors.textPrimary,
-                ),
-              ),
-            ),
-          ],
-        ),
-        content: Text(
-          'Pilihan intervensi $action dirancang untuk membantumu mengambil '
-          'jeda sadar dan mengistirahatkan mata. Apakah kamu ingin mencatat '
-          'pilihan ini sebagai pengingat pribadimu?',
-          style: const TextStyle(
-            fontSize: 13,
-            color: AppColors.textSecondary,
-            height: 1.4,
-          ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Get.back(),
-            child: const Text(
-              'Nanti Saja',
-              style: TextStyle(
-                color: AppColors.textSecondary,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-          ),
-          ElevatedButton(
-            onPressed: () {
-              controller.selectAction(action);
-              Get.back();
-              Get.snackbar(
-                'Tindakan Dicatat',
-                'Pilihan $action telah tersimpan.',
-                snackPosition: SnackPosition.BOTTOM,
-                backgroundColor: AppColors.card,
-                colorText: AppColors.textPrimary,
-                margin: const EdgeInsets.all(16),
-                borderRadius: 12,
-              );
-            },
-            style: ElevatedButton.styleFrom(
-              backgroundColor: AppColors.primary,
-              foregroundColor: Colors.white,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(10),
-              ),
-            ),
-            child: const Text('Simpan Pilihan'),
-          ),
-        ],
-      ),
-    );
-  }
-
   // ===========================================================================
-  // 8B. RECOMMENDATIONS SECTION (Pilihan Untukmu)
+  // 8B. RECOMMENDATIONS SECTION (Saran Berdasarkan Analisis)
   // ===========================================================================
   Widget _buildRecommendationsSection(List<RecommendationModel> recommendations) {
     return Column(
@@ -770,14 +707,14 @@ class InsightView extends GetView<InsightController> {
                 borderRadius: BorderRadius.circular(8),
               ),
               child: const Icon(
-                Icons.auto_awesome_rounded,
+                Icons.lightbulb_outline_rounded,
                 size: 16,
                 color: AppColors.primary,
               ),
             ),
             const SizedBox(width: 8),
             const Text(
-              'PILIHAN UNTUKMU',
+              'SARAN BERDASARKAN ANALISIS',
               style: TextStyle(
                 fontSize: 12,
                 fontWeight: FontWeight.w800,
@@ -789,7 +726,7 @@ class InsightView extends GetView<InsightController> {
         ),
         const SizedBox(height: 6),
         const Text(
-          'Pilihan intervensi yang dirancang untuk membantumu mengambil kendali secara mandiri.',
+          'Rekomendasi kebiasaan sehat berdasarkan temuan aktivitas penggunaanmu.',
           style: TextStyle(
             fontSize: 12,
             color: AppColors.textSecondary,
@@ -883,7 +820,7 @@ class InsightView extends GetView<InsightController> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 const Icon(
-                  Icons.info_outline_rounded,
+                  Icons.insights_rounded,
                   size: 15,
                   color: AppColors.textSecondary,
                 ),
@@ -903,191 +840,30 @@ class InsightView extends GetView<InsightController> {
             ),
           ),
           const SizedBox(height: 14),
-          const Text(
-            'Pilihan Durasi:',
-            style: TextStyle(
-              fontSize: 11,
-              fontWeight: FontWeight.w600,
-              color: AppColors.textSecondary,
-            ),
-          ),
-          const SizedBox(height: 8),
-          Obx(() {
-            final activeDuration = controller.getSelectedDuration(rec);
-            return Wrap(
-              spacing: 8,
-              runSpacing: 6,
-              children: rec.durationOptions.map((dur) {
-                final isSelected = dur == activeDuration;
-                return ChoiceChip(
-                  label: Text('$dur menit'),
-                  labelStyle: TextStyle(
-                    fontSize: 11,
-                    fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
-                    color: isSelected ? Colors.white : AppColors.textPrimary,
-                  ),
-                  selected: isSelected,
-                  selectedColor: AppColors.primary,
-                  backgroundColor: AppColors.card,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(8),
-                    side: BorderSide(
-                      color: isSelected
-                          ? AppColors.primary
-                          : AppColors.border,
-                      width: 1,
-                    ),
-                  ),
-                  onSelected: (selected) {
-                    if (selected) {
-                      controller.selectRecommendationDuration(rec.id, dur);
-                    }
-                  },
-                );
-              }).toList(),
-            );
-          }),
-          const SizedBox(height: 14),
           SizedBox(
             width: double.infinity,
-            child: ElevatedButton.icon(
-              onPressed: () {
-                final dur = controller.getSelectedDuration(rec);
-                _showRecommendationDialog(rec, dur);
-              },
-              icon: const Icon(Icons.touch_app_rounded, size: 16),
-              label: Text(
-                rec.actionLabel,
-                style: const TextStyle(
+            child: OutlinedButton.icon(
+              onPressed: () => Get.toNamed(Routes.intervention),
+              icon: const Icon(Icons.arrow_forward_rounded, size: 16),
+              label: const Text(
+                'Lihat Intervensi',
+                style: TextStyle(
                   fontSize: 13,
                   fontWeight: FontWeight.w700,
                 ),
               ),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.primary,
-                foregroundColor: Colors.white,
-                elevation: 0,
-                minimumSize: const Size.fromHeight(48),
+              style: OutlinedButton.styleFrom(
+                foregroundColor: AppColors.primary,
+                side: BorderSide(
+                  color: AppColors.primary.withValues(alpha: 0.4),
+                  width: 1.2,
+                ),
+                padding: const EdgeInsets.symmetric(vertical: 12),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(12),
                 ),
               ),
             ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  void _showRecommendationDialog(RecommendationModel rec, int duration) {
-    Get.dialog(
-      AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        title: Row(
-          children: [
-            Icon(
-              _getRecommendationIcon(rec.type),
-              color: AppColors.primary,
-              size: 24,
-            ),
-            const SizedBox(width: 10),
-            Expanded(
-              child: Text(
-                rec.title,
-                style: const TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w700,
-                  color: AppColors.textPrimary,
-                ),
-              ),
-            ),
-          ],
-        ),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              'Kamu memilih opsi ${rec.title} dengan durasi $duration menit.',
-              style: const TextStyle(
-                fontSize: 13,
-                fontWeight: FontWeight.w600,
-                color: AppColors.textPrimary,
-                height: 1.4,
-              ),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              rec.description,
-              style: const TextStyle(
-                fontSize: 12,
-                color: AppColors.textSecondary,
-                height: 1.4,
-              ),
-            ),
-            const SizedBox(height: 12),
-            Container(
-              padding: const EdgeInsets.all(10),
-              decoration: BoxDecoration(
-                color: AppColors.primaryContainer.withValues(alpha: 0.5),
-                borderRadius: BorderRadius.circular(10),
-              ),
-              child: const Row(
-                children: [
-                  Icon(
-                    Icons.check_circle_outline_rounded,
-                    size: 16,
-                    color: AppColors.primaryDark,
-                  ),
-                  SizedBox(width: 8),
-                  Expanded(
-                    child: Text(
-                      'Pilihan ini disimpan sebagai pengingat sadar pribadimu.',
-                      style: TextStyle(
-                        fontSize: 11,
-                        color: AppColors.primaryDark,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Get.back(),
-            child: const Text(
-              'Nanti Saja',
-              style: TextStyle(
-                color: AppColors.textSecondary,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-          ),
-          ElevatedButton(
-            onPressed: () {
-              controller.applyRecommendation(rec, duration);
-              Get.back();
-              Get.snackbar(
-                'Pilihan Disimpan',
-                '${rec.title} ($duration menit) berhasil dicatat.',
-                snackPosition: SnackPosition.BOTTOM,
-                backgroundColor: AppColors.card,
-                colorText: AppColors.textPrimary,
-                margin: const EdgeInsets.all(16),
-                borderRadius: 12,
-              );
-            },
-            style: ElevatedButton.styleFrom(
-              backgroundColor: AppColors.primary,
-              foregroundColor: Colors.white,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(10),
-              ),
-            ),
-            child: const Text('Konfirmasi Pilihan'),
           ),
         ],
       ),

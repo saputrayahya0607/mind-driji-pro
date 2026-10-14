@@ -363,9 +363,11 @@ class DoomscrollAccessibilityService : AccessibilityService() {
         val previousPackage = lastForegroundPackage
         if (pkgName != previousPackage) {
             lastForegroundPackage = pkgName
-            // Transisi dari aplikasi non-target ke target app adalah NEW LAUNCH ATTEMPT
-            // Reset debounce agar pembukaan ulang (kedua, ketiga, dst) selalu dicegat seketika!
-            if (!DoomscrollConfig.isTargetPackage(previousPackage) && DoomscrollConfig.isTargetPackage(pkgName)) {
+            // Transisi dari aplikasi non-target / aplikasi target lain ke target app adalah NEW LAUNCH ATTEMPT
+            // Reset debounce agar pembukaan ulang selalu dicegat seketika!
+            if (DoomscrollConfig.isTargetPackage(pkgName) &&
+                (!DoomscrollConfig.isTargetPackage(previousPackage) || previousPackage != pkgName)
+            ) {
                 lastBlockedAt = 0L
                 Log.i(
                     DoomscrollConfig.TAG,
@@ -646,6 +648,26 @@ class DoomscrollAccessibilityService : AccessibilityService() {
     }
 
     private fun isLauncherPackage(pkgName: String): Boolean {
+        if (pkgName.isNullOrBlank()) return false
+        // Known OEM launcher identifiers (MIUI, Poco, Samsung, Pixel, ColorOS, OxygenOS, EMUI, etc.)
+        if (pkgName == "com.miui.home" ||
+            pkgName == "com.mi.android.globallauncher" ||
+            pkgName == "com.sec.android.app.launcher" ||
+            pkgName == "com.google.android.apps.nexuslauncher" ||
+            pkgName == "com.android.launcher3" ||
+            pkgName == "com.android.launcher" ||
+            pkgName == "com.oppo.launcher" ||
+            pkgName == "com.coloros.home" ||
+            pkgName == "com.oneplus.launcher" ||
+            pkgName == "com.huawei.android.launcher" ||
+            pkgName == "com.bbk.launcher2" ||
+            pkgName == "com.vivo.upslide" ||
+            pkgName.contains("launcher", ignoreCase = true) ||
+            pkgName.endsWith(".home", ignoreCase = true)
+        ) {
+            return true
+        }
+
         try {
             val intent = Intent(Intent.ACTION_MAIN).apply {
                 addCategory(Intent.CATEGORY_HOME)
@@ -659,7 +681,7 @@ class DoomscrollAccessibilityService : AccessibilityService() {
         } catch (e: Exception) {
             // Abaikan kegagalan resolve launcher
         }
-        return pkgName.contains("launcher", ignoreCase = true) || pkgName == "com.google.android.apps.nexuslauncher"
+        return false
     }
 
     /**
@@ -681,23 +703,38 @@ class DoomscrollAccessibilityService : AccessibilityService() {
         }
 
         val now = System.currentTimeMillis()
-        if (now - lastBlockedAt < BLOCK_DEBOUNCE_MS) {
-            Log.d(DoomscrollConfig.TAG, "FOCUS MODE: Soft warning skipped by debounce (${now - lastBlockedAt}ms < ${BLOCK_DEBOUNCE_MS}ms)")
-            return true
-        }
-
-        lastBlockedAt = now
         val appName = DoomscrollConfig.getAppName(pkgName)
-        Log.i(DoomscrollConfig.TAG, "INTERVENTION ACTIVE: Blocking target package: $pkgName ($appName) -> Returning to Home")
 
-        // 1. Eksekusi active restriction: Kembalikan user ke Home / hentikan akses target app
-        performGlobalAction(GLOBAL_ACTION_HOME)
+        // Rapid burst debounce protection:
+        // Jika event berasal dari package yang sama dalam burst singkat saat jendela sedang ditutup (rapid subview burst),
+        // hindari spamming performGlobalAction(GLOBAL_ACTION_HOME) berulang agar tidak terjadi loop dengan Launcher atau System UI.
+        val isBurst = (now - lastBlockedAt < BLOCK_DEBOUNCE_MS)
+        if (!isBurst) {
+            lastBlockedAt = now
+            Log.i(DoomscrollConfig.TAG, "INTERVENTION ACTIVE: Blocking target package: $pkgName ($appName) -> Returning to Home")
 
-        // 2. Tampilkan feedback Toast
-        showBlockingFeedback(appName)
+            // 1. Eksekusi active restriction: Kembalikan user ke Home / hentikan akses target app
+            val homeSuccess = performGlobalAction(GLOBAL_ACTION_HOME)
+            if (!homeSuccess) {
+                try {
+                    val homeIntent = Intent(Intent.ACTION_MAIN).apply {
+                        addCategory(Intent.CATEGORY_HOME)
+                        flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_RESET_TASK_IF_NEEDED
+                    }
+                    startActivity(homeIntent)
+                } catch (e: Exception) {
+                    Log.w(DoomscrollConfig.TAG, "Fallback HOME intent failed: ${e.localizedMessage}")
+                }
+            }
 
-        // 3. Tampilkan High-Priority Heads-up Notification dengan aksi "Lihat"
-        showFocusWarningNotification(pkgName, appName)
+            // 2. Tampilkan feedback Toast
+            showBlockingFeedback(appName)
+
+            // 3. Tampilkan High-Priority Heads-up Notification dengan aksi "Lihat"
+            showFocusWarningNotification(pkgName, appName)
+        } else {
+            Log.d(DoomscrollConfig.TAG, "FOCUS MODE: Soft warning skipped by debounce (${now - lastBlockedAt}ms < ${BLOCK_DEBOUNCE_MS}ms)")
+        }
 
         return true
     }
@@ -865,11 +902,15 @@ class DoomscrollAccessibilityService : AccessibilityService() {
                 )
                 val now = System.currentTimeMillis()
 
-                val isRestrictingType = (type == null || type == "focusMode" || type == "digitalBreak" || type == "pomodoro" || type == "custom")
+                val isRestrictingType = (type == null || type == "focusMode" || type == "digitalBreak" ||
+                    type.equals("focusMode", ignoreCase = true) ||
+                    type.equals("digitalBreak", ignoreCase = true) ||
+                    type.equals("pomodoro", ignoreCase = true) ||
+                    type.equals("custom", ignoreCase = true))
                 val isActive = boolActive || (status == "active" && isRestrictingType)
 
                 if (isActive) {
-                    if (now < endedAt) {
+                    if (endedAt > 0L && now < endedAt) {
                         return true
                     } else {
                         // Otomatis bersihkan native state saat waktu berakhir
@@ -894,11 +935,13 @@ class DoomscrollAccessibilityService : AccessibilityService() {
                     .putString("status", "inactive")
                     .putBoolean("focus_mode_active", false)
                     .putLong("focus_mode_ended_at", 0L)
-                    .apply()
+                    .putLong("ended_at", 0L)
+                    .commit()
 
                 val notificationManager = context.getSystemService(Context.NOTIFICATION_SERVICE) as? NotificationManager
                 notificationManager?.cancel(NOTIFICATION_ID)
-                Log.i(DoomscrollConfig.TAG, "FOCUS MODE: Native state deactivated & notification cleared automatically")
+                notificationManager?.cancel(WARNING_NOTIFICATION_ID)
+                Log.i(DoomscrollConfig.TAG, "FOCUS MODE: Native state deactivated & notifications cleared automatically")
             } catch (e: Exception) {
                 Log.w(DoomscrollConfig.TAG, "Gagal deaktifasi native Focus Mode: ${e.localizedMessage}")
             }

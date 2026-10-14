@@ -161,12 +161,6 @@ class SimulatedAccessibilityService {
   String? lastForegroundPackage;
 
   bool onWindowStateChanged(String pkgName, int nowMillis) {
-    if (!isFocusModeActive(nowMillis)) {
-      currentForegroundPackage = pkgName;
-      lastForegroundPackage = pkgName;
-      return false;
-    }
-
     if (isExcludedPackage(pkgName)) {
       currentForegroundPackage = pkgName;
       lastForegroundPackage = pkgName;
@@ -174,35 +168,36 @@ class SimulatedAccessibilityService {
       return false;
     }
 
-    if (!isTargetPackage(pkgName)) {
-      currentForegroundPackage = pkgName;
-      lastForegroundPackage = pkgName;
-      return false;
-    }
-
-    // New launch attempt from outside target app resets debounce
-    if (!isTargetPackage(lastForegroundPackage)) {
+    // New launch attempt from outside target app or different app resets debounce
+    if (lastForegroundPackage != null && lastForegroundPackage != pkgName) {
       lastBlockedAt = 0;
     }
+    lastForegroundPackage = pkgName;
 
-    // Debounce check (1500ms) for rapid events within same app
-    if (nowMillis - lastBlockedAt < 1500) {
-      lastForegroundPackage = pkgName;
+    if (!isFocusModeActive(nowMillis)) {
+      currentForegroundPackage = pkgName;
       return false;
     }
 
-    lastBlockedAt = nowMillis;
-    blockCount++;
-    lastForegroundPackage = pkgName;
+    if (!isTargetPackage(pkgName)) {
+      currentForegroundPackage = pkgName;
+      return false;
+    }
 
-    // Throttled feedback toast (2500ms)
-    if (nowMillis - lastToastAt >= 2500) {
+    // Target package detected during active intervention:
+    // Blocking action (return to Home) is ALWAYS executed!
+    final isBurstEvent = (nowMillis - lastBlockedAt < 1500);
+    lastBlockedAt = nowMillis;
+
+    blockCount++;
+    currentForegroundPackage = 'com.android.launcher';
+
+    // Throttled feedback toast (2500ms) only if not burst event
+    if (!isBurstEvent && (nowMillis - lastToastAt >= 2500)) {
       lastToastAt = nowMillis;
       feedbackCount++;
     }
 
-    // Active restriction: returns to Home launcher
-    currentForegroundPackage = 'com.android.launcher';
     return true;
   }
 }
@@ -403,22 +398,25 @@ void main() {
     });
 
     // -------------------------------------------------------------------------
-    // 11. No blocking loop
+    // 11. No blocking loop & debounce maintains blocking action
     // -------------------------------------------------------------------------
-    test('11. No blocking loop: Rapid burst events dalam jendela 1500ms didebounce untuk mencegah loop', () async {
+    test('11. No blocking loop: Rapid burst events debounces feedback while maintaining blocking', () async {
       await service.startFocusMode(15);
       final sim = SimulatedAccessibilityService(mockPlatform.sharedPreferences);
 
       final now = DateTime.now().millisecondsSinceEpoch;
 
-      // Event pertama memicu block
+      // Event pertama memicu block & feedback
       expect(sim.onWindowStateChanged('com.ss.android.ugc.trill', now), isTrue);
+      expect(sim.feedbackCount, 1);
 
-      // Event subview burst dalam 50ms tidak memicu performGlobalAction ganda
-      expect(sim.onWindowStateChanged('com.ss.android.ugc.trill', now + 50), isFalse);
-      expect(sim.onWindowStateChanged('com.ss.android.ugc.trill', now + 100), isFalse);
+      // Event subview burst dalam 50ms tetap diblokir (mengembalikan pengguna ke Home),
+      // namun feedback toast/notification didebounce sehingga tidak terjadi spam
+      expect(sim.onWindowStateChanged('com.ss.android.ugc.trill', now + 50), isTrue);
+      expect(sim.onWindowStateChanged('com.ss.android.ugc.trill', now + 100), isTrue);
 
-      expect(sim.blockCount, 1);
+      expect(sim.blockCount, 3);
+      expect(sim.feedbackCount, 1); // Feedback tetap 1 karena burst debounce
     });
 
     // -------------------------------------------------------------------------
@@ -434,7 +432,7 @@ void main() {
       sim.onWindowStateChanged('com.ss.android.ugc.trill', now);
       expect(sim.feedbackCount, 1);
 
-      // Event berikutnya setelah 500ms tetap dihitung tapi toast dithrottle
+      // Event berikutnya setelah 500ms tetap diblokir tapi toast dithrottle
       sim.onWindowStateChanged('com.ss.android.ugc.trill', now + 500);
       expect(sim.feedbackCount, 1);
 
@@ -505,6 +503,111 @@ void main() {
       expect(content, contains('"stopFocusMode"'));
       expect(content, contains('"focus_mode_active", false'));
       expect(content, contains('"getInterventionStatus"'));
+    });
+  });
+
+  group('TAHAP 3 — BACKGROUND INTERVENTION BLOCKING SCENARIOS', () {
+    // Skenario 1: Intervensi aktif dan aplikasi target dibuka
+    test('Skenario 1: Intervensi aktif dan aplikasi target dibuka -> langsung dicegat dan dialihkan ke Home', () async {
+      await service.startFocusMode(20);
+      final sim = SimulatedAccessibilityService(mockPlatform.sharedPreferences);
+      final now = DateTime.now().millisecondsSinceEpoch;
+
+      final blocked = sim.onWindowStateChanged('com.instagram.android', now);
+      expect(blocked, isTrue);
+      expect(sim.currentForegroundPackage, 'com.android.launcher');
+      expect(sim.blockCount, 1);
+    });
+
+    // Skenario 2: Intervensi aktif ketika MIND DRIJI berada di latar belakang
+    test('Skenario 2: Intervensi aktif ketika MIND DRIJI di latar belakang -> target app dicegat langsung tanpa buka MIND DRIJI', () async {
+      await service.startFocusMode(15);
+      final sim = SimulatedAccessibilityService(mockPlatform.sharedPreferences);
+      final now = DateTime.now().millisecondsSinceEpoch;
+
+      // 1. Pengguna keluar dari MIND DRIJI ke launcher bawaan MIUI/AOSP
+      sim.onWindowStateChanged('com.hn.mind_drji', now);
+      sim.onWindowStateChanged('com.android.launcher', now + 200);
+
+      // 2. Dari launcher, pengguna langsung membuka Instagram TANPA pernah membuka MIND DRIJI lagi
+      final blocked = sim.onWindowStateChanged('com.instagram.android', now + 1000);
+
+      // 3. AccessibilityService wajib memblokir dan mengembalikan ke launcher secara otonom
+      expect(blocked, isTrue);
+      expect(sim.currentForegroundPackage, 'com.android.launcher');
+      expect(sim.blockCount, 1);
+    });
+
+    // Skenario 3: Intervensi kedaluwarsa
+    test('Skenario 3: Intervensi kedaluwarsa -> aplikasi target diizinkan dan state native dibersihkan', () async {
+      await service.startFocusMode(10);
+      final sim = SimulatedAccessibilityService(mockPlatform.sharedPreferences);
+      final endedAt = mockPlatform.sharedPreferences['focus_mode_ended_at'] as int;
+
+      // Saat timer telah habis (endedAt + 1 detik)
+      final blocked = sim.onWindowStateChanged('com.instagram.android', endedAt + 1000);
+
+      expect(blocked, isFalse);
+      expect(sim.blockCount, 0);
+      expect(mockPlatform.sharedPreferences['focus_mode_active'], isFalse);
+      expect(mockPlatform.sharedPreferences['status'], 'inactive');
+    });
+
+    // Skenario 4: Intervensi dihentikan manual
+    test('Skenario 4: Intervensi dihentikan manual -> blokir berhenti dan aplikasi target dapat dibuka', () async {
+      await service.startFocusMode(15);
+      final sim = SimulatedAccessibilityService(mockPlatform.sharedPreferences);
+      final now = DateTime.now().millisecondsSinceEpoch;
+
+      // Saat aktif -> diblokir
+      expect(sim.onWindowStateChanged('com.ss.android.ugc.trill', now), isTrue);
+
+      // Hentikan secara manual
+      await service.cancelIntervention();
+
+      // Sekarang buka target -> diizinkan
+      final blockedAfterStop = sim.onWindowStateChanged('com.ss.android.ugc.trill', now + 500);
+      expect(blockedAfterStop, isFalse);
+      expect(mockPlatform.sharedPreferences['focus_mode_active'], isFalse);
+    });
+
+    // Skenario 5: Event launcher/System UI berulang tidak menyebabkan loop
+    test('Skenario 5: Event launcher/System UI berulang tidak menyebabkan loop atau blocking palsu', () async {
+      await service.startFocusMode(15);
+      final sim = SimulatedAccessibilityService(mockPlatform.sharedPreferences);
+      final now = DateTime.now().millisecondsSinceEpoch;
+
+      // Event beruntun dari Home/System UI
+      expect(sim.onWindowStateChanged('com.android.launcher', now), isFalse);
+      expect(sim.onWindowStateChanged('com.android.systemui', now + 50), isFalse);
+      expect(sim.onWindowStateChanged('com.android.launcher', now + 100), isFalse);
+      expect(sim.onWindowStateChanged('com.android.systemui', now + 150), isFalse);
+
+      expect(sim.blockCount, 0);
+      expect(sim.feedbackCount, 0);
+    });
+
+    // Skenario 6: Debounce peringatan tidak menonaktifkan jalur blokir
+    test('Skenario 6: Debounce peringatan tidak menonaktifkan jalur blokir pada multiple window transition', () async {
+      await service.startFocusMode(15);
+      final sim = SimulatedAccessibilityService(mockPlatform.sharedPreferences);
+      final now = DateTime.now().millisecondsSinceEpoch;
+
+      // Event 1: Window transition awal target app -> Blocked + Feedback dimunculkan
+      final block1 = sim.onWindowStateChanged('com.instagram.android', now);
+      expect(block1, isTrue);
+      expect(sim.blockCount, 1);
+      expect(sim.feedbackCount, 1);
+
+      // Event 2 & 3: Window transition berikutnya (burst 50ms & 100ms) dari target app
+      // CRITICAL: Jalur blokir TETAP AKTIF (true), tetapi feedback toast didebounce (tidak bertambah)
+      final block2 = sim.onWindowStateChanged('com.instagram.android', now + 50);
+      final block3 = sim.onWindowStateChanged('com.instagram.android', now + 100);
+
+      expect(block2, isTrue, reason: 'Debounce peringatan TIDAK BOLEH menonaktifkan blokir');
+      expect(block3, isTrue, reason: 'Debounce peringatan TIDAK BOLEH menonaktifkan blokir');
+      expect(sim.blockCount, 3);
+      expect(sim.feedbackCount, 1, reason: 'Feedback toast dibatasi untuk menghindari spam UI');
     });
   });
 }

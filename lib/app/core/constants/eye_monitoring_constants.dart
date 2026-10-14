@@ -5,8 +5,8 @@ class EyeMonitoringConstants {
   /// Tag logging resmi untuk konsol/logcat
   static const String logTag = 'MIND_DRIJI_EYE';
 
-  /// Interval default antar sesi pemantauan otomatis (30 menit)
-  static const Duration defaultMonitoringInterval = Duration(minutes: 30);
+  /// Interval default antar sesi pemantauan otomatis (15 menit)
+  static const Duration defaultMonitoringInterval = Duration(minutes: 15);
 
   /// Durasi kamera aktif per sesi pemantauan (1 menit)
   static const Duration defaultSessionDuration = Duration(minutes: 1);

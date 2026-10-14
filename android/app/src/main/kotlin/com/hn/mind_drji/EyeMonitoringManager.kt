@@ -2,6 +2,8 @@ package com.hn.mind_drji
 
 import android.content.Context
 import android.graphics.Bitmap
+import android.graphics.Matrix
+import android.os.Build
 import android.os.Handler
 import android.os.Looper
 import android.util.Log
@@ -12,6 +14,7 @@ import androidx.camera.lifecycle.ProcessCameraProvider
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.LifecycleOwner
 import com.google.mediapipe.framework.image.BitmapImageBuilder
+import com.google.mediapipe.tasks.components.containers.NormalizedLandmark
 import com.google.mediapipe.tasks.core.BaseOptions
 import com.google.mediapipe.tasks.vision.core.RunningMode
 import com.google.mediapipe.tasks.vision.facelandmarker.FaceLandmarker
@@ -45,13 +48,20 @@ class EyeMonitoringManager(private val context: Context) {
         // PENTING: Nilai ini BUKAN standar medis ataupun clinical cutoff.
         const val TECHNICAL_EAR_CLOSURE_THRESHOLD = 0.21
 
-        // Threshold ukuran wajah minimum (rasio tinggi & lebar relatif terhadap frame)
+        // Ambang durasi kedipan mata manusia normal: 60ms - 450ms.
+        // Penutupan melebihi 1000ms dianggap prolonged eye closure (indikasi mata terpejam lama / fatigue).
+        const val MIN_BLINK_DURATION_MS = 60L
+        const val MAX_BLINK_DURATION_MS = 450L
+        const val PROLONGED_CLOSURE_THRESHOLD_MS = 1000L
+        const val MIN_INTER_BLINK_INTERVAL_MS = 150L
+
+        // Threshold ukuran wajah minimum (rasio bounding box relatif terhadap frame)
         // Disesuaikan untuk jarak natural penggunaan HP (30-45 cm): MIN_FACE_RATIO = 0.05
         const val MIN_FACE_HEIGHT_RATIO = 0.05f
         const val MIN_FACE_WIDTH_RATIO = 0.05f
 
         // Toleransi orientasi kepala (Head Pose) yang wajar saat beraktivitas di depan layar HP
-        // Roll: kemiringan kepala ke kiri/kanan (derajat)
+        // Roll: kemiringan kepala ke kiri/kanan (derajat deviasi dari garis horizontal)
         const val MAX_ROLL_DEGREES = 45.0
         // Yaw: toleransi tolehan wajah (offset hidung relatif ke jarak antar mata)
         const val MAX_YAW_OFFSET_RATIO = 0.50f
@@ -70,7 +80,9 @@ class EyeMonitoringManager(private val context: Context) {
         private const val LEFT_CHEEK = 234
         private const val RIGHT_CHEEK = 454
 
-        // Mata Kiri
+        // Sudut mata lateral (outer) untuk estimasi orientasi head pose roll
+        // Landmark 33: Sudut luar mata kanan subjek (sisi kiri citra saat tidak mirrored)
+        // Landmark 263: Sudut luar mata kiri subjek (sisi kanan citra saat tidak mirrored)
         private const val LEFT_EYE_OUTER = 33
         private const val LEFT_EYE_INNER = 133
         private const val LEFT_EYE_TOP_1 = 160
@@ -78,7 +90,6 @@ class EyeMonitoringManager(private val context: Context) {
         private const val LEFT_EYE_TOP_2 = 158
         private const val LEFT_EYE_BOTTOM_2 = 153
 
-        // Mata Kanan
         private const val RIGHT_EYE_INNER = 362
         private const val RIGHT_EYE_OUTER = 263
         private const val RIGHT_EYE_TOP_1 = 385
@@ -87,6 +98,25 @@ class EyeMonitoringManager(private val context: Context) {
         private const val RIGHT_EYE_BOTTOM_2 = 373
     }
 
+    private data class FaceCandidate(
+        val index: Int,
+        val landmarks: List<NormalizedLandmark>,
+        val minX: Float,
+        val maxX: Float,
+        val minY: Float,
+        val maxY: Float,
+        val bboxWidth: Float,
+        val bboxHeight: Float,
+        val anatWidth: Float,
+        val anatHeight: Float,
+        val faceWidth: Float,
+        val faceHeight: Float,
+        val faceArea: Float,
+        val centerX: Float,
+        val centerY: Float,
+        val score: Double
+    )
+
     private var cameraProvider: ProcessCameraProvider? = null
     private var cameraExecutor: ExecutorService? = null
     private var faceLandmarker: FaceLandmarker? = null
@@ -94,6 +124,9 @@ class EyeMonitoringManager(private val context: Context) {
     @Volatile
     var isMonitoring = false
         private set
+
+    @Volatile
+    private var isAnalyzingFrame = false
 
     @Volatile
     var eventSink: EventChannel.EventSink? = null
@@ -109,9 +142,26 @@ class EyeMonitoringManager(private val context: Context) {
     private var earMeasurementCount: Int = 0
     private var minRecordedEar: Double = 1.0
 
-    private var consecutiveClosureFrames: Int = 0
+    // Tracking wajah utama antar-frame (mencegah perpindahan wajah acak saat ada multiple faces)
+    private var hasTrackedFace = false
+    private var trackedFaceCenterX = 0.5f
+    private var trackedFaceCenterY = 0.5f
+    private var lastTrackedFaceTime = 0L
+
+    // State machine kedipan & penutupan mata
+    private var isEyeCurrentlyClosed: Boolean = false
+    private var closureStartTimeMs: Long = 0L
+    private var closureFrameCount: Int = 0
+    private var prolongedClosureReported: Boolean = false
+    private var lastBlinkTimestamp: Long = 0L
     private var eyeClosureEventsCount: Int = 0
     private var totalBlinkCount: Int = 0
+
+    // Diagnostik terkontrol (throttled logging)
+    private var processedFrameCount: Long = 0L
+    private var lastDiagnosticLogTime: Long = 0L
+    private var lastDispatchLogTime: Long = 0L
+    private var lastFaceDetectedState: Boolean? = null
 
     /**
      * Memulai pemantauan mata menggunakan kamera depan dan Face Landmarker.
@@ -133,7 +183,7 @@ class EyeMonitoringManager(private val context: Context) {
                 .setMinFaceDetectionConfidence(0.5f)
                 .setMinFacePresenceConfidence(0.5f)
                 .setMinTrackingConfidence(0.5f)
-                .setNumFaces(2) // Deteksi hingga 2 wajah agar tahu jika ada multiple faces
+                .setNumFaces(2) // Deteksi hingga 2 wajah agar dapat memilih wajah utama pengguna
                 .setRunningMode(RunningMode.IMAGE)
                 .build()
 
@@ -145,16 +195,25 @@ class EyeMonitoringManager(private val context: Context) {
             return
         }
 
-        // 2. Reset akumulator statistik sesi
+        // 2. Reset akumulator statistik sesi & state machine
         sessionId = UUID.randomUUID().toString()
         sessionStartTime = System.currentTimeMillis()
         lastAnalyzedTime = 0L
         totalEarSum = 0.0
         earMeasurementCount = 0
         minRecordedEar = 1.0
-        consecutiveClosureFrames = 0
+
+        resetTrackedFace()
+        resetClosureState()
+        lastBlinkTimestamp = 0L
         eyeClosureEventsCount = 0
         totalBlinkCount = 0
+
+        processedFrameCount = 0L
+        lastDiagnosticLogTime = 0L
+        lastDispatchLogTime = 0L
+        lastFaceDetectedState = null
+        isAnalyzingFrame = false
 
         cameraExecutor = Executors.newSingleThreadExecutor()
 
@@ -175,9 +234,22 @@ class EyeMonitoringManager(private val context: Context) {
                     return@addListener
                 }
 
+                // Dapatkan rotasi display layar aktif
+                val displayRotation = try {
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+                        context.display?.rotation ?: android.view.Surface.ROTATION_0
+                    } else {
+                        @Suppress("DEPRECATION")
+                        (context.getSystemService(Context.WINDOW_SERVICE) as? android.view.WindowManager)?.defaultDisplay?.rotation ?: android.view.Surface.ROTATION_0
+                    }
+                } catch (e: Exception) {
+                    android.view.Surface.ROTATION_0
+                }
+
                 val imageAnalysis = ImageAnalysis.Builder()
                     .setOutputImageFormat(ImageAnalysis.OUTPUT_IMAGE_FORMAT_RGBA_8888)
                     .setBackpressureStrategy(ImageAnalysis.STRATEGY_KEEP_ONLY_LATEST)
+                    .setTargetRotation(displayRotation)
                     .build()
 
                 imageAnalysis.setAnalyzer(cameraExecutor!!) { imageProxy ->
@@ -190,7 +262,7 @@ class EyeMonitoringManager(private val context: Context) {
                 cameraProvider?.bindToLifecycle(lifecycleOwner, cameraSelector, imageAnalysis)
 
                 isMonitoring = true
-                Log.d(TAG, "CameraX front camera berhasil terikat dan monitoring dimulai")
+                Log.d(TAG, "CameraX front camera berhasil terikat dan monitoring dimulai (displayRotation=$displayRotation)")
 
                 mainHandler.post {
                     dispatchStatusEvent(
@@ -213,41 +285,72 @@ class EyeMonitoringManager(private val context: Context) {
 
     /**
      * Memproses setiap frame dari CameraX secara non-blocking dengan throttling 5-10 FPS.
+     * Mengoreksi rotasi sensor (portrait 270°/90°) sebelum diteruskan ke MediaPipe.
      */
     private fun processImageProxy(imageProxy: ImageProxy) {
         val now = System.currentTimeMillis()
-        if (now - lastAnalyzedTime < FRAME_THROTTLE_INTERVAL_MS || !isMonitoring) {
+        if (isAnalyzingFrame || now - lastAnalyzedTime < FRAME_THROTTLE_INTERVAL_MS || !isMonitoring) {
             imageProxy.close()
             return
         }
+        isAnalyzingFrame = true
         lastAnalyzedTime = now
+        processedFrameCount++
 
         try {
-            val bitmap = imageProxy.toBitmap()
+            val rotationDegrees = imageProxy.imageInfo.rotationDegrees
+            val rawBitmap = imageProxy.toBitmap()
+
+            if (processedFrameCount <= 5L || processedFrameCount % 50L == 0L) {
+                Log.d(TAG, "[MIND_DRIJI_EYE] Frame #${processedFrameCount}: raw=${rawBitmap.width}x${rawBitmap.height}, rotationDegrees=$rotationDegrees")
+            }
+
+            // Rotasi bitmap sesuai orientasi sensor kamera depan agar wajah tegak lurus
+            // PENTING: Jangan panggil rawBitmap.recycle() karena pada perangkat GPU Mali,
+            // buffer grafis dibagi bersama dengan ImageProxy. Memanggil recycle() menyebabkan mali_gralloc invalid write locks!
+            val bitmap = if (rotationDegrees != 0) {
+                val matrix = Matrix().apply {
+                    postRotate(rotationDegrees.toFloat())
+                }
+                Bitmap.createBitmap(rawBitmap, 0, 0, rawBitmap.width, rawBitmap.height, matrix, true)
+            } else {
+                rawBitmap
+            }
+
             val mpImage = BitmapImageBuilder(bitmap).build()
             val result = faceLandmarker?.detect(mpImage)
 
             if (result != null) {
-                handleLandmarkResult(result)
+                handleLandmarkResult(result, bitmap.width, bitmap.height, now)
             }
         } catch (e: Exception) {
             Log.e(TAG, "Error saat pemrosesan frame image: ${e.localizedMessage}")
         } finally {
             imageProxy.close()
+            isAnalyzingFrame = false
         }
     }
 
     /**
      * Menghitung EAR dan indikator mata dari hasil facial landmark dengan validasi robust
-     * terhadap ukuran wajah (jarak HP), head pose (yaw/pitch/roll), dan pengguna yang melihat layar.
+     * terhadap pemilihan wajah utama, ukuran wajah (jarak HP), head pose, dan pengguna yang melihat layar.
      */
-    private fun handleLandmarkResult(result: FaceLandmarkerResult) {
+    private fun handleLandmarkResult(
+        result: FaceLandmarkerResult,
+        frameWidth: Int,
+        frameHeight: Int,
+        frameTimestamp: Long
+    ) {
         val faces = result.faceLandmarks()
 
         // 1. Wajah tidak ditemukan
         if (faces.isEmpty()) {
-            consecutiveClosureFrames = 0 // Face lost bukan eye closed!
-            Log.d(TAG, "[MIND_DRIJI_EYE] frameReceived=true faceDetected=false landmarkCount=0")
+            resetClosureState()
+            resetTrackedFace()
+            if (lastFaceDetectedState != false) {
+                lastFaceDetectedState = false
+                Log.d(TAG, "[MIND_DRIJI_EYE] STATUS_CHANGE: Wajah tidak terdeteksi (frames=$processedFrameCount)")
+            }
             mainHandler.post {
                 dispatchStatusEvent(
                     faceDetected = false,
@@ -260,14 +363,92 @@ class EyeMonitoringManager(private val context: Context) {
             return
         }
 
-        // 2. Lebih dari satu wajah terdeteksi
-        if (faces.size > 1) {
-            consecutiveClosureFrames = 0
-            Log.d(TAG, "[MIND_DRIJI_EYE] MEASUREMENT_INVALID: multiple_faces (${faces.size})")
+        // 2. Pemilihan Wajah Utama (Primary Face Selection)
+        // Hitung bounding box sejati dari seluruh landmark untuk memperoleh ukuran fisik wajah yang akurat
+        val candidateFaces = mutableListOf<FaceCandidate>()
+
+        for ((index, landmarkList) in faces.withIndex()) {
+            if (landmarkList.size < 400) continue
+
+            var minX = Float.MAX_VALUE
+            var maxX = -Float.MAX_VALUE
+            var minY = Float.MAX_VALUE
+            var maxY = -Float.MAX_VALUE
+
+            for (lm in landmarkList) {
+                val x = lm.x()
+                val y = lm.y()
+                if (x < minX) minX = x
+                if (x > maxX) maxX = x
+                if (y < minY) minY = y
+                if (y > maxY) maxY = y
+            }
+
+            val bboxWidth = maxX - minX
+            val bboxHeight = maxY - minY
+            val centerX = (minX + maxX) / 2.0f
+            val centerY = (minY + maxY) / 2.0f
+
+            // Jarak Euclidean anatomis dahi-dagu dan pipi-pipi (kebal terhadap orientasi sensor landscape/portrait)
+            val anatHeight = hypot(
+                (landmarkList[CHIN].x() - landmarkList[FOREHEAD].x()).toDouble(),
+                (landmarkList[CHIN].y() - landmarkList[FOREHEAD].y()).toDouble()
+            ).toFloat()
+            val anatWidth = hypot(
+                (landmarkList[RIGHT_CHEEK].x() - landmarkList[LEFT_CHEEK].x()).toDouble(),
+                (landmarkList[RIGHT_CHEEK].y() - landmarkList[LEFT_CHEEK].y()).toDouble()
+            ).toFloat()
+
+            // Ukuran wajah efektif adalah nilai maksimum dari bounding box terluar dan rentang anatomis
+            val faceWidth = max(bboxWidth, anatWidth)
+            val faceHeight = max(bboxHeight, anatHeight)
+            val faceArea = faceWidth * faceHeight
+
+            // Jarak ke tengah frame (0.5, 0.5)
+            val distFromScreenCenter = hypot((centerX - 0.5f).toDouble(), (centerY - 0.5f).toDouble())
+
+            // Jarak ke posisi wajah utama yang ditracking pada frame sebelumnya (temporal hysteresis)
+            val distFromPreviousTrack = if (hasTrackedFace && frameTimestamp - lastTrackedFaceTime < 1500L) {
+                hypot((centerX - trackedFaceCenterX).toDouble(), (centerY - trackedFaceCenterY).toDouble())
+            } else {
+                0.0
+            }
+
+            // Skor kandidat:
+            // - Wajah lebih besar (lebih dekat ke kamera / pengguna HP 30-45 cm) -> bobot tinggi (+3.0)
+            // - Wajah lebih dekat ke tengah frame -> bobot (+0.4)
+            // - Konsistensi tracking frame sebelumnya -> bobot stabilitas (+1.5)
+            val score = (faceArea * 3.0) - (distFromScreenCenter * 0.4) - (distFromPreviousTrack * 1.5)
+
+            candidateFaces.add(
+                FaceCandidate(
+                    index = index,
+                    landmarks = landmarkList,
+                    minX = minX,
+                    maxX = maxX,
+                    minY = minY,
+                    maxY = maxY,
+                    bboxWidth = bboxWidth,
+                    bboxHeight = bboxHeight,
+                    anatWidth = anatWidth,
+                    anatHeight = anatHeight,
+                    faceWidth = faceWidth,
+                    faceHeight = faceHeight,
+                    faceArea = faceArea,
+                    centerX = centerX,
+                    centerY = centerY,
+                    score = score
+                )
+            )
+        }
+
+        if (candidateFaces.isEmpty()) {
+            resetClosureState()
+            Log.d(TAG, "[MIND_DRIJI_EYE] MEASUREMENT_INVALID: landmark missing pada semua wajah (count=${faces.size})")
             mainHandler.post {
                 dispatchStatusEvent(
                     faceDetected = true,
-                    multipleFaces = true,
+                    multipleFaces = faces.size > 1,
                     measurementValid = false,
                     currentEar = 0.0,
                     statusMessage = "Menyesuaikan posisi wajah"
@@ -276,15 +457,49 @@ class EyeMonitoringManager(private val context: Context) {
             return
         }
 
-        // Tepat 1 wajah terdeteksi
-        val landmarks = faces[0]
-        if (landmarks.size < 400) {
-            consecutiveClosureFrames = 0
-            Log.d(TAG, "[MIND_DRIJI_EYE] MEASUREMENT_INVALID: landmark missing (count=${landmarks.size})")
+        // Urutkan kandidat berdasarkan skor tertinggi dan pilih kandidat terunggul sebagai wajah pengguna utama
+        candidateFaces.sortByDescending { it.score }
+        val primaryCandidate = candidateFaces.first()
+        val landmarks = primaryCandidate.landmarks
+        val isMultipleFacesPresent = faces.size > 1
+
+        // Update tracking state wajah utama
+        trackedFaceCenterX = primaryCandidate.centerX
+        trackedFaceCenterY = primaryCandidate.centerY
+        lastTrackedFaceTime = frameTimestamp
+        hasTrackedFace = true
+
+        if (processedFrameCount <= 10L || processedFrameCount % 30L == 0L) {
+            Log.d(
+                TAG,
+                "[MIND_DRIJI_EYE] FACE_SIZE_DIAG: frame=${frameWidth}x${frameHeight} bbox=[minX=%.3f, maxX=%.3f, minY=%.3f, maxY=%.3f] bboxW=%.3f bboxH=%.3f anatW=%.3f anatH=%.3f finalW=%.3f finalH=%.3f (min=%.2f) multi=${isMultipleFacesPresent}".format(
+                    primaryCandidate.minX, primaryCandidate.maxX, primaryCandidate.minY, primaryCandidate.maxY,
+                    primaryCandidate.bboxWidth, primaryCandidate.bboxHeight,
+                    primaryCandidate.anatWidth, primaryCandidate.anatHeight,
+                    primaryCandidate.faceWidth, primaryCandidate.faceHeight,
+                    MIN_FACE_HEIGHT_RATIO
+                )
+            )
+        }
+
+        if (lastFaceDetectedState != true) {
+            lastFaceDetectedState = true
+            Log.d(TAG, "[MIND_DRIJI_EYE] STATUS_CHANGE: Wajah terdeteksi (landmarks=${landmarks.size})")
+        }
+
+        // 3. Validasi Ukuran Wajah (Face Visibility / Distance Validation untuk jarak 30-45 cm)
+        if (primaryCandidate.faceHeight < MIN_FACE_HEIGHT_RATIO || primaryCandidate.faceWidth < MIN_FACE_WIDTH_RATIO) {
+            resetClosureState()
+            Log.w(
+                TAG,
+                "[MIND_DRIJI_EYE] MEASUREMENT_INVALID: face_distance (height=%.4f, width=%.4f, min=%.2f) - wajah terlalu jauh".format(
+                    primaryCandidate.faceHeight, primaryCandidate.faceWidth, MIN_FACE_HEIGHT_RATIO
+                )
+            )
             mainHandler.post {
                 dispatchStatusEvent(
                     faceDetected = true,
-                    multipleFaces = false,
+                    multipleFaces = isMultipleFacesPresent,
                     measurementValid = false,
                     currentEar = 0.0,
                     statusMessage = "Menyesuaikan posisi wajah"
@@ -293,35 +508,32 @@ class EyeMonitoringManager(private val context: Context) {
             return
         }
 
-        // 3. Validasi Ukuran Wajah (Face Visibility / Distance Validation)
-        val faceHeight = kotlin.math.abs(landmarks[CHIN].y() - landmarks[FOREHEAD].y())
-        val faceWidth = kotlin.math.abs(landmarks[RIGHT_CHEEK].x() - landmarks[LEFT_CHEEK].x())
-        if (faceHeight < MIN_FACE_HEIGHT_RATIO || faceWidth < MIN_FACE_WIDTH_RATIO) {
-            consecutiveClosureFrames = 0 // JANGAN dianggap fatigue!
-            Log.d(TAG, "[MIND_DRIJI_EYE] MEASUREMENT_INVALID: face_distance (faceHeight=$faceHeight, faceWidth=$faceWidth)")
-            mainHandler.post {
-                dispatchStatusEvent(
-                    faceDetected = true,
-                    multipleFaces = false,
-                    measurementValid = false,
-                    currentEar = 0.0,
-                    statusMessage = "Menyesuaikan posisi wajah"
+        // 4. Validasi Head Pose: Roll (Kemiringan garis mata terhadap horizontal)
+        val pLeft = landmarks[LEFT_EYE_OUTER]
+        val pRight = landmarks[RIGHT_EYE_OUTER]
+        val eyeDx = (pRight.x() - pLeft.x()).toDouble() * frameWidth
+        val eyeDy = (pRight.y() - pLeft.y()).toDouble() * frameHeight
+        val absDx = kotlin.math.abs(eyeDx)
+        val absDy = kotlin.math.abs(eyeDy)
+        // Hitung sudut kemiringan absolut garis mata terhadap garis horizontal layar
+        val rollDegrees = Math.toDegrees(kotlin.math.atan2(absDy, max(0.0001, absDx)))
+
+        if (processedFrameCount <= 10L || processedFrameCount % 30L == 0L || rollDegrees > MAX_ROLL_DEGREES) {
+            Log.d(
+                TAG,
+                "[MIND_DRIJI_EYE] POSE_ROLL_DIAG: pLeft=(${pLeft.x()}, ${pLeft.y()}) pRight=(${pRight.x()}, ${pRight.y()}) dx=$eyeDx dy=$eyeDy absDx=$absDx absDy=$absDy roll=%.2f deg (max=%.1f deg)".format(
+                    rollDegrees, MAX_ROLL_DEGREES
                 )
-            }
-            return
+            )
         }
 
-        // 4. Validasi Head Pose: Roll (Kemiringan kepala)
-        val dx = (landmarks[RIGHT_EYE_OUTER].x() - landmarks[LEFT_EYE_OUTER].x()).toDouble()
-        val dy = (landmarks[RIGHT_EYE_OUTER].y() - landmarks[LEFT_EYE_OUTER].y()).toDouble()
-        val rollDegrees = kotlin.math.abs(Math.toDegrees(kotlin.math.atan2(dy, dx)))
         if (rollDegrees > MAX_ROLL_DEGREES) {
-            consecutiveClosureFrames = 0 // Landmark miring tidak valid untuk EAR
-            Log.d(TAG, "[MIND_DRIJI_EYE] MEASUREMENT_INVALID: pose_roll ($rollDegrees deg > $MAX_ROLL_DEGREES deg)")
+            resetClosureState()
+            Log.d(TAG, "[MIND_DRIJI_EYE] MEASUREMENT_INVALID: pose_roll (roll=%.2f deg > %.1f deg)".format(rollDegrees, MAX_ROLL_DEGREES))
             mainHandler.post {
                 dispatchStatusEvent(
                     faceDetected = true,
-                    multipleFaces = false,
+                    multipleFaces = isMultipleFacesPresent,
                     measurementValid = false,
                     currentEar = 0.0,
                     statusMessage = "Menyesuaikan posisi wajah"
@@ -330,17 +542,17 @@ class EyeMonitoringManager(private val context: Context) {
             return
         }
 
-        // 5. Validasi Head Pose: Yaw (Tolehan kepala)
-        val eyeMidX = (landmarks[LEFT_EYE_OUTER].x() + landmarks[RIGHT_EYE_OUTER].x()) / 2.0
-        val eyeSpan = max(0.001, kotlin.math.abs(landmarks[RIGHT_EYE_OUTER].x() - landmarks[LEFT_EYE_OUTER].x()).toDouble())
+        // 5. Validasi Head Pose: Yaw (Tolehan kepala kiri/kanan)
+        val eyeMidX = (pLeft.x() + pRight.x()) / 2.0
+        val eyeSpan = max(0.001, kotlin.math.abs(pRight.x() - pLeft.x()).toDouble())
         val yawRatio = kotlin.math.abs((landmarks[NOSE_TIP].x() - eyeMidX) / eyeSpan)
         if (yawRatio > MAX_YAW_OFFSET_RATIO) {
-            consecutiveClosureFrames = 0
-            Log.d(TAG, "[MIND_DRIJI_EYE] MEASUREMENT_INVALID: pose_yaw ($yawRatio > $MAX_YAW_OFFSET_RATIO)")
+            resetClosureState()
+            Log.d(TAG, "[MIND_DRIJI_EYE] MEASUREMENT_INVALID: pose_yaw (yawRatio=%.3f > %.2f)".format(yawRatio, MAX_YAW_OFFSET_RATIO))
             mainHandler.post {
                 dispatchStatusEvent(
                     faceDetected = true,
-                    multipleFaces = false,
+                    multipleFaces = isMultipleFacesPresent,
                     measurementValid = false,
                     currentEar = 0.0,
                     statusMessage = "Menyesuaikan posisi wajah"
@@ -351,14 +563,14 @@ class EyeMonitoringManager(private val context: Context) {
 
         // 6. Validasi Head Pose: Pitch (Kemiringan kepala atas/bawah saat menatap layar HP)
         val upperFaceDist = kotlin.math.abs(landmarks[NOSE_TIP].y() - landmarks[FOREHEAD].y())
-        val pitchRatio = upperFaceDist / max(0.001f, faceHeight)
+        val pitchRatio = upperFaceDist / max(0.001f, primaryCandidate.faceHeight)
         if (pitchRatio < MIN_PITCH_RATIO || pitchRatio > MAX_PITCH_RATIO) {
-            consecutiveClosureFrames = 0
-            Log.d(TAG, "[MIND_DRIJI_EYE] MEASUREMENT_INVALID: pose_pitch ($pitchRatio out of range $MIN_PITCH_RATIO..$MAX_PITCH_RATIO)")
+            resetClosureState()
+            Log.d(TAG, "[MIND_DRIJI_EYE] MEASUREMENT_INVALID: pose_pitch (pitchRatio=%.3f out of [%.2f..%.2f])".format(pitchRatio, MIN_PITCH_RATIO, MAX_PITCH_RATIO))
             mainHandler.post {
                 dispatchStatusEvent(
                     faceDetected = true,
-                    multipleFaces = false,
+                    multipleFaces = isMultipleFacesPresent,
                     measurementValid = false,
                     currentEar = 0.0,
                     statusMessage = "Menyesuaikan posisi wajah"
@@ -367,24 +579,30 @@ class EyeMonitoringManager(private val context: Context) {
             return
         }
 
-        // 7. Frame valid: Hitung EAR (Mata pengguna yang melihat layar tetap terukur akurat)
-        // MediaPipe Face Mesh Landmark Indices:
-        // Left Eye: Outer=33, Inner=133, Top1=160, Bottom1=144, Top2=158, Bottom2=153
-        // Right Eye: Inner=362, Outer=263, Top1=385, Bottom1=380, Top2=387, Bottom2=373
-        val leftDistV1 = calculateDistance(landmarks[LEFT_EYE_TOP_1].x(), landmarks[LEFT_EYE_TOP_1].y(), landmarks[LEFT_EYE_BOTTOM_1].x(), landmarks[LEFT_EYE_BOTTOM_1].y())
-        val leftDistV2 = calculateDistance(landmarks[LEFT_EYE_TOP_2].x(), landmarks[LEFT_EYE_TOP_2].y(), landmarks[LEFT_EYE_BOTTOM_2].x(), landmarks[LEFT_EYE_BOTTOM_2].y())
-        val leftDistH = calculateDistance(landmarks[LEFT_EYE_OUTER].x(), landmarks[LEFT_EYE_OUTER].y(), landmarks[LEFT_EYE_INNER].x(), landmarks[LEFT_EYE_INNER].y())
+        // 7. Hitung EAR berbasis Euclidean pixel distance (Soukupová & Čech formula)
+        // Menjamin rasio aspek citra tidak mendistorsi jarak vertikal kelopak mata
+        val leftDistV1 = calculateDistance(landmarks[LEFT_EYE_TOP_1].x(), landmarks[LEFT_EYE_TOP_1].y(), landmarks[LEFT_EYE_BOTTOM_1].x(), landmarks[LEFT_EYE_BOTTOM_1].y(), frameWidth, frameHeight)
+        val leftDistV2 = calculateDistance(landmarks[LEFT_EYE_TOP_2].x(), landmarks[LEFT_EYE_TOP_2].y(), landmarks[LEFT_EYE_BOTTOM_2].x(), landmarks[LEFT_EYE_BOTTOM_2].y(), frameWidth, frameHeight)
+        val leftDistH = calculateDistance(landmarks[LEFT_EYE_OUTER].x(), landmarks[LEFT_EYE_OUTER].y(), landmarks[LEFT_EYE_INNER].x(), landmarks[LEFT_EYE_INNER].y(), frameWidth, frameHeight)
 
-        val rightDistV1 = calculateDistance(landmarks[RIGHT_EYE_TOP_1].x(), landmarks[RIGHT_EYE_TOP_1].y(), landmarks[RIGHT_EYE_BOTTOM_1].x(), landmarks[RIGHT_EYE_BOTTOM_1].y())
-        val rightDistV2 = calculateDistance(landmarks[RIGHT_EYE_TOP_2].x(), landmarks[RIGHT_EYE_TOP_2].y(), landmarks[RIGHT_EYE_BOTTOM_2].x(), landmarks[RIGHT_EYE_BOTTOM_2].y())
-        val rightDistH = calculateDistance(landmarks[RIGHT_EYE_INNER].x(), landmarks[RIGHT_EYE_INNER].y(), landmarks[RIGHT_EYE_OUTER].x(), landmarks[RIGHT_EYE_OUTER].y())
+        val rightDistV1 = calculateDistance(landmarks[RIGHT_EYE_TOP_1].x(), landmarks[RIGHT_EYE_TOP_1].y(), landmarks[RIGHT_EYE_BOTTOM_1].x(), landmarks[RIGHT_EYE_BOTTOM_1].y(), frameWidth, frameHeight)
+        val rightDistV2 = calculateDistance(landmarks[RIGHT_EYE_TOP_2].x(), landmarks[RIGHT_EYE_TOP_2].y(), landmarks[RIGHT_EYE_BOTTOM_2].x(), landmarks[RIGHT_EYE_BOTTOM_2].y(), frameWidth, frameHeight)
+        val rightDistH = calculateDistance(landmarks[RIGHT_EYE_INNER].x(), landmarks[RIGHT_EYE_INNER].y(), landmarks[RIGHT_EYE_OUTER].x(), landmarks[RIGHT_EYE_OUTER].y(), frameWidth, frameHeight)
 
-        if (leftDistH <= 0.0001 || rightDistH <= 0.0001) {
-            Log.w(TAG, "[MIND_DRIJI_EYE] EAR_INVALID: horizontalDistance=0 (leftDistH=$leftDistH, rightDistH=$rightDistH)")
+        val leftEar = if (leftDistH > 0.001) (leftDistV1 + leftDistV2) / (2.0 * leftDistH) else -1.0
+        val rightEar = if (rightDistH > 0.001) (rightDistV1 + rightDistV2) / (2.0 * rightDistH) else -1.0
+
+        // Validasi fisik nilai EAR wajar (0.05..0.60)
+        val leftValid = !leftEar.isNaN() && !leftEar.isInfinite() && leftEar in 0.05..0.60
+        val rightValid = !rightEar.isNaN() && !rightEar.isInfinite() && rightEar in 0.05..0.60
+
+        if (!leftValid && !rightValid) {
+            resetClosureState()
+            Log.w(TAG, "[MIND_DRIJI_EYE] EAR_INVALID: leftEar=$leftEar rightEar=$rightEar")
             mainHandler.post {
                 dispatchStatusEvent(
                     faceDetected = true,
-                    multipleFaces = false,
+                    multipleFaces = isMultipleFacesPresent,
                     measurementValid = false,
                     currentEar = 0.0,
                     statusMessage = "Menyesuaikan posisi wajah"
@@ -393,85 +611,167 @@ class EyeMonitoringManager(private val context: Context) {
             return
         }
 
-        val leftEar = (leftDistV1 + leftDistV2) / (2.0 * leftDistH)
-        val rightEar = (rightDistV1 + rightDistV2) / (2.0 * rightDistH)
-
-        if (leftEar.isNaN() || leftEar.isInfinite() || rightEar.isNaN() || rightEar.isInfinite()) {
-            Log.w(TAG, "[MIND_DRIJI_EYE] EAR_INVALID: NaN or Infinite (leftEar=$leftEar, rightEar=$rightEar)")
-            mainHandler.post {
-                dispatchStatusEvent(
-                    faceDetected = true,
-                    multipleFaces = false,
-                    measurementValid = false,
-                    currentEar = 0.0,
-                    statusMessage = "Menyesuaikan posisi wajah"
-                )
-            }
-            return
+        // Pengukuran kedua mata dengan toleransi jika salah satu mata terhalang sebagian
+        val avgEar = when {
+            leftValid && rightValid -> (leftEar + rightEar) / 2.0
+            leftValid -> leftEar
+            else -> rightEar
         }
 
-        val avgEar = (leftEar + rightEar) / 2.0
-
-        // Akumulasi metrik statistik HANYA dari frame valid
+        // Akumulasi metrik statistik sesi
         totalEarSum += avgEar
         earMeasurementCount++
         if (avgEar < minRecordedEar) {
             minRecordedEar = avgEar
         }
 
-        // Deteksi behavioral closure & blink berbasis stabilitas temporal
-        val isClosed = avgEar < TECHNICAL_EAR_CLOSURE_THRESHOLD
-        var blinkDetected = false
-        if (isClosed) {
-            consecutiveClosureFrames++
-            if (consecutiveClosureFrames == 3) {
-                // Penutupan mata berkepanjangan (indikasi eye closure event)
-                eyeClosureEventsCount++
-            }
-        } else {
-            if (consecutiveClosureFrames in 1..2) {
-                // Penutupan cepat (kedipan normal)
-                totalBlinkCount++
-                blinkDetected = true
-            }
-            consecutiveClosureFrames = 0
+        // Log koordinat landmark kedua mata dan hasil EAR
+        if (processedFrameCount <= 10L || processedFrameCount % 30L == 0L) {
+            Log.d(
+                TAG,
+                "[MIND_DRIJI_EYE] EYE_METRICS_DIAG: L_Ear=%.3f R_Ear=%.3f avgEar=%.3f L_V=(%.1f, %.1f) L_H=%.1f R_V=(%.1f, %.1f) R_H=%.1f".format(
+                    leftEar, rightEar, avgEar, leftDistV1, leftDistV2, leftDistH, rightDistV1, rightDistV2, rightDistH
+                )
+            )
         }
 
-        Log.d(
-            TAG,
-            "[MIND_DRIJI_EYE] frameReceived=true faceDetected=true landmarkCount=${landmarks.size} leftEyeLandmarks=6 rightEyeLandmarks=6 ear=$avgEar measurementValid=true blinkDetected=$blinkDetected eyeClosed=$isClosed"
-        )
+        // 8. State Machine Deteksi Kedipan & Prolonged Closure
+        val isClosed = avgEar < TECHNICAL_EAR_CLOSURE_THRESHOLD
+        var blinkDetected = false
+
+        if (isClosed) {
+            if (!isEyeCurrentlyClosed) {
+                // Transisi: TERBUKA -> TERTUTUP (Mata mulai menutup)
+                isEyeCurrentlyClosed = true
+                closureStartTimeMs = frameTimestamp
+                closureFrameCount = 1
+                prolongedClosureReported = false
+                Log.d(TAG, "[MIND_DRIJI_EYE] TRANSISI: Mata menutup (EAR=%.3f, threshold=%.2f)".format(avgEar, TECHNICAL_EAR_CLOSURE_THRESHOLD))
+            } else {
+                // Keadaan berkelanjutan: Mata masih tertutup
+                closureFrameCount++
+                val closedDuration = frameTimestamp - closureStartTimeMs
+                if (closedDuration >= PROLONGED_CLOSURE_THRESHOLD_MS && !prolongedClosureReported) {
+                    eyeClosureEventsCount++
+                    prolongedClosureReported = true
+                    Log.d(
+                        TAG,
+                        "[MIND_DRIJI_EYE] PROLONGED_CLOSURE: durasi=${closedDuration}ms frames=$closureFrameCount total=$eyeClosureEventsCount"
+                    )
+                }
+            }
+        } else {
+            if (isEyeCurrentlyClosed) {
+                // Transisi: TERTUTUP -> TERBUKA (Mata membuka kembali)
+                val closedDuration = frameTimestamp - closureStartTimeMs
+                val timeSinceLastBlink = frameTimestamp - lastBlinkTimestamp
+
+                // Kedipan valid: durasi wajar (60-450ms atau 1-4 frame) dan bukan penutupan berkepanjangan
+                val isValidDuration = (closedDuration in MIN_BLINK_DURATION_MS..MAX_BLINK_DURATION_MS) ||
+                        (closureFrameCount in 1..4 && closedDuration <= MAX_BLINK_DURATION_MS + 100L)
+
+                if (!prolongedClosureReported && isValidDuration && timeSinceLastBlink >= MIN_INTER_BLINK_INTERVAL_MS) {
+                    totalBlinkCount++
+                    lastBlinkTimestamp = frameTimestamp
+                    blinkDetected = true
+                    Log.d(
+                        TAG,
+                        "[MIND_DRIJI_EYE] BLINK_DETECTED: durasi=${closedDuration}ms frames=$closureFrameCount totalBlinks=$totalBlinkCount EAR=%.3f".format(avgEar)
+                    )
+                } else if (prolongedClosureReported) {
+                    Log.d(
+                        TAG,
+                        "[MIND_DRIJI_EYE] REOPEN_AFTER_PROLONGED: durasi=${closedDuration}ms (bukan kedipan tunggal)"
+                    )
+                }
+
+                // Kembalikan ke baseline terbuka
+                isEyeCurrentlyClosed = false
+                closureFrameCount = 0
+                prolongedClosureReported = false
+            }
+        }
+
+        // 9. Log diagnostik periodik berkala (setiap 2 detik agar logcat tidak terbebani)
+        if (frameTimestamp - lastDiagnosticLogTime >= 2000L) {
+            lastDiagnosticLogTime = frameTimestamp
+            Log.i(
+                TAG,
+                "[MIND_DRIJI_EYE_DIAG] frame=$processedFrameCount ear=%.3f (L=%.3f, R=%.3f) eyeClosed=$isClosed blinks=$totalBlinkCount closures=$eyeClosureEventsCount landmarks=${landmarks.size} multiFace=$isMultipleFacesPresent".format(
+                    avgEar, leftEar, rightEar
+                )
+            )
+        }
 
         val status = if (isClosed) "Indikasi mata tertutup / berkedip" else "Mata terbuka normal"
 
         mainHandler.post {
             dispatchStatusEvent(
                 faceDetected = true,
-                multipleFaces = false,
+                multipleFaces = isMultipleFacesPresent,
                 measurementValid = true,
                 currentEar = avgEar,
-                statusMessage = status
+                statusMessage = status,
+                forceLog = blinkDetected
             )
         }
     }
 
-    private fun calculateDistance(x1: Float, y1: Float, x2: Float, y2: Float): Double {
-        return hypot((x1 - x2).toDouble(), (y1 - y2).toDouble())
+    /**
+     * Mengatur ulang status penutupan mata saat wajah hilang atau landmark tidak valid,
+     * sehingga kehilangan wajah tidak pernah menghasilkan kedipan palsu.
+     */
+    private fun resetClosureState() {
+        if (isEyeCurrentlyClosed) {
+            Log.d(TAG, "[MIND_DRIJI_EYE] State reset: wajah hilang / landmark tidak valid saat mata tertutup")
+        }
+        isEyeCurrentlyClosed = false
+        closureFrameCount = 0
+        prolongedClosureReported = false
+    }
+
+    /**
+     * Mengatur ulang tracking wajah pengguna utama.
+     */
+    private fun resetTrackedFace() {
+        hasTrackedFace = false
+        trackedFaceCenterX = 0.5f
+        trackedFaceCenterY = 0.5f
+        lastTrackedFaceTime = 0L
+    }
+
+    /**
+     * Menghitung jarak Euclidean antar dua titik dalam koordinat piksel gambar.
+     */
+    private fun calculateDistance(
+        x1: Float,
+        y1: Float,
+        x2: Float,
+        y2: Float,
+        width: Int = 1,
+        height: Int = 1
+    ): Double {
+        val dx = (x1 - x2).toDouble() * width
+        val dy = (y1 - y2).toDouble() * height
+        return hypot(dx, dy)
     }
 
     /**
      * Mengirim status snapshot realtime ke Flutter via EventChannel.
+     * Menggunakan throttled logging untuk meminimalkan beban I/O log.
      */
     private fun dispatchStatusEvent(
         faceDetected: Boolean,
         multipleFaces: Boolean,
         measurementValid: Boolean = false,
         currentEar: Double,
-        statusMessage: String
+        statusMessage: String,
+        forceLog: Boolean = false
     ) {
         val sink = eventSink ?: return
+        val now = System.currentTimeMillis()
         val currentAverageEar = if (earMeasurementCount > 0) totalEarSum / earMeasurementCount else 0.0
-        val durationMillis = max(0L, System.currentTimeMillis() - sessionStartTime)
+        val durationMillis = max(0L, now - sessionStartTime)
 
         val payload = mapOf(
             "type" to "status_update",
@@ -490,6 +790,15 @@ class EyeMonitoringManager(private val context: Context) {
 
         try {
             sink.success(payload)
+            if (forceLog || now - lastDispatchLogTime >= 2000L) {
+                lastDispatchLogTime = now
+                Log.d(
+                    TAG,
+                    "[MIND_DRIJI_EYE] EventChannel dispatched: ear=%.3f blinks=%d closures=%d valid=%b multi=%b msg=%s".format(
+                        currentEar, totalBlinkCount, eyeClosureEventsCount, measurementValid, multipleFaces, statusMessage
+                    )
+                )
+            }
         } catch (e: Exception) {
             Log.e(TAG, "Gagal mengirim status_update ke Flutter EventChannel: ${e.localizedMessage}")
         }

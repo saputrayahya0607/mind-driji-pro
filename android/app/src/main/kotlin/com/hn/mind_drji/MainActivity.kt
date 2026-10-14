@@ -316,7 +316,7 @@ class MainActivity : FlutterActivity() {
                         return@setMethodCallHandler
                     }
                     try {
-                        val intervalMs = (call.argument<Number>("intervalMillis"))?.toLong() ?: (30 * 60 * 1000L)
+                        val intervalMs = (call.argument<Number>("intervalMillis"))?.toLong() ?: (15 * 60 * 1000L)
                         val sessionDurationMs = (call.argument<Number>("sessionDurationMillis"))?.toLong() ?: (60 * 1000L)
                         val userId = call.argument<String>("userId") ?: "local_user"
                         val deviceId = call.argument<String>("deviceId") ?: "unknown_device"
@@ -581,7 +581,7 @@ class MainActivity : FlutterActivity() {
                             .putBoolean("focus_mode_active", true)
                             .putLong("focus_mode_ended_at", endTimestamp)
                             .remove("cancelled_at")
-                            .apply()
+                            .commit()
 
                         showInterventionNotification(
                             "Jeda Digital Aktif",
@@ -605,8 +605,9 @@ class MainActivity : FlutterActivity() {
                             .putString("status", "inactive")
                             .putBoolean("focus_mode_active", false)
                             .putLong("focus_mode_ended_at", 0L)
+                            .putLong("ended_at", 0L)
                             .remove("cancelled_at")
-                            .apply()
+                            .commit()
 
                         cancelInterventionNotification()
 
@@ -638,7 +639,7 @@ class MainActivity : FlutterActivity() {
                             .putBoolean("focus_mode_active", true)
                             .putLong("focus_mode_ended_at", endTimestamp)
                             .remove("cancelled_at")
-                            .apply()
+                            .commit()
 
                         showInterventionNotification(
                             "Focus Mode Aktif",
@@ -662,8 +663,9 @@ class MainActivity : FlutterActivity() {
                             .putString("status", "inactive")
                             .putBoolean("focus_mode_active", false)
                             .putLong("focus_mode_ended_at", 0L)
+                            .putLong("ended_at", 0L)
                             .remove("cancelled_at")
-                            .apply()
+                            .commit()
 
                         cancelInterventionNotification()
 
@@ -711,7 +713,8 @@ class MainActivity : FlutterActivity() {
                                     .putString("status", "inactive")
                                     .putBoolean("focus_mode_active", false)
                                     .putLong("focus_mode_ended_at", 0L)
-                                    .apply()
+                                    .putLong("ended_at", 0L)
+                                    .commit()
                                 cancelInterventionNotification()
                             }
                             result.success(null)
@@ -794,6 +797,7 @@ class MainActivity : FlutterActivity() {
         try {
             val notificationManager = getSystemService(Context.NOTIFICATION_SERVICE) as? NotificationManager
             notificationManager?.cancel(INTERVENTION_NOTIFICATION_ID)
+            notificationManager?.cancel(3002)
         } catch (e: Exception) {
             android.util.Log.w("MIND_DRIJI_INTERVENTION", "Gagal membatalkan notifikasi: ${e.localizedMessage}")
         }

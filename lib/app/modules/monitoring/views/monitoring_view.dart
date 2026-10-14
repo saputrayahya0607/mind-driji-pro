@@ -18,14 +18,21 @@ class MonitoringView extends GetView<MonitoringController> {
       appBar: AppBar(
         title: const Text('Monitoring'),
         centerTitle: true,
-        backgroundColor: AppColors.background,
+        backgroundColor: Colors.transparent,
         elevation: 0,
         scrolledUnderElevation: 0,
+        titleTextStyle: const TextStyle(
+          fontSize: 18,
+          fontWeight: FontWeight.w800,
+          color: AppColors.navy,
+          letterSpacing: -0.2,
+        ),
       ),
       body: SafeArea(
         child: RefreshIndicator(
           onRefresh: controller.loadData,
-          color: AppColors.primary,
+          color: AppColors.teal,
+          backgroundColor: Colors.white,
           child: SingleChildScrollView(
             physics: const AlwaysScrollableScrollPhysics(),
             padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
@@ -37,8 +44,8 @@ class MonitoringView extends GetView<MonitoringController> {
                   'Visualisasi Monitoring',
                   style: TextStyle(
                     fontSize: 22,
-                    fontWeight: FontWeight.w700,
-                    color: AppColors.textPrimary,
+                    fontWeight: FontWeight.w800,
+                    color: AppColors.navy,
                     letterSpacing: -0.3,
                   ),
                 ),
@@ -71,7 +78,7 @@ class MonitoringView extends GetView<MonitoringController> {
                           height: 24,
                           child: CircularProgressIndicator(
                             strokeWidth: 2.5,
-                            color: AppColors.primary,
+                            color: AppColors.teal,
                           ),
                         ),
                       ),
@@ -80,16 +87,16 @@ class MonitoringView extends GetView<MonitoringController> {
                   return const SizedBox.shrink();
                 }),
 
-                // 1. Screen Time Summary Card & Chart
+                // 1. Doomscrolling Hero Card ("Pola Scrolling" - Fitur Utama MIND DRIJI)
+                _buildDoomscrollCard(),
+                const SizedBox(height: 16),
+
+                // 2. Screen Time Summary Card & Chart ("Total Screen Time")
                 _buildScreenTimeCard(),
                 const SizedBox(height: 16),
 
-                // 2. App Usage Card (Top 5 Apps)
+                // 3. App Usage Card (Top 5 Apps - "Penggunaan Aplikasi")
                 _buildAppUsageCard(),
-                const SizedBox(height: 16),
-
-                // 3. Doomscrolling Card ("Pola Scrolling")
-                _buildDoomscrollCard(),
                 const SizedBox(height: 16),
 
                 // 4. Eye Monitoring Card ("Monitoring Mata")
@@ -113,11 +120,18 @@ class MonitoringView extends GetView<MonitoringController> {
   // ===========================================================================
   Widget _buildPeriodTabs() {
     return Container(
-      padding: const EdgeInsets.all(4),
+      padding: const EdgeInsets.all(5),
       decoration: BoxDecoration(
-        color: AppColors.surfaceContainer,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: AppColors.border, width: 1),
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: const Color(0xFFE2E8F0), width: 1),
+        boxShadow: [
+          BoxShadow(
+            color: AppColors.navy.withValues(alpha: 0.03),
+            blurRadius: 10,
+            offset: const Offset(0, 2),
+          ),
+        ],
       ),
       child: Obx(() {
         final current = controller.selectedPeriod.value;
@@ -146,12 +160,12 @@ class MonitoringView extends GetView<MonitoringController> {
           duration: const Duration(milliseconds: 200),
           padding: const EdgeInsets.symmetric(vertical: 9),
           decoration: BoxDecoration(
-            color: isSelected ? AppColors.card : Colors.transparent,
-            borderRadius: BorderRadius.circular(10),
+            color: isSelected ? AppColors.softMint : Colors.transparent,
+            borderRadius: BorderRadius.circular(12),
             boxShadow: isSelected
                 ? [
                     BoxShadow(
-                      color: AppColors.secondary.withValues(alpha: 0.05),
+                      color: AppColors.navy.withValues(alpha: 0.05),
                       blurRadius: 4,
                       offset: const Offset(0, 2),
                     )
@@ -163,8 +177,8 @@ class MonitoringView extends GetView<MonitoringController> {
               label,
               style: TextStyle(
                 fontSize: 13,
-                fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
-                color: isSelected ? AppColors.primary : AppColors.textSecondary,
+                fontWeight: isSelected ? FontWeight.w800 : FontWeight.w600,
+                color: isSelected ? AppColors.navy : AppColors.textSecondary,
               ),
             ),
           ),

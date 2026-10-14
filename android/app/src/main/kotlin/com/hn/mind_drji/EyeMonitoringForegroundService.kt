@@ -26,7 +26,7 @@ import io.flutter.plugin.common.EventChannel
  * FITUR & KEAMANAN:
  * 1. Menggunakan foreground service type: camera (Android 14+ / API 34+ compliant).
  * 2. Hanya aktif setelah user memberikan camera permission dan eksplisit memilih "Aktifkan Monitoring".
- * 3. Kamera TIDAK MENYALA TERUS: kamera hanya melakukan sampling berkala (default 1 menit tiap 30 menit).
+ * 3. Kamera TIDAK MENYALA TERUS: kamera hanya melakukan sampling berkala (default 1 menit tiap 15 menit).
  * 4. Saat di luar sesi sampling, kamera dilepas (unbindAll, camera OFF).
  * 5. Tetap berjalan saat pengguna membuka aplikasi lain (TikTok, Instagram, YouTube, WhatsApp, dll).
  * 6. Stop total saat user memilih "Matikan Monitoring" atau saat user logout.
@@ -42,7 +42,7 @@ class EyeMonitoringForegroundService : Service(), LifecycleOwner {
     private var wakeLock: PowerManager.WakeLock? = null
 
     // Konfigurasi & State
-    private var intervalMillis: Long = 30 * 60 * 1000L // Default: 30 menit
+    private var intervalMillis: Long = 15 * 60 * 1000L // Default: 15 menit (900.000 ms)
     private var sessionDurationMillis: Long = 60 * 1000L // Default: 1 menit
     private var userId: String = "local_user"
     private var deviceId: String = "unknown_device"

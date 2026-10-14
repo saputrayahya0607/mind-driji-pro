@@ -14,14 +14,20 @@ class EyeMonitoringView extends GetView<EyeMonitoringController> {
       appBar: AppBar(
         title: const Text('Eye Monitoring'),
         centerTitle: true,
-        backgroundColor: AppColors.background,
+        backgroundColor: Colors.transparent,
         elevation: 0,
         scrolledUnderElevation: 0,
+        titleTextStyle: const TextStyle(
+          fontSize: 18,
+          fontWeight: FontWeight.w800,
+          color: AppColors.navy,
+          letterSpacing: -0.2,
+        ),
         leading: IconButton(
           icon: const Icon(
             Icons.arrow_back_rounded,
             size: 22,
-            color: AppColors.textPrimary,
+            color: AppColors.navy,
           ),
           constraints: const BoxConstraints(minWidth: 48, minHeight: 48),
           onPressed: () => Get.back(),
@@ -32,16 +38,20 @@ class EyeMonitoringView extends GetView<EyeMonitoringController> {
         top: false,
         child: Obx(() {
           if (controller.isLoading.value && !controller.isMonitoring.value) {
-            return const Center(
+            return Center(
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  CircularProgressIndicator(
-                    color: AppColors.primary,
-                    strokeWidth: 3,
+                  SizedBox(
+                    width: 32,
+                    height: 32,
+                    child: CircularProgressIndicator(
+                      color: AppColors.teal,
+                      strokeWidth: 3,
+                    ),
                   ),
-                  SizedBox(height: 16),
-                  Text(
+                  const SizedBox(height: 16),
+                  const Text(
                     'Menyiapkan pemantauan mata...',
                     style: TextStyle(
                       color: AppColors.textSecondary,
@@ -55,8 +65,8 @@ class EyeMonitoringView extends GetView<EyeMonitoringController> {
           }
 
           return RefreshIndicator(
-            color: AppColors.primary,
-            backgroundColor: AppColors.card,
+            color: AppColors.teal,
+            backgroundColor: Colors.white,
             onRefresh: () async {
               await controller.checkPermissionAndStatus();
               await controller.loadStoredSessions();
@@ -94,9 +104,9 @@ class EyeMonitoringView extends GetView<EyeMonitoringController> {
         Text(
           'Pemantauan Mata',
           style: TextStyle(
-            fontSize: 20,
-            fontWeight: FontWeight.w700,
-            color: AppColors.textPrimary,
+            fontSize: 22,
+            fontWeight: FontWeight.w800,
+            color: AppColors.navy,
             letterSpacing: -0.3,
           ),
         ),
@@ -116,35 +126,35 @@ class EyeMonitoringView extends GetView<EyeMonitoringController> {
   Widget _buildSyncInfoCard() {
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
       decoration: BoxDecoration(
-        color: AppColors.successContainer.withValues(alpha: 0.6),
-        borderRadius: BorderRadius.circular(16),
+        color: AppColors.softMint,
+        borderRadius: BorderRadius.circular(18),
         border: Border.all(
-          color: AppColors.success.withValues(alpha: 0.25),
+          color: AppColors.teal.withValues(alpha: 0.25),
           width: 1,
         ),
+        boxShadow: [
+          BoxShadow(
+            color: AppColors.teal.withValues(alpha: 0.05),
+            blurRadius: 10,
+            offset: const Offset(0, 3),
+          ),
+        ],
       ),
       child: Row(
         children: [
           Container(
-            width: 36,
-            height: 36,
-            decoration: BoxDecoration(
-              color: AppColors.card,
+            width: 38,
+            height: 38,
+            decoration: const BoxDecoration(
+              color: Colors.white,
               shape: BoxShape.circle,
-              boxShadow: [
-                BoxShadow(
-                  color: AppColors.success.withValues(alpha: 0.12),
-                  blurRadius: 6,
-                  offset: const Offset(0, 2),
-                ),
-              ],
             ),
             child: const Icon(
               Icons.schedule_rounded,
               size: 20,
-              color: AppColors.success,
+              color: AppColors.teal,
             ),
           ),
           const SizedBox(width: 12),
@@ -155,17 +165,17 @@ class EyeMonitoringView extends GetView<EyeMonitoringController> {
                 Text(
                   'Penyimpanan Lokal Aktif',
                   style: TextStyle(
-                    fontSize: 13,
-                    fontWeight: FontWeight.w700,
-                    color: AppColors.textPrimary,
+                    fontSize: 13.5,
+                    fontWeight: FontWeight.w800,
+                    color: AppColors.navy,
                   ),
                 ),
                 SizedBox(height: 2),
                 Text(
                   'Data pemantauan mata tersimpan aman di perangkat. Sinkronisasi otomatis ke cloud berjalan setiap pukul 23:59 WIB.',
                   style: TextStyle(
-                    fontSize: 11,
-                    color: AppColors.textSecondary,
+                    fontSize: 11.5,
+                    color: AppColors.navy,
                     height: 1.35,
                   ),
                 ),
@@ -177,7 +187,7 @@ class EyeMonitoringView extends GetView<EyeMonitoringController> {
     );
   }
 
-  /// Kartu utama pemantauan mata (Belum Aktif / Aktif Berjalan Otomatis / Sedang Memantau)
+  /// Kartu utama pemantauan mata
   Widget _buildMonitoringStatusCard() {
     return Obx(() {
       final isEnabled = controller.isMonitoringEnabled.value;
@@ -189,26 +199,25 @@ class EyeMonitoringView extends GetView<EyeMonitoringController> {
       final nextSchedule = controller.nextScheduledAt.value;
       final lastCompleted = controller.lastSessionCompletedAt.value;
 
-      // Color scheme based on state
       final Color borderColor;
       final Color shadowColor;
       if (isSessionRunning) {
-        borderColor = AppColors.primary;
-        shadowColor = AppColors.primary.withValues(alpha: 0.12);
+        borderColor = AppColors.teal;
+        shadowColor = AppColors.teal.withValues(alpha: 0.12);
       } else if (isEnabled) {
         borderColor = AppColors.success;
         shadowColor = AppColors.success.withValues(alpha: 0.08);
       } else {
-        borderColor = AppColors.border;
-        shadowColor = AppColors.secondary.withValues(alpha: 0.04);
+        borderColor = const Color(0xFFE2E8F0);
+        shadowColor = AppColors.navy.withValues(alpha: 0.04);
       }
 
       return Container(
         width: double.infinity,
-        padding: const EdgeInsets.all(18),
+        padding: const EdgeInsets.all(20),
         decoration: BoxDecoration(
-          color: AppColors.card,
-          borderRadius: BorderRadius.circular(20),
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(22),
           border: Border.all(
             color: borderColor,
             width: (isSessionRunning || isEnabled) ? 1.5 : 1.0,
@@ -232,14 +241,14 @@ class EyeMonitoringView extends GetView<EyeMonitoringController> {
                   height: 10,
                   decoration: BoxDecoration(
                     color: isSessionRunning
-                        ? AppColors.primary
+                        ? AppColors.teal
                         : (isEnabled ? AppColors.success : AppColors.textTertiary),
                     shape: BoxShape.circle,
                     boxShadow: (isSessionRunning || isEnabled)
                         ? [
                             BoxShadow(
                               color: (isSessionRunning
-                                      ? AppColors.primary
+                                      ? AppColors.teal
                                       : AppColors.success)
                                   .withValues(alpha: 0.4),
                               blurRadius: 6,
@@ -255,10 +264,10 @@ class EyeMonitoringView extends GetView<EyeMonitoringController> {
                       ? 'Sedang Memantau'
                       : (isEnabled ? 'Monitoring Aktif' : 'Monitoring belum aktif'),
                   style: TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w700,
+                    fontSize: 14.5,
+                    fontWeight: FontWeight.w800,
                     color: isSessionRunning
-                        ? AppColors.primary
+                        ? AppColors.teal
                         : (isEnabled ? AppColors.onSuccessContainer : AppColors.textSecondary),
                   ),
                 ),
@@ -267,8 +276,8 @@ class EyeMonitoringView extends GetView<EyeMonitoringController> {
                   padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                   decoration: BoxDecoration(
                     color: isSessionRunning
-                        ? AppColors.primaryContainer
-                        : (isEnabled ? AppColors.successContainer : AppColors.surfaceContainer),
+                        ? AppColors.softMint
+                        : (isEnabled ? AppColors.successContainer : const Color(0xFFF1F5F9)),
                     borderRadius: BorderRadius.circular(8),
                   ),
                   child: Text(
@@ -279,7 +288,7 @@ class EyeMonitoringView extends GetView<EyeMonitoringController> {
                       fontSize: 11,
                       fontWeight: FontWeight.w700,
                       color: isSessionRunning
-                          ? AppColors.primary
+                          ? AppColors.navy
                           : (isEnabled ? AppColors.onSuccessContainer : AppColors.textSecondary),
                     ),
                   ),
@@ -293,9 +302,9 @@ class EyeMonitoringView extends GetView<EyeMonitoringController> {
               const Text(
                 'Kamera aktif untuk pemantauan mata.',
                 style: TextStyle(
-                  fontSize: 13,
-                  fontWeight: FontWeight.w600,
-                  color: AppColors.textPrimary,
+                  fontSize: 13.5,
+                  fontWeight: FontWeight.w700,
+                  color: AppColors.navy,
                 ),
               ),
               const SizedBox(height: 12),
@@ -314,7 +323,7 @@ class EyeMonitoringView extends GetView<EyeMonitoringController> {
                                   : Icons.face_outlined,
                               size: 18,
                               color: faceDet
-                                  ? (multiFace ? AppColors.warning : AppColors.primary)
+                                  ? (multiFace ? AppColors.warning : AppColors.teal)
                                   : AppColors.textTertiary,
                             ),
                             const SizedBox(width: 6),
@@ -325,9 +334,9 @@ class EyeMonitoringView extends GetView<EyeMonitoringController> {
                                     : 'Mencari Wajah...',
                                 style: TextStyle(
                                   fontSize: 13,
-                                  fontWeight: FontWeight.w600,
+                                  fontWeight: FontWeight.w700,
                                   color: faceDet
-                                      ? (multiFace ? AppColors.warning : AppColors.textPrimary)
+                                      ? (multiFace ? AppColors.warning : AppColors.navy)
                                       : AppColors.textSecondary,
                                 ),
                                 maxLines: 1,
@@ -357,7 +366,7 @@ class EyeMonitoringView extends GetView<EyeMonitoringController> {
                       style: const TextStyle(
                         fontSize: 24,
                         fontWeight: FontWeight.w800,
-                        color: AppColors.secondary,
+                        color: AppColors.navy,
                         letterSpacing: 0.5,
                       ),
                     ),
@@ -368,9 +377,9 @@ class EyeMonitoringView extends GetView<EyeMonitoringController> {
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 12),
                 decoration: BoxDecoration(
-                  color: AppColors.surfaceContainerLow,
+                  color: AppColors.background,
                   borderRadius: BorderRadius.circular(14),
-                  border: Border.all(color: AppColors.border),
+                  border: Border.all(color: const Color(0xFFE2E8F0)),
                 ),
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.spaceAround,
@@ -383,14 +392,14 @@ class EyeMonitoringView extends GetView<EyeMonitoringController> {
                             : '-',
                       ),
                     ),
-                    Container(width: 1, height: 28, color: AppColors.border),
+                    Container(width: 1, height: 28, color: const Color(0xFFE2E8F0)),
                     Expanded(
                       child: _buildMetricItem(
                         label: 'Kedipan',
                         value: '${controller.blinkCount.value}',
                       ),
                     ),
-                    Container(width: 1, height: 28, color: AppColors.border),
+                    Container(width: 1, height: 28, color: const Color(0xFFE2E8F0)),
                     Expanded(
                       child: _buildMetricItem(
                         label: 'Penutupan Mata',
@@ -426,22 +435,21 @@ class EyeMonitoringView extends GetView<EyeMonitoringController> {
                 'Pemantauan berjalan otomatis di latar belakang.',
                 style: TextStyle(
                   fontSize: 14,
-                  fontWeight: FontWeight.w600,
-                  color: AppColors.textPrimary,
+                  fontWeight: FontWeight.w700,
+                  color: AppColors.navy,
                 ),
               ),
               const SizedBox(height: 4),
               const Text(
                 'Sistem akan melakukan pemantauan singkat secara berkala (±1 menit). Kamera akan aktif otomatis dan mati setelah selesai.',
                 style: TextStyle(
-                  fontSize: 12,
+                  fontSize: 12.5,
                   color: AppColors.textSecondary,
                   height: 1.4,
                 ),
               ),
               const SizedBox(height: 14),
 
-              // Status selesai jika baru saja selesai
               if (controller.statusMessage.value.contains('selesai') ||
                   controller.statusMessage.value.contains('Selesai')) ...[
                 Container(
@@ -460,7 +468,7 @@ class EyeMonitoringView extends GetView<EyeMonitoringController> {
                         child: Text(
                           'Pemantauan selesai. Kamera telah dimatikan.',
                           style: TextStyle(
-                            fontSize: 11,
+                            fontSize: 11.5,
                             color: AppColors.onSuccessContainer,
                             fontWeight: FontWeight.w600,
                           ),
@@ -472,14 +480,13 @@ class EyeMonitoringView extends GetView<EyeMonitoringController> {
                 const SizedBox(height: 12),
               ],
 
-              // Jadwal berikutnya & Sesi terakhir
               Container(
                 width: double.infinity,
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
-                  color: AppColors.surfaceContainerLow,
+                  color: AppColors.background,
                   borderRadius: BorderRadius.circular(14),
-                  border: Border.all(color: AppColors.border),
+                  border: Border.all(color: const Color(0xFFE2E8F0)),
                 ),
                 child: Row(
                   children: [
@@ -501,14 +508,14 @@ class EyeMonitoringView extends GetView<EyeMonitoringController> {
                                 : 'Menunggu...',
                             style: const TextStyle(
                               fontSize: 13,
-                              fontWeight: FontWeight.w700,
-                              color: AppColors.textPrimary,
+                              fontWeight: FontWeight.w800,
+                              color: AppColors.navy,
                             ),
                           ),
                         ],
                       ),
                     ),
-                    Container(width: 1, height: 28, color: AppColors.border),
+                    Container(width: 1, height: 28, color: const Color(0xFFE2E8F0)),
                     const SizedBox(width: 12),
                     Expanded(
                       child: Column(
@@ -528,8 +535,8 @@ class EyeMonitoringView extends GetView<EyeMonitoringController> {
                                 : '-',
                             style: const TextStyle(
                               fontSize: 13,
-                              fontWeight: FontWeight.w700,
-                              color: AppColors.textPrimary,
+                              fontWeight: FontWeight.w800,
+                              color: AppColors.navy,
                             ),
                           ),
                         ],
@@ -559,14 +566,13 @@ class EyeMonitoringView extends GetView<EyeMonitoringController> {
                     ),
                   ),
                   const SizedBox(width: 10),
-                  // Internal testing trigger for manual inspection
                   IconButton(
                     onPressed: () => controller.startSessionNow(),
                     icon: const Icon(Icons.play_circle_outline_rounded),
-                    color: AppColors.primary,
+                    color: AppColors.teal,
                     tooltip: 'Jalankan Sesi Sekarang (Tes)',
                     style: IconButton.styleFrom(
-                      backgroundColor: AppColors.primaryContainer,
+                      backgroundColor: AppColors.softMint,
                       minimumSize: const Size(48, 48),
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(14),
@@ -595,7 +601,7 @@ class EyeMonitoringView extends GetView<EyeMonitoringController> {
                   icon: const Icon(Icons.remove_red_eye_rounded, size: 18),
                   label: const Text('Aktifkan Monitoring'),
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: AppColors.primary,
+                    backgroundColor: AppColors.teal,
                     foregroundColor: Colors.white,
                     minimumSize: const Size.fromHeight(48),
                     shape: RoundedRectangleBorder(
@@ -621,8 +627,8 @@ class EyeMonitoringView extends GetView<EyeMonitoringController> {
             value,
             style: const TextStyle(
               fontSize: 16,
-              fontWeight: FontWeight.w700,
-              color: AppColors.textPrimary,
+              fontWeight: FontWeight.w800,
+              color: AppColors.navy,
             ),
           ),
         ),
@@ -641,15 +647,22 @@ class EyeMonitoringView extends GetView<EyeMonitoringController> {
     );
   }
 
-  /// Banner informasi privasi penting sesuai ketentuan Section 13
+  /// Banner informasi privasi penting
   Widget _buildPrivacyNoticeCard() {
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.all(14),
+      padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: AppColors.surfaceContainerLow,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: AppColors.border),
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: const Color(0xFFE2E8F0)),
+        boxShadow: [
+          BoxShadow(
+            color: AppColors.navy.withValues(alpha: 0.02),
+            blurRadius: 10,
+            offset: const Offset(0, 2),
+          ),
+        ],
       ),
       child: const Row(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -657,7 +670,7 @@ class EyeMonitoringView extends GetView<EyeMonitoringController> {
           Icon(
             Icons.privacy_tip_outlined,
             size: 20,
-            color: AppColors.textSecondary,
+            color: AppColors.teal,
           ),
           SizedBox(width: 10),
           Expanded(
@@ -667,9 +680,9 @@ class EyeMonitoringView extends GetView<EyeMonitoringController> {
                 Text(
                   'Prinsip Privasi & Keamanan Kamera',
                   style: TextStyle(
-                    fontSize: 12,
-                    fontWeight: FontWeight.w700,
-                    color: AppColors.textPrimary,
+                    fontSize: 12.5,
+                    fontWeight: FontWeight.w800,
+                    color: AppColors.navy,
                   ),
                 ),
                 SizedBox(height: 6),
@@ -679,7 +692,7 @@ class EyeMonitoringView extends GetView<EyeMonitoringController> {
                   '• TIDAK ADA foto, video, frame gambar, atau face embedding yang disimpan atau dikirim.\n'
                   '• Yang disimpan HANYA ringkasan numerik: rata-rata EAR, kedipan, eye closure, dan durasi.',
                   style: TextStyle(
-                    fontSize: 11,
+                    fontSize: 11.5,
                     color: AppColors.textSecondary,
                     height: 1.45,
                   ),
@@ -705,19 +718,26 @@ class EyeMonitoringView extends GetView<EyeMonitoringController> {
             const Text(
               'Riwayat Sesi Pemantauan',
               style: TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.w700,
-                color: AppColors.textPrimary,
+                fontSize: 16.5,
+                fontWeight: FontWeight.w800,
+                color: AppColors.navy,
                 letterSpacing: -0.2,
               ),
             ),
             if (list.isNotEmpty)
-              Text(
-                '${list.length} sesi',
-                style: const TextStyle(
-                  fontSize: 12,
-                  fontWeight: FontWeight.w600,
-                  color: AppColors.primary,
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                decoration: BoxDecoration(
+                  color: AppColors.softMint,
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Text(
+                  '${list.length} sesi',
+                  style: const TextStyle(
+                    fontSize: 11.5,
+                    fontWeight: FontWeight.w700,
+                    color: AppColors.navy,
+                  ),
                 ),
               ),
           ],
@@ -743,17 +763,17 @@ class EyeMonitoringView extends GetView<EyeMonitoringController> {
   Widget _buildEmptyState() {
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.symmetric(vertical: 34, horizontal: 20),
+      padding: const EdgeInsets.symmetric(vertical: 36, horizontal: 20),
       decoration: BoxDecoration(
-        color: AppColors.card,
-        borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: AppColors.border),
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: const Color(0xFFE2E8F0)),
       ),
       child: const Column(
         children: [
           Icon(
             Icons.visibility_off_outlined,
-            size: 42,
+            size: 44,
             color: AppColors.textTertiary,
           ),
           SizedBox(height: 12),
@@ -761,9 +781,9 @@ class EyeMonitoringView extends GetView<EyeMonitoringController> {
             'Belum ada riwayat sesi pemantauan mata.',
             textAlign: TextAlign.center,
             style: TextStyle(
-              fontSize: 14,
-              fontWeight: FontWeight.w600,
-              color: AppColors.textSecondary,
+              fontSize: 14.5,
+              fontWeight: FontWeight.w700,
+              color: AppColors.navy,
             ),
           ),
           SizedBox(height: 4),
@@ -771,8 +791,8 @@ class EyeMonitoringView extends GetView<EyeMonitoringController> {
             'Mulai pemantauan mata untuk mencatat rata-rata keterbukaan kelopak mata dan frekuensi kedipan.',
             textAlign: TextAlign.center,
             style: TextStyle(
-              fontSize: 12,
-              color: AppColors.textTertiary,
+              fontSize: 12.5,
+              color: AppColors.textSecondary,
               height: 1.4,
             ),
           ),
@@ -789,15 +809,15 @@ class EyeMonitoringView extends GetView<EyeMonitoringController> {
         : '${durationSeconds ~/ 60}m ${durationSeconds % 60}d';
 
     return Container(
-      padding: const EdgeInsets.all(14),
+      padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: AppColors.card,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: AppColors.border),
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: const Color(0xFFE2E8F0)),
         boxShadow: [
           BoxShadow(
-            color: AppColors.secondary.withValues(alpha: 0.02),
-            blurRadius: 8,
+            color: AppColors.navy.withValues(alpha: 0.03),
+            blurRadius: 10,
             offset: const Offset(0, 2),
           ),
         ],
@@ -805,21 +825,21 @@ class EyeMonitoringView extends GetView<EyeMonitoringController> {
       child: Row(
         children: [
           Container(
-            width: 42,
-            height: 42,
+            width: 44,
+            height: 44,
             decoration: BoxDecoration(
-              color: AppColors.primaryContainer.withValues(alpha: 0.35),
-              borderRadius: BorderRadius.circular(12),
+              color: AppColors.softMint,
+              borderRadius: BorderRadius.circular(14),
             ),
             child: const Center(
               child: Icon(
                 Icons.remove_red_eye_outlined,
                 size: 22,
-                color: AppColors.primary,
+                color: AppColors.navy,
               ),
             ),
           ),
-          const SizedBox(width: 12),
+          const SizedBox(width: 14),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -830,17 +850,17 @@ class EyeMonitoringView extends GetView<EyeMonitoringController> {
                     const Text(
                       'Sesi Pemantauan Mata',
                       style: TextStyle(
-                        fontSize: 14,
-                        fontWeight: FontWeight.w700,
-                        color: AppColors.textPrimary,
+                        fontSize: 14.5,
+                        fontWeight: FontWeight.w800,
+                        color: AppColors.navy,
                       ),
                     ),
                     Text(
                       _formatTime(session.startedAt),
                       style: const TextStyle(
-                        fontSize: 11,
+                        fontSize: 11.5,
                         color: AppColors.textSecondary,
-                        fontWeight: FontWeight.w500,
+                        fontWeight: FontWeight.w600,
                       ),
                     ),
                   ],
@@ -851,38 +871,41 @@ class EyeMonitoringView extends GetView<EyeMonitoringController> {
                     Text(
                       'Durasi $durationText',
                       style: const TextStyle(
-                        fontSize: 12,
-                        fontWeight: FontWeight.w600,
-                        color: AppColors.textPrimary,
+                        fontSize: 12.5,
+                        fontWeight: FontWeight.w700,
+                        color: AppColors.navy,
                       ),
                     ),
                     const SizedBox(width: 8),
-                    const Text('•', style: TextStyle(color: AppColors.border)),
+                    const Text('•', style: TextStyle(color: Color(0xFFCBD5E1))),
                     const SizedBox(width: 8),
                     Text(
                       'Rata-rata EAR ${session.averageEar.toStringAsFixed(2)}',
                       style: const TextStyle(
                         fontSize: 12,
                         color: AppColors.textSecondary,
+                        fontWeight: FontWeight.w500,
                       ),
                     ),
                   ],
                 ),
-                const SizedBox(height: 4),
+                const SizedBox(height: 6),
                 Row(
                   children: [
                     Text(
                       '${session.blinkCount} kedipan',
                       style: const TextStyle(
-                        fontSize: 11,
-                        color: AppColors.textSecondary,
+                        fontSize: 11.5,
+                        fontWeight: FontWeight.w600,
+                        color: AppColors.navy,
                       ),
                     ),
-                    const SizedBox(width: 8),
+                    const SizedBox(width: 10),
                     Text(
                       '${session.eyeClosureEvents} penutupan',
                       style: const TextStyle(
-                        fontSize: 11,
+                        fontSize: 11.5,
+                        fontWeight: FontWeight.w600,
                         color: AppColors.textSecondary,
                       ),
                     ),
@@ -896,8 +919,8 @@ class EyeMonitoringView extends GetView<EyeMonitoringController> {
                     const Text(
                       'Tersimpan',
                       style: TextStyle(
-                        fontSize: 10,
-                        fontWeight: FontWeight.w600,
+                        fontSize: 10.5,
+                        fontWeight: FontWeight.w700,
                         color: AppColors.success,
                       ),
                     ),

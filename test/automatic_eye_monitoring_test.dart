@@ -264,7 +264,7 @@ void main() {
     });
 
     // 6. interval calculation
-    test('6. Interval calculation: default 30 menit dan deteksi jatuh tempo', () async {
+    test('6. Interval calculation: default 15 menit dan deteksi jatuh tempo', () async {
       final service = EyeMonitoringService(
         repository: mockRepo,
         localRepository: localRepo,
@@ -273,7 +273,8 @@ void main() {
         autoStart: false,
       );
 
-      expect(service.monitoringInterval, const Duration(minutes: 30));
+      expect(service.monitoringInterval, const Duration(minutes: 15));
+      expect(service.monitoringInterval.inMilliseconds, 900000);
       expect(service.sessionDuration, const Duration(minutes: 1));
     });
 
@@ -321,7 +322,7 @@ void main() {
         localRepository: localRepo,
         syncManager: syncMgr,
         db: db,
-        monitoringInterval: const Duration(minutes: 30),
+        monitoringInterval: const Duration(minutes: 15),
         autoStart: false,
       );
 
@@ -455,11 +456,11 @@ void main() {
         localRepository: localRepo,
         syncManager: syncMgr,
         db: db,
-        monitoringInterval: const Duration(minutes: 30),
+        monitoringInterval: const Duration(minutes: 15),
         autoStart: false,
       );
 
-      service.lastSessionCompletedAt.value = DateTime.now().subtract(const Duration(minutes: 31));
+      service.lastSessionCompletedAt.value = DateTime.now().subtract(const Duration(minutes: 16));
       service.isMonitoringEnabled.value = true;
 
       // Resume harus menjalankan sesi karena due
@@ -474,11 +475,11 @@ void main() {
         localRepository: localRepo,
         syncManager: syncMgr,
         db: db,
-        monitoringInterval: const Duration(minutes: 30),
+        monitoringInterval: const Duration(minutes: 15),
         autoStart: false,
       );
 
-      service.lastSessionCompletedAt.value = DateTime.now().subtract(const Duration(minutes: 10));
+      service.lastSessionCompletedAt.value = DateTime.now().subtract(const Duration(minutes: 5));
       service.isMonitoringEnabled.value = true;
 
       // Resume tidak boleh langsung menyalakan kamera
@@ -602,6 +603,104 @@ void main() {
       await service.enableMonitoring();
       expect(service.isMonitoringEnabled.value, isTrue);
       expect(service.isSchedulerActive, isTrue);
+    });
+
+    // 21. verifikasi ketat jadwal 15 menit dan kamera tidak terus menyala
+    test('21. Verifikasi ketat jadwal 15 menit (900.000 ms): kamera mati setelah sesi selesai dan tidak aktif selama masa jeda', () async {
+      final service = EyeMonitoringService(
+        repository: mockRepo,
+        localRepository: localRepo,
+        syncManager: syncMgr,
+        db: db,
+        autoStart: false,
+      );
+      service.onInit();
+
+      // Pastikan default interval tepat 15 menit dan durasi aktif 1 menit
+      expect(service.monitoringInterval, const Duration(minutes: 15));
+      expect(service.monitoringInterval.inMilliseconds, 900000);
+      expect(service.sessionDuration, const Duration(minutes: 1));
+
+      // 1. Mulai monitoring
+      await service.enableMonitoring();
+      expect(service.isMonitoringEnabled.value, isTrue);
+      expect(service.isSessionRunning.value, isTrue);
+      expect(mockRepo.isCameraRunning, isTrue);
+
+      // 2. Selesaikan sesi kamera
+      final completedSession = await mockRepo.stopMonitoringAndPersist();
+      expect(completedSession, isNotNull);
+
+      // Simulasikan event session_finished dari native
+      mockRepo.liveStreamController.add(EyeMonitoringLiveEvent.fromMap({
+        'type': 'session_finished',
+        'isMonitoring': false,
+        'faceDetected': false,
+        'statusMessage': 'Pemantauan selesai',
+      }));
+      await Future.delayed(const Duration(milliseconds: 50));
+
+      // 3. Verifikasi KAMERA HARUS OFF setelah sesi selesai
+      expect(service.isSessionRunning.value, isFalse, reason: 'Sesi kamera harus sudah berhenti');
+      expect(mockRepo.isCameraRunning, isFalse, reason: 'Kamera fisik harus dilepas / OFF');
+
+      // 4. Verifikasi jadwal berikutnya tepat 15 menit setelah waktu penyelesaian
+      final completedAt = service.lastSessionCompletedAt.value;
+      final nextScheduled = service.nextScheduledAt.value;
+      expect(completedAt, isNotNull);
+      expect(nextScheduled, isNotNull);
+      final scheduledInterval = nextScheduled!.difference(completedAt!);
+      expect(scheduledInterval.inMinutes, 15);
+      expect(scheduledInterval.inMilliseconds, 900000);
+
+      // 5. Verifikasi selama masa jeda (misal 5 menit atau 14 menit), kamera TIDAK boleh menyala
+      service.didChangeAppLifecycleState(AppLifecycleState.resumed);
+      expect(service.isSessionRunning.value, isFalse, reason: 'Kamera tidak boleh menyala sebelum 15 menit');
+      expect(mockRepo.isCameraRunning, isFalse);
+
+      await service.disableMonitoring();
+      service.onClose();
+    });
+
+    // 22. verifikasi konsistensi interval 15 menit tersimpan dan pulih dari database Drift
+    test('22. Verifikasi konsistensi interval 15 menit tersimpan di SQLite Drift dan pulih saat app dibuka kembali', () async {
+      final completedTime = DateTime.now().subtract(const Duration(minutes: 5));
+      final expectedNext = completedTime.add(const Duration(minutes: 15));
+
+      // Simpan state persisten ke database Drift seolah-olah sesi selesai 5 menit lalu
+      await db.into(db.eyeMonitoringConfig).insertOnConflictUpdate(
+        EyeMonitoringConfigCompanion.insert(
+          id: 'current_config',
+          monitoringEnabled: const drift.Value(true),
+          lastSessionCompletedAt: drift.Value(completedTime),
+          nextScheduledAt: drift.Value(expectedNext),
+          updatedAt: DateTime.now(),
+        ),
+      );
+
+      final restartedService = EyeMonitoringService(
+        repository: mockRepo,
+        localRepository: localRepo,
+        syncManager: syncMgr,
+        db: db,
+        autoStart: false,
+      );
+      restartedService.onInit();
+
+      await restartedService.initService();
+
+      // State harus pulih dengan monitoring aktif dan interval 15 menit
+      expect(restartedService.isMonitoringEnabled.value, isTrue);
+      expect(restartedService.monitoringInterval, const Duration(minutes: 15));
+      expect(restartedService.lastSessionCompletedAt.value, isNotNull);
+      expect(restartedService.nextScheduledAt.value, isNotNull);
+
+      // Karena baru 5 menit berlalu (< 15 menit), kamera TIDAK boleh langsung menyala
+      expect(restartedService.isSessionRunning.value, isFalse);
+      expect(mockRepo.isCameraRunning, isFalse);
+
+      await restartedService.disableMonitoring();
+      restartedService.onClose();
     });
   });
 }

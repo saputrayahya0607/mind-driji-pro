@@ -14,20 +14,47 @@ class ProfileView extends GetView<ProfileController> {
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: AppBar(
-        title: const Text('Profil'),
-        centerTitle: true,
-        backgroundColor: AppColors.background,
+        title: const Text(
+          'Profil',
+          style: TextStyle(
+            fontSize: 18,
+            fontWeight: FontWeight.w800,
+            color: AppColors.navy,
+            letterSpacing: -0.2,
+          ),
+        ),
+        centerTitle: false,
+        backgroundColor: Colors.transparent,
         elevation: 0,
         scrolledUnderElevation: 0,
         actions: [
           IconButton(
-            icon: const Icon(
-              Icons.edit_outlined,
-              color: AppColors.textPrimary,
+            icon: Container(
+              width: 38,
+              height: 38,
+              decoration: BoxDecoration(
+                color: Colors.white,
+                shape: BoxShape.circle,
+                border: Border.all(color: const Color(0xFFE2E8F0), width: 1),
+                boxShadow: [
+                  BoxShadow(
+                    color: AppColors.navy.withValues(alpha: 0.04),
+                    blurRadius: 6,
+                    offset: const Offset(0, 2),
+                  ),
+                ],
+              ),
+              child: const Icon(
+                Icons.edit_outlined,
+                size: 20,
+                color: AppColors.navy,
+              ),
             ),
+            constraints: const BoxConstraints(minWidth: 48, minHeight: 48),
             tooltip: 'Edit Profil',
             onPressed: () => _goToEditProfile(context),
           ),
+          const SizedBox(width: 8),
         ],
       ),
       body: Obx(() {
@@ -235,9 +262,9 @@ class ProfileView extends GetView<ProfileController> {
           'Profil',
           style: TextStyle(
             fontSize: 24,
-            fontWeight: FontWeight.w700,
-            color: AppColors.textPrimary,
-            letterSpacing: -0.3,
+            fontWeight: FontWeight.w800,
+            color: AppColors.navy,
+            letterSpacing: -0.4,
           ),
         ),
         SizedBox(height: 4),
@@ -261,12 +288,12 @@ class ProfileView extends GetView<ProfileController> {
       width: double.infinity,
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: AppColors.card,
+        color: Colors.white,
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: AppColors.border, width: 1),
+        border: Border.all(color: const Color(0xFFE2E8F0), width: 1),
         boxShadow: [
           BoxShadow(
-            color: AppColors.secondary.withValues(alpha: 0.04),
+            color: AppColors.navy.withValues(alpha: 0.04),
             blurRadius: 16,
             offset: const Offset(0, 4),
           ),
@@ -278,10 +305,10 @@ class ProfileView extends GetView<ProfileController> {
             width: 64,
             height: 64,
             decoration: BoxDecoration(
-              color: AppColors.primary.withValues(alpha: 0.12),
+              color: AppColors.softMint,
               shape: BoxShape.circle,
               border: Border.all(
-                color: AppColors.primary.withValues(alpha: 0.3),
+                color: AppColors.teal.withValues(alpha: 0.35),
                 width: 2,
               ),
             ),
@@ -290,8 +317,8 @@ class ProfileView extends GetView<ProfileController> {
                 _getInitials(profile.namaLengkap),
                 style: const TextStyle(
                   fontSize: 22,
-                  fontWeight: FontWeight.bold,
-                  color: AppColors.primary,
+                  fontWeight: FontWeight.w800,
+                  color: AppColors.navy,
                 ),
               ),
             ),
@@ -304,9 +331,10 @@ class ProfileView extends GetView<ProfileController> {
                 Text(
                   nama,
                   style: const TextStyle(
-                    fontSize: 17,
-                    fontWeight: FontWeight.w700,
-                    color: AppColors.textPrimary,
+                    fontSize: 18,
+                    fontWeight: FontWeight.w800,
+                    color: AppColors.navy,
+                    letterSpacing: -0.2,
                   ),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
@@ -340,13 +368,13 @@ class ProfileView extends GetView<ProfileController> {
           'Edit Profil',
           style: TextStyle(
             fontSize: 15,
-            fontWeight: FontWeight.w600,
+            fontWeight: FontWeight.w700,
           ),
         ),
         style: OutlinedButton.styleFrom(
-          foregroundColor: AppColors.primary,
-          side: const BorderSide(color: AppColors.primary, width: 1.5),
-          padding: const EdgeInsets.symmetric(vertical: 12),
+          foregroundColor: AppColors.teal,
+          side: const BorderSide(color: AppColors.teal, width: 1.5),
+          padding: const EdgeInsets.symmetric(vertical: 14),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(14),
           ),
@@ -375,20 +403,20 @@ class ProfileView extends GetView<ProfileController> {
           'Informasi Pribadi',
           style: TextStyle(
             fontSize: 16,
-            fontWeight: FontWeight.w700,
-            color: AppColors.textPrimary,
+            fontWeight: FontWeight.w800,
+            color: AppColors.navy,
             letterSpacing: -0.2,
           ),
         ),
         const SizedBox(height: 12),
         Container(
           decoration: BoxDecoration(
-            color: AppColors.card,
+            color: Colors.white,
             borderRadius: BorderRadius.circular(20),
-            border: Border.all(color: AppColors.border, width: 1),
+            border: Border.all(color: const Color(0xFFE2E8F0), width: 1),
             boxShadow: [
               BoxShadow(
-                color: AppColors.secondary.withValues(alpha: 0.03),
+                color: AppColors.navy.withValues(alpha: 0.03),
                 blurRadius: 12,
                 offset: const Offset(0, 3),
               ),
@@ -402,25 +430,25 @@ class ProfileView extends GetView<ProfileController> {
                 value: _formatText(profile.namaLengkap),
                 isFirst: true,
               ),
-              const Divider(height: 1, thickness: 1, color: AppColors.border),
+              const Divider(height: 1, thickness: 1, color: Color(0xFFF1F5F9)),
               _buildInfoTile(
                 icon: Icons.mail_outline_rounded,
                 label: 'Email',
                 value: _formatText(profile.email),
               ),
-              const Divider(height: 1, thickness: 1, color: AppColors.border),
+              const Divider(height: 1, thickness: 1, color: Color(0xFFF1F5F9)),
               _buildInfoTile(
                 icon: Icons.phone_outlined,
                 label: 'Nomor HP',
                 value: _formatText(profile.noHp),
               ),
-              const Divider(height: 1, thickness: 1, color: AppColors.border),
+              const Divider(height: 1, thickness: 1, color: Color(0xFFF1F5F9)),
               _buildInfoTile(
                 icon: Icons.calendar_today_outlined,
                 label: 'Tanggal Lahir',
                 value: _formatTanggal(profile.tanggalLahir),
               ),
-              const Divider(height: 1, thickness: 1, color: AppColors.border),
+              const Divider(height: 1, thickness: 1, color: Color(0xFFF1F5F9)),
               _buildInfoTile(
                 icon: Icons.wc_outlined,
                 label: 'Jenis Kelamin',
@@ -448,8 +476,8 @@ class ProfileView extends GetView<ProfileController> {
                 'Perangkat Ini',
                 style: TextStyle(
                   fontSize: 16,
-                  fontWeight: FontWeight.w700,
-                  color: AppColors.textPrimary,
+                  fontWeight: FontWeight.w800,
+                  color: AppColors.navy,
                   letterSpacing: -0.2,
                 ),
               ),
@@ -460,12 +488,12 @@ class ProfileView extends GetView<ProfileController> {
         Container(
           width: double.infinity,
           decoration: BoxDecoration(
-            color: AppColors.card,
+            color: Colors.white,
             borderRadius: BorderRadius.circular(20),
-            border: Border.all(color: AppColors.border, width: 1),
+            border: Border.all(color: const Color(0xFFE2E8F0), width: 1),
             boxShadow: [
               BoxShadow(
-                color: AppColors.secondary.withValues(alpha: 0.03),
+                color: AppColors.navy.withValues(alpha: 0.03),
                 blurRadius: 12,
                 offset: const Offset(0, 3),
               ),
@@ -495,12 +523,12 @@ class ProfileView extends GetView<ProfileController> {
                         width: 48,
                         height: 48,
                         decoration: BoxDecoration(
-                          color: AppColors.primary.withValues(alpha: 0.1),
+                          color: AppColors.softMint,
                           borderRadius: BorderRadius.circular(14),
                         ),
                         child: const Icon(
                           Icons.smartphone_rounded,
-                          color: AppColors.primary,
+                          color: AppColors.teal,
                           size: 26,
                         ),
                       ),
@@ -513,8 +541,8 @@ class ProfileView extends GetView<ProfileController> {
                               brand,
                               style: const TextStyle(
                                 fontSize: 17,
-                                fontWeight: FontWeight.w700,
-                                color: AppColors.textPrimary,
+                                fontWeight: FontWeight.w800,
+                                color: AppColors.navy,
                                 letterSpacing: -0.2,
                               ),
                             ),
@@ -523,7 +551,7 @@ class ProfileView extends GetView<ProfileController> {
                               androidVer,
                               style: const TextStyle(
                                 fontSize: 13,
-                                fontWeight: FontWeight.w500,
+                                fontWeight: FontWeight.w600,
                                 color: AppColors.textSecondary,
                               ),
                             ),
@@ -543,7 +571,7 @@ class ProfileView extends GetView<ProfileController> {
                     ],
                   ),
                 ),
-                const Divider(height: 1, thickness: 1, color: AppColors.border),
+                const Divider(height: 1, thickness: 1, color: Color(0xFFF1F5F9)),
                 _buildInfoTile(
                   icon: Icons.fingerprint_rounded,
                   label: 'Device ID',
@@ -567,20 +595,20 @@ class ProfileView extends GetView<ProfileController> {
           'Pengaturan Monitoring',
           style: TextStyle(
             fontSize: 16,
-            fontWeight: FontWeight.w700,
-            color: AppColors.textPrimary,
+            fontWeight: FontWeight.w800,
+            color: AppColors.navy,
             letterSpacing: -0.2,
           ),
         ),
         const SizedBox(height: 12),
         Container(
           decoration: BoxDecoration(
-            color: AppColors.card,
+            color: Colors.white,
             borderRadius: BorderRadius.circular(20),
-            border: Border.all(color: AppColors.border, width: 1),
+            border: Border.all(color: const Color(0xFFE2E8F0), width: 1),
             boxShadow: [
               BoxShadow(
-                color: AppColors.secondary.withValues(alpha: 0.03),
+                color: AppColors.navy.withValues(alpha: 0.03),
                 blurRadius: 12,
                 offset: const Offset(0, 3),
               ),
@@ -596,7 +624,7 @@ class ProfileView extends GetView<ProfileController> {
                 onTap: () => Get.toNamed(Routes.targetApps),
                 isFirst: true,
               ),
-              const Divider(height: 1, thickness: 1, color: AppColors.border),
+              const Divider(height: 1, thickness: 1, color: Color(0xFFF1F5F9)),
               _buildNavigationTile(
                 key: const Key('tile_permission_guide'),
                 icon: Icons.verified_user_outlined,
@@ -797,9 +825,16 @@ class ProfileView extends GetView<ProfileController> {
     return Container(
       width: double.infinity,
       decoration: BoxDecoration(
-        color: AppColors.card,
+        color: Colors.white,
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: AppColors.border, width: 1),
+        border: Border.all(color: const Color(0xFFFEE2E2), width: 1.2),
+        boxShadow: [
+          BoxShadow(
+            color: const Color(0xFFEF4444).withValues(alpha: 0.03),
+            blurRadius: 10,
+            offset: const Offset(0, 2),
+          ),
+        ],
       ),
       child: Material(
         color: Colors.transparent,

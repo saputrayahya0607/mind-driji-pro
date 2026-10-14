@@ -19,7 +19,7 @@ import '../sync/sync_manager.dart';
 /// 1. Lifecycle global (GetxService) yang tidak terikat pada buka-tutup halaman UI.
 /// 2. Terintegrasi dengan Android Foreground Service (camera type) untuk eksekusi background resmi.
 /// 3. Status monitoring (monitoringEnabled) tersimpan persisten di SQLite (Drift).
-/// 4. Kamera TIDAK MENYALA TERUS: hanya sampling berkala (default 1 menit tiap 30 menit).
+/// 4. Kamera TIDAK MENYALA TERUS: hanya sampling berkala (default 1 menit tiap 15 menit).
 /// 5. Kamera otomatis OFF dan dilepas setelah sesi 1 menit selesai.
 /// 6. Tetap aktif di background saat pengguna membuka aplikasi lain (TikTok, Instagram, YouTube, dll).
 /// 7. Berhenti total saat user menekan "Matikan Monitoring" atau saat user logout.
@@ -145,6 +145,9 @@ class EyeMonitoringService extends GetxService with WidgetsBindingObserver {
   // ===========================================================================
   bool _isSchedulerActive = false;
   bool _isExecutingSession = false;
+  bool _isCompletingSession = false;
+  bool _isFlushingPending = false;
+  bool _isSavingConfig = false;
   Timer? _schedulerTimer;
   Timer? _sessionTimeoutTimer;
   StreamSubscription<EyeMonitoringLiveEvent>? _liveSubscription;
@@ -449,6 +452,8 @@ class EyeMonitoringService extends GetxService with WidgetsBindingObserver {
 
   /// Mengambil dan memproses antrean sesi yang selesai dijalankan di background oleh native service
   Future<List<EyeMonitoringSessionModel>> flushPendingSessions() async {
+    if (_isFlushingPending) return [];
+    _isFlushingPending = true;
     try {
       final flushed = await _repository.flushPendingSessions();
       if (flushed.isNotEmpty) {
@@ -470,6 +475,8 @@ class EyeMonitoringService extends GetxService with WidgetsBindingObserver {
     } catch (e) {
       _log('[EYE] Error flushing pending sessions: $e');
       return [];
+    } finally {
+      _isFlushingPending = false;
     }
   }
 
@@ -582,8 +589,10 @@ class EyeMonitoringService extends GetxService with WidgetsBindingObserver {
 
   /// Menyelesaikan sesi monitoring, mematikan kamera, menyimpan sesi ke Drift, dan memicu sync
   Future<void> _completeSession({String reason = 'normal'}) async {
+    if (_isCompletingSession) return;
     if (!_isExecutingSession && !isSessionRunning.value) return;
 
+    _isCompletingSession = true;
     _sessionTimeoutTimer?.cancel();
     _sessionTimeoutTimer = null;
 
@@ -624,6 +633,8 @@ class EyeMonitoringService extends GetxService with WidgetsBindingObserver {
       if (isMonitoringEnabled.value) {
         _scheduleNextSession();
       }
+    } finally {
+      _isCompletingSession = false;
     }
   }
 
@@ -650,6 +661,14 @@ class EyeMonitoringService extends GetxService with WidgetsBindingObserver {
         if (event.type == 'status_update') {
           if (!faceDetected.value && event.faceDetected) {
             _log('[EYE] Face detected');
+          } else if (faceDetected.value && !event.faceDetected) {
+            _log('[EYE] Face lost');
+          }
+          if (event.blinkCount > blinkCount.value) {
+            _log('[EYE] Blink received from native EventChannel: count=${event.blinkCount}, currentEar=${event.currentEar.toStringAsFixed(3)}');
+          }
+          if (event.eyeClosureEvents > eyeClosureEvents.value) {
+            _log('[EYE] Prolonged closure received from native EventChannel: count=${event.eyeClosureEvents}');
           }
           faceDetected.value = event.faceDetected;
           multipleFaces.value = event.multipleFaces;
@@ -664,6 +683,7 @@ class EyeMonitoringService extends GetxService with WidgetsBindingObserver {
           }
         } else if (event.type == 'session_finished') {
           _log('[EYE] Received session_finished from native');
+          final wasRunning = isSessionRunning.value;
           isSessionRunning.value = false;
           _isExecutingSession = false;
           statusMessage.value = 'Pemantauan selesai';
@@ -672,11 +692,13 @@ class EyeMonitoringService extends GetxService with WidgetsBindingObserver {
           lastSessionCompletedAt.value = now;
           nextScheduledAt.value = now.add(_monitoringInterval);
 
-          flushPendingSessions();
-
-          if (isMonitoringEnabled.value) {
-            statusMessage.value = 'Monitoring Aktif';
-            _scheduleNextSession();
+          // Hindari tabrakan SQLite jika _completeSession sedang berjalan
+          if (!_isCompletingSession) {
+            flushPendingSessions();
+            if (isMonitoringEnabled.value && wasRunning) {
+              statusMessage.value = 'Monitoring Aktif';
+              _scheduleNextSession();
+            }
           }
         }
       },
@@ -730,6 +752,8 @@ class EyeMonitoringService extends GetxService with WidgetsBindingObserver {
   Future<void> _saveConfigToDb() async {
     final db = _db;
     if (db == null) return;
+    if (_isSavingConfig) return;
+    _isSavingConfig = true;
 
     try {
       final now = DateTime.now();
@@ -745,6 +769,8 @@ class EyeMonitoringService extends GetxService with WidgetsBindingObserver {
           );
     } catch (e) {
       _log('[EYE] Failed to save config to database: $e');
+    } finally {
+      _isSavingConfig = false;
     }
   }
 

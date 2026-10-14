@@ -52,5 +52,8 @@ class AppDatabase extends _$AppDatabase {
             await m.createTable(interventionHistories);
           }
         },
+        beforeOpen: (details) async {
+          await customStatement('PRAGMA busy_timeout = 5000;');
+        },
       );
 }

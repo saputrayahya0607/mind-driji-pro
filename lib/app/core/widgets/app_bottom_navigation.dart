@@ -21,48 +21,56 @@ class AppBottomNavigation extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      decoration: const BoxDecoration(
-        color: AppColors.navBackground,
-        border: Border(
-          top: BorderSide(color: AppColors.border, width: 1),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        border: const Border(
+          top: BorderSide(color: Color(0xFFE2E8F0), width: 1),
         ),
+        boxShadow: [
+          BoxShadow(
+            color: AppColors.navy.withValues(alpha: 0.04),
+            blurRadius: 16,
+            offset: const Offset(0, -4),
+          ),
+        ],
       ),
       child: NavigationBar(
         selectedIndex: currentIndex.clamp(0, 4),
         onDestinationSelected: _onDestinationSelected,
-        backgroundColor: AppColors.navBackground,
+        backgroundColor: Colors.white,
         elevation: 0,
         height: 68,
+        indicatorColor: AppColors.softMint,
         labelBehavior: NavigationDestinationLabelBehavior.alwaysShow,
         destinations: const [
           NavigationDestination(
             key: Key('nav_destination_home'),
             icon: Icon(Icons.home_outlined),
-            selectedIcon: Icon(Icons.home_rounded),
+            selectedIcon: Icon(Icons.home_rounded, color: AppColors.navy),
             label: 'Home',
           ),
           NavigationDestination(
             key: Key('nav_destination_monitoring'),
             icon: Icon(Icons.speed_outlined),
-            selectedIcon: Icon(Icons.speed_rounded),
+            selectedIcon: Icon(Icons.speed_rounded, color: AppColors.navy),
             label: 'Monitoring',
           ),
           NavigationDestination(
             key: Key('nav_destination_insight'),
             icon: Icon(Icons.insights_outlined),
-            selectedIcon: Icon(Icons.insights_rounded),
+            selectedIcon: Icon(Icons.insights_rounded, color: AppColors.navy),
             label: 'Insight',
           ),
           NavigationDestination(
             key: Key('nav_destination_intervention'),
             icon: Icon(Icons.spa_outlined),
-            selectedIcon: Icon(Icons.spa_rounded),
+            selectedIcon: Icon(Icons.spa_rounded, color: AppColors.navy),
             label: 'Intervensi',
           ),
           NavigationDestination(
             key: Key('nav_destination_profile'),
             icon: Icon(Icons.person_outline_rounded),
-            selectedIcon: Icon(Icons.person_rounded),
+            selectedIcon: Icon(Icons.person_rounded, color: AppColors.navy),
             label: 'Profil',
           ),
         ],

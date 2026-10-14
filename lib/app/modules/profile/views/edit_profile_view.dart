@@ -11,16 +11,33 @@ class EditProfileView extends GetView<EditProfileController> {
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: AppBar(
-        title: const Text('Edit Profil'),
-        centerTitle: true,
-        backgroundColor: AppColors.background,
+        title: const Text(
+          'Edit Profil',
+          style: TextStyle(
+            fontSize: 18,
+            fontWeight: FontWeight.w800,
+            color: AppColors.navy,
+            letterSpacing: -0.2,
+          ),
+        ),
+        centerTitle: false,
+        backgroundColor: Colors.transparent,
         elevation: 0,
         scrolledUnderElevation: 0,
         leading: IconButton(
-          icon: const Icon(
-            Icons.arrow_back_ios_new_rounded,
-            size: 20,
-            color: AppColors.textPrimary,
+          icon: Container(
+            width: 38,
+            height: 38,
+            decoration: BoxDecoration(
+              color: Colors.white,
+              shape: BoxShape.circle,
+              border: Border.all(color: const Color(0xFFE2E8F0), width: 1),
+            ),
+            child: const Icon(
+              Icons.arrow_back_ios_new_rounded,
+              size: 16,
+              color: AppColors.navy,
+            ),
           ),
           onPressed: () => Get.back(),
           tooltip: 'Kembali',
@@ -68,8 +85,8 @@ class EditProfileView extends GetView<EditProfileController> {
           'Perbarui Data Diri',
           style: TextStyle(
             fontSize: 22,
-            fontWeight: FontWeight.w700,
-            color: AppColors.textPrimary,
+            fontWeight: FontWeight.w800,
+            color: AppColors.navy,
             letterSpacing: -0.3,
           ),
         ),
@@ -90,12 +107,12 @@ class EditProfileView extends GetView<EditProfileController> {
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: AppColors.card,
+        color: Colors.white,
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: AppColors.border, width: 1),
+        border: Border.all(color: const Color(0xFFE2E8F0), width: 1),
         boxShadow: [
           BoxShadow(
-            color: AppColors.secondary.withValues(alpha: 0.03),
+            color: AppColors.navy.withValues(alpha: 0.03),
             blurRadius: 16,
             offset: const Offset(0, 4),
           ),
@@ -390,10 +407,10 @@ class EditProfileView extends GetView<EditProfileController> {
         child: ElevatedButton(
           onPressed: isSaving ? null : () => controller.saveProfile(),
           style: ElevatedButton.styleFrom(
-            backgroundColor: AppColors.primary,
+            backgroundColor: AppColors.teal,
             foregroundColor: Colors.white,
             elevation: 0,
-            disabledBackgroundColor: AppColors.primary.withValues(alpha: 0.6),
+            disabledBackgroundColor: AppColors.teal.withValues(alpha: 0.6),
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(14),
             ),
@@ -447,22 +464,22 @@ class EditProfileView extends GetView<EditProfileController> {
       prefixIcon: Icon(
         prefixIcon,
         size: 20,
-        color: AppColors.secondary,
+        color: AppColors.teal,
       ),
       contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
       filled: true,
-      fillColor: AppColors.card,
+      fillColor: Colors.white,
       border: OutlineInputBorder(
         borderRadius: BorderRadius.circular(12),
-        borderSide: const BorderSide(color: AppColors.border),
+        borderSide: const BorderSide(color: Color(0xFFE2E8F0)),
       ),
       enabledBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(12),
-        borderSide: const BorderSide(color: AppColors.border),
+        borderSide: const BorderSide(color: Color(0xFFE2E8F0)),
       ),
       focusedBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(12),
-        borderSide: const BorderSide(color: AppColors.primary, width: 1.5),
+        borderSide: const BorderSide(color: AppColors.teal, width: 1.5),
       ),
       errorBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(12),

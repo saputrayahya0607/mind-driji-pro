@@ -16,21 +16,39 @@ class TargetAppsView extends GetView<TargetAppsController> {
           'Target Doomscrolling',
           style: TextStyle(
             fontSize: 18,
-            fontWeight: FontWeight.w700,
-            color: AppColors.textPrimary,
+            fontWeight: FontWeight.w800,
+            color: AppColors.navy,
+            letterSpacing: -0.2,
           ),
         ),
-        centerTitle: true,
-        backgroundColor: AppColors.background,
+        centerTitle: false,
+        backgroundColor: Colors.transparent,
         elevation: 0,
         scrolledUnderElevation: 0,
         actions: [
           IconButton(
             key: const Key('btn_reset_target_apps'),
-            icon: const Icon(Icons.refresh_rounded, color: AppColors.textSecondary),
+            icon: Container(
+              width: 38,
+              height: 38,
+              decoration: BoxDecoration(
+                color: Colors.white,
+                shape: BoxShape.circle,
+                border: Border.all(color: const Color(0xFFE2E8F0), width: 1),
+                boxShadow: [
+                  BoxShadow(
+                    color: AppColors.navy.withValues(alpha: 0.04),
+                    blurRadius: 6,
+                    offset: const Offset(0, 2),
+                  ),
+                ],
+              ),
+              child: const Icon(Icons.refresh_rounded, size: 20, color: AppColors.navy),
+            ),
             tooltip: 'Reset ke Bawaan',
             onPressed: () => _showResetDialog(context),
           ),
+          const SizedBox(width: 8),
         ],
       ),
       body: Column(
@@ -92,22 +110,22 @@ class TargetAppsView extends GetView<TargetAppsController> {
                   'Aplikasi yang Dipantau',
                   style: TextStyle(
                     fontSize: 14,
-                    fontWeight: FontWeight.w600,
-                    color: AppColors.textSecondary,
+                    fontWeight: FontWeight.w700,
+                    color: AppColors.navy,
                   ),
                 ),
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                   decoration: BoxDecoration(
-                    color: AppColors.primary.withValues(alpha: 0.12),
+                    color: AppColors.softMint,
                     borderRadius: BorderRadius.circular(10),
                   ),
                   child: Text(
                     '$count Aktif',
                     style: const TextStyle(
                       fontSize: 12,
-                      fontWeight: FontWeight.w700,
-                      color: AppColors.primary,
+                      fontWeight: FontWeight.w800,
+                      color: AppColors.navy,
                     ),
                   ),
                 ),
@@ -117,9 +135,16 @@ class TargetAppsView extends GetView<TargetAppsController> {
           const SizedBox(height: 10),
           Container(
             decoration: BoxDecoration(
-              color: AppColors.card,
-              borderRadius: BorderRadius.circular(14),
-              border: Border.all(color: AppColors.border),
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(color: const Color(0xFFE2E8F0)),
+              boxShadow: [
+                BoxShadow(
+                  color: AppColors.navy.withValues(alpha: 0.03),
+                  blurRadius: 8,
+                  offset: const Offset(0, 2),
+                ),
+              ],
             ),
             child: TextField(
               key: const Key('input_search_target_apps'),
@@ -212,8 +237,8 @@ class TargetAppsView extends GetView<TargetAppsController> {
           label,
           style: TextStyle(
             fontSize: 12,
-            fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
-            color: isSelected ? Colors.white : AppColors.textPrimary,
+            fontWeight: isSelected ? FontWeight.w800 : FontWeight.w600,
+            color: isSelected ? AppColors.navy : AppColors.textSecondary,
           ),
         ),
       ),
@@ -223,34 +248,41 @@ class TargetAppsView extends GetView<TargetAppsController> {
   /// Card Item Aplikasi
   Widget _buildAppItemCard(TargetAppModel app) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
       decoration: BoxDecoration(
-        color: AppColors.card,
-        borderRadius: BorderRadius.circular(16),
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(18),
         border: Border.all(
           color: app.isMonitored
-              ? AppColors.primary.withValues(alpha: 0.3)
-              : AppColors.border,
+              ? AppColors.teal.withValues(alpha: 0.35)
+              : const Color(0xFFE2E8F0),
           width: 1,
         ),
+        boxShadow: [
+          BoxShadow(
+            color: AppColors.navy.withValues(alpha: 0.02),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ],
       ),
       child: Row(
         children: [
           Container(
-            width: 42,
-            height: 42,
+            width: 44,
+            height: 44,
             decoration: BoxDecoration(
               color: app.isMonitored
-                  ? AppColors.primary.withValues(alpha: 0.12)
-                  : AppColors.background,
-              borderRadius: BorderRadius.circular(12),
+                  ? AppColors.softMint
+                  : const Color(0xFFF1F5F9),
+              borderRadius: BorderRadius.circular(14),
             ),
             child: Icon(
               app.isMonitored
                   ? Icons.sensors_rounded
                   : Icons.smartphone_rounded,
               color: app.isMonitored
-                  ? AppColors.primary
+                  ? AppColors.teal
                   : AppColors.textSecondary,
               size: 22,
             ),
@@ -267,8 +299,9 @@ class TargetAppsView extends GetView<TargetAppsController> {
                         app.appName,
                         style: const TextStyle(
                           fontSize: 14,
-                          fontWeight: FontWeight.w700,
-                          color: AppColors.textPrimary,
+                          fontWeight: FontWeight.w800,
+                          color: AppColors.navy,
+                          letterSpacing: -0.2,
                         ),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
@@ -280,15 +313,15 @@ class TargetAppsView extends GetView<TargetAppsController> {
                         padding: const EdgeInsets.symmetric(
                             horizontal: 6, vertical: 2),
                         decoration: BoxDecoration(
-                          color: const Color(0xFFEFF6FF),
+                          color: AppColors.softMint,
                           borderRadius: BorderRadius.circular(6),
                         ),
                         child: const Text(
                           'Default',
                           style: TextStyle(
                             fontSize: 10,
-                            fontWeight: FontWeight.w600,
-                            color: Color(0xFF2563EB),
+                            fontWeight: FontWeight.w700,
+                            color: AppColors.teal,
                           ),
                         ),
                       ),
@@ -312,7 +345,7 @@ class TargetAppsView extends GetView<TargetAppsController> {
           Switch.adaptive(
             key: Key('switch_${app.packageName}'),
             value: app.isMonitored,
-            activeTrackColor: AppColors.primary,
+            activeTrackColor: AppColors.teal,
             onChanged: (val) => controller.toggleApp(app, val),
           ),
         ],
@@ -349,7 +382,7 @@ class TargetAppsView extends GetView<TargetAppsController> {
         padding: const EdgeInsets.all(20),
         child: SizedBox(
           width: double.infinity,
-          height: 48,
+          height: 52,
           child: Obx(() {
             return ElevatedButton.icon(
               key: const Key('btn_save_target_apps'),
@@ -377,7 +410,7 @@ class TargetAppsView extends GetView<TargetAppsController> {
                 ),
               ),
               style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.primary,
+                backgroundColor: AppColors.teal,
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(14),
                 ),

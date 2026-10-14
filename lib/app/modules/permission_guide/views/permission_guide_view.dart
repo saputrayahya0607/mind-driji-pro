@@ -11,9 +11,17 @@ class PermissionGuideView extends GetView<PermissionGuideController> {
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: AppBar(
-        title: const Text('Persiapan Monitoring'),
-        centerTitle: true,
-        backgroundColor: AppColors.background,
+        title: const Text(
+          'Persiapan Monitoring',
+          style: TextStyle(
+            fontSize: 18,
+            fontWeight: FontWeight.w800,
+            color: AppColors.navy,
+            letterSpacing: -0.2,
+          ),
+        ),
+        centerTitle: false,
+        backgroundColor: Colors.transparent,
         elevation: 0,
         scrolledUnderElevation: 0,
       ),
@@ -27,8 +35,8 @@ class PermissionGuideView extends GetView<PermissionGuideController> {
                 'Persiapan Monitoring',
                 style: TextStyle(
                   fontSize: 22,
-                  fontWeight: FontWeight.w700,
-                  color: AppColors.textPrimary,
+                  fontWeight: FontWeight.w800,
+                  color: AppColors.navy,
                   letterSpacing: -0.3,
                 ),
               ),
@@ -126,7 +134,7 @@ class PermissionGuideView extends GetView<PermissionGuideController> {
                         ),
                       ),
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: AppColors.primary,
+                        backgroundColor: AppColors.teal,
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(14),
                         ),
@@ -166,16 +174,16 @@ class PermissionGuideView extends GetView<PermissionGuideController> {
       final progress = activeCount / controller.totalPermission;
 
       return Container(
-        padding: const EdgeInsets.all(18),
+        padding: const EdgeInsets.all(20),
         decoration: BoxDecoration(
-          color: AppColors.card,
+          color: Colors.white,
           borderRadius: BorderRadius.circular(20),
-          border: Border.all(color: AppColors.border, width: 1),
+          border: Border.all(color: const Color(0xFFE2E8F0), width: 1),
           boxShadow: [
             BoxShadow(
-              color: AppColors.secondary.withValues(alpha: 0.03),
-              blurRadius: 10,
-              offset: const Offset(0, 4),
+              color: AppColors.navy.withValues(alpha: 0.03),
+              blurRadius: 12,
+              offset: const Offset(0, 3),
             ),
           ],
         ),
@@ -257,19 +265,19 @@ class PermissionGuideView extends GetView<PermissionGuideController> {
     required VoidCallback onAction,
   }) {
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
-        color: AppColors.card,
-        borderRadius: BorderRadius.circular(16),
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(18),
         border: Border.all(
           color: isGranted
-              ? AppColors.primary.withValues(alpha: 0.25)
-              : AppColors.border,
+              ? AppColors.teal.withValues(alpha: 0.35)
+              : const Color(0xFFE2E8F0),
           width: 1,
         ),
         boxShadow: [
           BoxShadow(
-            color: AppColors.secondary.withValues(alpha: 0.02),
+            color: AppColors.navy.withValues(alpha: 0.02),
             blurRadius: 8,
             offset: const Offset(0, 2),
           ),
@@ -355,24 +363,24 @@ class PermissionGuideView extends GetView<PermissionGuideController> {
             const SizedBox(height: 14),
             SizedBox(
               width: double.infinity,
-              height: 40,
+              height: 44,
               child: ElevatedButton(
                 key: Key('btn_aktifkan_$title'),
                 onPressed: onAction,
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: AppColors.primary,
+                  backgroundColor: AppColors.teal,
                   foregroundColor: Colors.white,
                   elevation: 0,
                   padding: EdgeInsets.zero,
                   shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(10),
+                    borderRadius: BorderRadius.circular(12),
                   ),
                 ),
                 child: const Text(
                   'Aktifkan',
                   style: TextStyle(
                     fontSize: 14,
-                    fontWeight: FontWeight.w600,
+                    fontWeight: FontWeight.w700,
                   ),
                 ),
               ),

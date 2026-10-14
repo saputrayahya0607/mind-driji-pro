@@ -15,14 +15,20 @@ class ScreenTimeView extends GetView<ScreenTimeController> {
       appBar: AppBar(
         title: const Text('Screen Time'),
         centerTitle: true,
-        backgroundColor: AppColors.background,
+        backgroundColor: Colors.transparent,
         elevation: 0,
         scrolledUnderElevation: 0,
+        titleTextStyle: const TextStyle(
+          fontSize: 18,
+          fontWeight: FontWeight.w800,
+          color: AppColors.navy,
+          letterSpacing: -0.2,
+        ),
         leading: IconButton(
           icon: const Icon(
             Icons.arrow_back_rounded,
             size: 22,
-            color: AppColors.textPrimary,
+            color: AppColors.navy,
           ),
           constraints: const BoxConstraints(minWidth: 48, minHeight: 48),
           onPressed: () => Get.back(),
@@ -33,16 +39,20 @@ class ScreenTimeView extends GetView<ScreenTimeController> {
         top: false,
         child: Obx(() {
           if (controller.isLoading.value) {
-            return const Center(
+            return Center(
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  CircularProgressIndicator(
-                    color: AppColors.primary,
-                    strokeWidth: 3,
+                  SizedBox(
+                    width: 32,
+                    height: 32,
+                    child: CircularProgressIndicator(
+                      color: AppColors.teal,
+                      strokeWidth: 3,
+                    ),
                   ),
-                  SizedBox(height: 16),
-                  Text(
+                  const SizedBox(height: 16),
+                  const Text(
                     'Memuat data penggunaan...',
                     style: TextStyle(
                       color: AppColors.textSecondary,
@@ -56,8 +66,8 @@ class ScreenTimeView extends GetView<ScreenTimeController> {
           }
 
           return RefreshIndicator(
-            color: AppColors.primary,
-            backgroundColor: AppColors.card,
+            color: AppColors.teal,
+            backgroundColor: Colors.white,
             onRefresh: () => controller.refreshUsage(),
             child: SingleChildScrollView(
               physics: const AlwaysScrollableScrollPhysics(),
@@ -90,35 +100,35 @@ class ScreenTimeView extends GetView<ScreenTimeController> {
   Widget _buildSyncInfoCard() {
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
       decoration: BoxDecoration(
-        color: AppColors.successContainer.withValues(alpha: 0.6),
-        borderRadius: BorderRadius.circular(16),
+        color: AppColors.softMint,
+        borderRadius: BorderRadius.circular(18),
         border: Border.all(
-          color: AppColors.success.withValues(alpha: 0.25),
+          color: AppColors.teal.withValues(alpha: 0.25),
           width: 1,
         ),
+        boxShadow: [
+          BoxShadow(
+            color: AppColors.teal.withValues(alpha: 0.05),
+            blurRadius: 10,
+            offset: const Offset(0, 3),
+          ),
+        ],
       ),
       child: Row(
         children: [
           Container(
-            width: 36,
-            height: 36,
-            decoration: BoxDecoration(
-              color: AppColors.card,
+            width: 38,
+            height: 38,
+            decoration: const BoxDecoration(
+              color: Colors.white,
               shape: BoxShape.circle,
-              boxShadow: [
-                BoxShadow(
-                  color: AppColors.success.withValues(alpha: 0.12),
-                  blurRadius: 6,
-                  offset: const Offset(0, 2),
-                ),
-              ],
             ),
             child: const Icon(
               Icons.schedule_rounded,
               size: 20,
-              color: AppColors.success,
+              color: AppColors.teal,
             ),
           ),
           const SizedBox(width: 12),
@@ -129,17 +139,17 @@ class ScreenTimeView extends GetView<ScreenTimeController> {
                 Text(
                   'Penyimpanan Lokal Aktif',
                   style: TextStyle(
-                    fontSize: 13,
-                    fontWeight: FontWeight.w700,
-                    color: AppColors.textPrimary,
+                    fontSize: 13.5,
+                    fontWeight: FontWeight.w800,
+                    color: AppColors.navy,
                   ),
                 ),
                 SizedBox(height: 2),
                 Text(
                   'Data monitoring tersimpan aman di perangkat. Sinkronisasi otomatis ke cloud berjalan setiap pukul 23:59 WIB.',
                   style: TextStyle(
-                    fontSize: 11,
-                    color: AppColors.textSecondary,
+                    fontSize: 11.5,
+                    color: AppColors.navy,
                     height: 1.35,
                   ),
                 ),
@@ -151,7 +161,7 @@ class ScreenTimeView extends GetView<ScreenTimeController> {
     );
   }
 
-  /// Header halaman Screen Time (bersih, tanpa pengulangan kata berlebih)
+  /// Header halaman Screen Time
   Widget _buildHeader() {
     return const Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -159,9 +169,9 @@ class ScreenTimeView extends GetView<ScreenTimeController> {
         Text(
           'Waktu Layar',
           style: TextStyle(
-            fontSize: 20,
-            fontWeight: FontWeight.w700,
-            color: AppColors.textPrimary,
+            fontSize: 22,
+            fontWeight: FontWeight.w800,
+            color: AppColors.navy,
             letterSpacing: -0.3,
           ),
         ),
@@ -181,19 +191,19 @@ class ScreenTimeView extends GetView<ScreenTimeController> {
   Widget _buildPermissionRequiredCard() {
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.all(22),
+      padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
-        color: AppColors.card,
-        borderRadius: BorderRadius.circular(20),
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(22),
         border: Border.all(
-          color: AppColors.warning.withValues(alpha: 0.35),
-          width: 1.2,
+          color: AppColors.warning.withValues(alpha: 0.4),
+          width: 1.4,
         ),
         boxShadow: [
           BoxShadow(
-            color: AppColors.secondary.withValues(alpha: 0.04),
-            blurRadius: 16,
-            offset: const Offset(0, 4),
+            color: AppColors.warning.withValues(alpha: 0.08),
+            blurRadius: 18,
+            offset: const Offset(0, 6),
           ),
         ],
       ),
@@ -201,15 +211,15 @@ class ScreenTimeView extends GetView<ScreenTimeController> {
         crossAxisAlignment: CrossAxisAlignment.center,
         children: [
           Container(
-            width: 60,
-            height: 60,
+            width: 64,
+            height: 64,
             decoration: const BoxDecoration(
               color: AppColors.warningContainer,
               shape: BoxShape.circle,
             ),
             child: const Icon(
               Icons.lock_clock_outlined,
-              size: 30,
+              size: 32,
               color: AppColors.warning,
             ),
           ),
@@ -218,9 +228,9 @@ class ScreenTimeView extends GetView<ScreenTimeController> {
             'Monitoring penggunaan belum aktif',
             textAlign: TextAlign.center,
             style: TextStyle(
-              fontSize: 16,
-              fontWeight: FontWeight.w700,
-              color: AppColors.textPrimary,
+              fontSize: 17,
+              fontWeight: FontWeight.w800,
+              color: AppColors.navy,
             ),
           ),
           const SizedBox(height: 8),
@@ -241,7 +251,7 @@ class ScreenTimeView extends GetView<ScreenTimeController> {
               icon: const Icon(Icons.settings_outlined, size: 18),
               label: const Text('Aktifkan Monitoring'),
               style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.primary,
+                backgroundColor: AppColors.teal,
                 foregroundColor: Colors.white,
                 minimumSize: const Size.fromHeight(48),
                 shape: RoundedRectangleBorder(
@@ -263,16 +273,16 @@ class ScreenTimeView extends GetView<ScreenTimeController> {
 
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.all(20),
+      padding: const EdgeInsets.all(22),
       decoration: BoxDecoration(
-        color: AppColors.card,
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: AppColors.border, width: 1),
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(22),
+        border: Border.all(color: const Color(0xFFE2E8F0), width: 1),
         boxShadow: [
           BoxShadow(
-            color: AppColors.secondary.withValues(alpha: 0.03),
-            blurRadius: 14,
-            offset: const Offset(0, 3),
+            color: AppColors.navy.withValues(alpha: 0.04),
+            blurRadius: 16,
+            offset: const Offset(0, 4),
           ),
         ],
       ),
@@ -282,16 +292,16 @@ class ScreenTimeView extends GetView<ScreenTimeController> {
           Row(
             children: [
               Container(
-                width: 36,
-                height: 36,
+                width: 40,
+                height: 40,
                 decoration: BoxDecoration(
-                  color: AppColors.primary.withValues(alpha: 0.12),
-                  borderRadius: BorderRadius.circular(10),
+                  color: AppColors.softMint,
+                  borderRadius: BorderRadius.circular(12),
                 ),
                 child: const Icon(
                   Icons.timer_outlined,
-                  size: 20,
-                  color: AppColors.primary,
+                  size: 22,
+                  color: AppColors.navy,
                 ),
               ),
               const SizedBox(width: 12),
@@ -299,40 +309,40 @@ class ScreenTimeView extends GetView<ScreenTimeController> {
                 child: Text(
                   'Total Penggunaan',
                   style: TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w600,
-                    color: AppColors.textSecondary,
+                    fontSize: 14.5,
+                    fontWeight: FontWeight.w700,
+                    color: AppColors.navy,
                   ),
                 ),
               ),
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                 decoration: BoxDecoration(
-                  color: AppColors.successContainer,
-                  borderRadius: BorderRadius.circular(8),
+                  color: AppColors.softMint,
+                  borderRadius: BorderRadius.circular(10),
                 ),
                 child: const Text(
                   'Hari Ini',
                   style: TextStyle(
                     fontSize: 11,
                     fontWeight: FontWeight.w700,
-                    color: AppColors.onSuccessContainer,
+                    color: AppColors.navy,
                   ),
                 ),
               ),
             ],
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: 18),
           FittedBox(
             alignment: Alignment.centerLeft,
             fit: BoxFit.scaleDown,
             child: Text(
               formattedTotal,
               style: const TextStyle(
-                fontSize: 34,
+                fontSize: 36,
                 fontWeight: FontWeight.w800,
-                color: AppColors.textPrimary,
-                letterSpacing: -0.5,
+                color: AppColors.navy,
+                letterSpacing: -0.6,
               ),
             ),
           ),
@@ -364,21 +374,28 @@ class ScreenTimeView extends GetView<ScreenTimeController> {
               child: Text(
                 'Aplikasi yang Digunakan',
                 style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w700,
-                  color: AppColors.textPrimary,
+                  fontSize: 16.5,
+                  fontWeight: FontWeight.w800,
+                  color: AppColors.navy,
                   letterSpacing: -0.2,
                 ),
               ),
             ),
             if (apps.isNotEmpty) ...[
               const SizedBox(width: 8),
-              Text(
-                '${apps.length} aplikasi',
-                style: const TextStyle(
-                  fontSize: 12,
-                  color: AppColors.textSecondary,
-                  fontWeight: FontWeight.w600,
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFF1F5F9),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Text(
+                  '${apps.length} aplikasi',
+                  style: const TextStyle(
+                    fontSize: 11.5,
+                    color: AppColors.textSecondary,
+                    fontWeight: FontWeight.w700,
+                  ),
                 ),
               ),
             ],
@@ -390,14 +407,14 @@ class ScreenTimeView extends GetView<ScreenTimeController> {
         else
           Container(
             decoration: BoxDecoration(
-              color: AppColors.card,
-              borderRadius: BorderRadius.circular(18),
-              border: Border.all(color: AppColors.border, width: 1),
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(20),
+              border: Border.all(color: const Color(0xFFE2E8F0), width: 1),
               boxShadow: [
                 BoxShadow(
-                  color: AppColors.secondary.withValues(alpha: 0.02),
-                  blurRadius: 10,
-                  offset: const Offset(0, 2),
+                  color: AppColors.navy.withValues(alpha: 0.03),
+                  blurRadius: 12,
+                  offset: const Offset(0, 3),
                 ),
               ],
             ),
@@ -408,7 +425,7 @@ class ScreenTimeView extends GetView<ScreenTimeController> {
               separatorBuilder: (context, index) => const Divider(
                 height: 1,
                 thickness: 1,
-                color: AppColors.borderLight,
+                color: Color(0xFFF1F5F9),
               ),
               itemBuilder: (context, index) {
                 final app = apps[index];
@@ -432,22 +449,27 @@ class ScreenTimeView extends GetView<ScreenTimeController> {
       child: Row(
         children: [
           Container(
-            width: 42,
-            height: 42,
+            width: 44,
+            height: 44,
             decoration: BoxDecoration(
-              color: AppColors.primaryContainer.withValues(alpha: 0.35),
-              borderRadius: BorderRadius.circular(12),
+              gradient: const LinearGradient(
+                colors: [AppColors.softMint, Color(0xFFE0F7F4)],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+              ),
+              borderRadius: BorderRadius.circular(14),
               border: Border.all(
-                color: AppColors.primary.withValues(alpha: 0.15),
+                color: AppColors.teal.withValues(alpha: 0.2),
+                width: 1,
               ),
             ),
             child: Center(
               child: Text(
                 _getAppInitial(app.appName),
                 style: const TextStyle(
-                  fontSize: 17,
-                  fontWeight: FontWeight.w700,
-                  color: AppColors.primary,
+                  fontSize: 18,
+                  fontWeight: FontWeight.w800,
+                  color: AppColors.navy,
                 ),
               ),
             ),
@@ -460,22 +482,22 @@ class ScreenTimeView extends GetView<ScreenTimeController> {
                 Text(
                   app.appName,
                   style: const TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w600,
-                    color: AppColors.textPrimary,
+                    fontSize: 14.5,
+                    fontWeight: FontWeight.w700,
+                    color: AppColors.navy,
                   ),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                 ),
                 const SizedBox(height: 6),
                 ClipRRect(
-                  borderRadius: BorderRadius.circular(4),
+                  borderRadius: BorderRadius.circular(5),
                   child: LinearProgressIndicator(
                     value: percentage,
-                    minHeight: 5,
-                    backgroundColor: AppColors.surfaceContainer,
+                    minHeight: 6,
+                    backgroundColor: const Color(0xFFF1F5F9),
                     valueColor: const AlwaysStoppedAnimation<Color>(
-                      AppColors.primary,
+                      AppColors.teal,
                     ),
                   ),
                 ),
@@ -487,8 +509,8 @@ class ScreenTimeView extends GetView<ScreenTimeController> {
             DurationFormatter.format(app.usageMillis),
             style: const TextStyle(
               fontSize: 14,
-              fontWeight: FontWeight.w700,
-              color: AppColors.textPrimary,
+              fontWeight: FontWeight.w800,
+              color: AppColors.navy,
             ),
           ),
         ],
@@ -500,18 +522,18 @@ class ScreenTimeView extends GetView<ScreenTimeController> {
   Widget _buildEmptyUsageState() {
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.all(26),
+      padding: const EdgeInsets.all(28),
       decoration: BoxDecoration(
-        color: AppColors.card,
-        borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: AppColors.border, width: 1),
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: const Color(0xFFE2E8F0), width: 1),
       ),
       child: const Column(
         children: [
           Icon(
             Icons.hourglass_empty_rounded,
-            size: 40,
-            color: AppColors.textSecondary,
+            size: 42,
+            color: AppColors.textTertiary,
           ),
           SizedBox(height: 14),
           Text(
@@ -520,7 +542,7 @@ class ScreenTimeView extends GetView<ScreenTimeController> {
             style: TextStyle(
               fontSize: 15,
               fontWeight: FontWeight.w700,
-              color: AppColors.textPrimary,
+              color: AppColors.navy,
             ),
           ),
           SizedBox(height: 6),

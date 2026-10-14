@@ -13,28 +13,49 @@ class InterventionHistoryView extends GetView<InterventionHistoryController> {
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: AppBar(
-        title: const Text('Riwayat Intervensi'),
+        title: const Text(
+          'Riwayat Intervensi',
+          style: TextStyle(
+            color: AppColors.navy,
+            fontSize: 18,
+            fontWeight: FontWeight.w800,
+            letterSpacing: -0.3,
+          ),
+        ),
         centerTitle: false,
-        backgroundColor: AppColors.surface,
-        foregroundColor: AppColors.textPrimary,
+        backgroundColor: AppColors.background,
         elevation: 0,
         surfaceTintColor: Colors.transparent,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back_rounded),
-          tooltip: 'Kembali',
-          constraints: const BoxConstraints(minWidth: 48, minHeight: 48),
-          onPressed: () => Get.back(),
+        leading: Padding(
+          padding: const EdgeInsets.only(left: 12),
+          child: Center(
+            child: Material(
+              color: Colors.white,
+              shape: const CircleBorder(
+                side: BorderSide(color: Color(0xFFE2E8F0)),
+              ),
+              child: InkWell(
+                customBorder: const CircleBorder(),
+                onTap: () => Get.back(),
+                child: const SizedBox(
+                  width: 38,
+                  height: 38,
+                  child: Icon(Icons.arrow_back_rounded, color: AppColors.navy, size: 20),
+                ),
+              ),
+            ),
+          ),
         ),
       ),
       body: Obx(() {
         if (controller.isLoading.value && controller.historyList.isEmpty) {
           return const Center(
-            child: CircularProgressIndicator(color: AppColors.primary),
+            child: CircularProgressIndicator(color: AppColors.teal),
           );
         }
 
         return RefreshIndicator(
-          color: AppColors.primary,
+          color: AppColors.teal,
           onRefresh: () => controller.loadHistory(),
           child: ListView(
             padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
@@ -67,8 +88,8 @@ class InterventionHistoryView extends GetView<InterventionHistoryController> {
                         icon: const Icon(Icons.expand_more, size: 20),
                         label: const Text('Lihat Lebih Banyak'),
                         style: TextButton.styleFrom(
-                          foregroundColor: AppColors.primary,
-                          textStyle: const TextStyle(fontWeight: FontWeight.w600),
+                          foregroundColor: AppColors.teal,
+                          textStyle: const TextStyle(fontWeight: FontWeight.w700),
                         ),
                       ),
                     ),
@@ -87,38 +108,53 @@ class InterventionHistoryView extends GetView<InterventionHistoryController> {
     if (stats == null) return const SizedBox.shrink();
 
     return Container(
-      padding: const EdgeInsets.all(18),
+      padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: AppColors.surface,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: AppColors.border),
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: const Color(0xFFE2E8F0)),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.02),
-            blurRadius: 10,
-            offset: const Offset(0, 2),
+            color: AppColors.navy.withValues(alpha: 0.04),
+            blurRadius: 14,
+            offset: const Offset(0, 3),
           ),
         ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
-            'Ringkasan Intervensi',
-            style: TextStyle(
-              fontSize: 15,
-              fontWeight: FontWeight.w700,
-              color: AppColors.textPrimary,
-              letterSpacing: -0.2,
-            ),
-          ),
-          const SizedBox(height: 16),
           Row(
             children: [
-              _buildStatItem('Total', '${stats.totalCount}'),
-              _buildStatItem('Selesai', '${stats.completedCount}'),
-              _buildStatItem('Dibatalkan', '${stats.cancelledCount}'),
-              _buildStatItem('Durasi', '${stats.totalDurationMinutes}m'),
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: AppColors.softMint,
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: const Icon(Icons.bar_chart_rounded, color: AppColors.teal, size: 18),
+              ),
+              const SizedBox(width: 10),
+              const Expanded(
+                child: Text(
+                  'Ringkasan Intervensi',
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w800,
+                    color: AppColors.navy,
+                    letterSpacing: -0.3,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 18),
+          Row(
+            children: [
+              _buildStatItem('Total', '${stats.totalCount}', AppColors.navy),
+              _buildStatItem('Selesai', '${stats.completedCount}', AppColors.teal),
+              _buildStatItem('Dibatalkan', '${stats.cancelledCount}', const Color(0xFFE65100)),
+              _buildStatItem('Durasi', '${stats.totalDurationMinutes}m', AppColors.cyan),
             ],
           ),
         ],
@@ -126,26 +162,32 @@ class InterventionHistoryView extends GetView<InterventionHistoryController> {
     );
   }
 
-  Widget _buildStatItem(String label, String value) {
+  Widget _buildStatItem(String label, String value, [Color valueColor = AppColors.teal]) {
     return Expanded(
       child: Column(
         children: [
-          Text(
-            value,
-            style: const TextStyle(
-              fontSize: 18,
-              fontWeight: FontWeight.w800,
-              color: AppColors.primary,
-              letterSpacing: -0.3,
+          FittedBox(
+            fit: BoxFit.scaleDown,
+            child: Text(
+              value,
+              style: TextStyle(
+                fontSize: 19,
+                fontWeight: FontWeight.w800,
+                color: valueColor,
+                letterSpacing: -0.4,
+              ),
             ),
           ),
           const SizedBox(height: 4),
-          Text(
-            label,
-            style: const TextStyle(
-              fontSize: 12,
-              fontWeight: FontWeight.w500,
-              color: AppColors.textSecondary,
+          FittedBox(
+            fit: BoxFit.scaleDown,
+            child: Text(
+              label,
+              style: const TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.w600,
+                color: AppColors.textSecondary,
+              ),
             ),
           ),
         ],
@@ -165,19 +207,19 @@ class InterventionHistoryView extends GetView<InterventionHistoryController> {
               label: Text(filter.label),
               selected: isSelected,
               onSelected: (_) => controller.setTypeFilter(filter),
-              selectedColor: AppColors.primary.withValues(alpha: 0.14),
-              backgroundColor: AppColors.surface,
+              selectedColor: AppColors.softMint,
+              backgroundColor: Colors.white,
               labelStyle: TextStyle(
                 fontSize: 13,
-                fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
-                color: isSelected ? AppColors.primary : AppColors.textSecondary,
+                fontWeight: isSelected ? FontWeight.w800 : FontWeight.w600,
+                color: isSelected ? AppColors.teal : AppColors.textSecondary,
               ),
               side: BorderSide(
-                color: isSelected ? AppColors.primary : AppColors.border,
-                width: isSelected ? 1.4 : 1.0,
+                color: isSelected ? AppColors.teal : const Color(0xFFE2E8F0),
+                width: isSelected ? 1.5 : 1.0,
               ),
               shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(10),
+                borderRadius: BorderRadius.circular(12),
               ),
             ),
           );
@@ -198,19 +240,19 @@ class InterventionHistoryView extends GetView<InterventionHistoryController> {
               label: Text(filter.label),
               selected: isSelected,
               onSelected: (_) => controller.setDateFilter(filter),
-              selectedColor: AppColors.secondary.withValues(alpha: 0.12),
-              backgroundColor: AppColors.surface,
+              selectedColor: AppColors.navy.withValues(alpha: 0.08),
+              backgroundColor: Colors.white,
               labelStyle: TextStyle(
                 fontSize: 12,
-                fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
-                color: isSelected ? AppColors.secondary : AppColors.textSecondary,
+                fontWeight: isSelected ? FontWeight.w800 : FontWeight.w500,
+                color: isSelected ? AppColors.navy : AppColors.textSecondary,
               ),
               side: BorderSide(
-                color: isSelected ? AppColors.secondary : AppColors.border,
-                width: isSelected ? 1.4 : 1.0,
+                color: isSelected ? AppColors.navy : const Color(0xFFE2E8F0),
+                width: isSelected ? 1.5 : 1.0,
               ),
               shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(10),
+                borderRadius: BorderRadius.circular(12),
               ),
             ),
           );
@@ -223,13 +265,13 @@ class InterventionHistoryView extends GetView<InterventionHistoryController> {
     final isCompleted = item.status == InterventionStatus.completed;
     final isCancelled = item.status == InterventionStatus.cancelled;
 
-    final badgeColor = isCompleted
-        ? AppColors.successContainer
-        : (isCancelled ? AppColors.warningContainer : AppColors.border);
+    final badgeBg = isCompleted
+        ? AppColors.softMint
+        : (isCancelled ? const Color(0xFFFFECE0) : const Color(0xFFF1F5F9));
 
     final badgeTextColor = isCompleted
-        ? AppColors.onSuccessContainer
-        : (isCancelled ? AppColors.onWarningContainer : AppColors.textSecondary);
+        ? AppColors.teal
+        : (isCancelled ? const Color(0xFFD9531E) : AppColors.textSecondary);
 
     final statusText = isCompleted
         ? 'Selesai'
@@ -248,19 +290,27 @@ class InterventionHistoryView extends GetView<InterventionHistoryController> {
       margin: const EdgeInsets.only(bottom: 12),
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: AppColors.surface,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: AppColors.border),
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: const Color(0xFFE2E8F0)),
+        boxShadow: [
+          BoxShadow(
+            color: AppColors.navy.withValues(alpha: 0.03),
+            blurRadius: 10,
+            offset: const Offset(0, 2),
+          ),
+        ],
       ),
       child: Row(
         children: [
           Container(
-            padding: const EdgeInsets.all(10),
+            width: 44,
+            height: 44,
             decoration: BoxDecoration(
-              color: AppColors.primary.withValues(alpha: 0.1),
-              shape: BoxShape.circle,
+              color: AppColors.softMint,
+              borderRadius: BorderRadius.circular(12),
             ),
-            child: Icon(icon, color: AppColors.primary, size: 22),
+            child: Icon(icon, color: AppColors.teal, size: 22),
           ),
           const SizedBox(width: 14),
           Expanded(
@@ -272,7 +322,8 @@ class InterventionHistoryView extends GetView<InterventionHistoryController> {
                   style: const TextStyle(
                     fontSize: 15,
                     fontWeight: FontWeight.w700,
-                    color: AppColors.textPrimary,
+                    color: AppColors.navy,
+                    letterSpacing: -0.2,
                   ),
                 ),
                 const SizedBox(height: 3),
@@ -280,6 +331,7 @@ class InterventionHistoryView extends GetView<InterventionHistoryController> {
                   '${item.durationMinutes} menit · $dateStr',
                   style: const TextStyle(
                     fontSize: 12,
+                    fontWeight: FontWeight.w500,
                     color: AppColors.textSecondary,
                   ),
                 ),
@@ -289,14 +341,14 @@ class InterventionHistoryView extends GetView<InterventionHistoryController> {
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
             decoration: BoxDecoration(
-              color: badgeColor,
+              color: badgeBg,
               borderRadius: BorderRadius.circular(8),
             ),
             child: Text(
               statusText,
               style: TextStyle(
-                fontSize: 12,
-                fontWeight: FontWeight.w700,
+                fontSize: 11,
+                fontWeight: FontWeight.w800,
                 color: badgeTextColor,
               ),
             ),
@@ -308,21 +360,26 @@ class InterventionHistoryView extends GetView<InterventionHistoryController> {
 
   Widget _buildEmptyState() {
     return Container(
-      padding: const EdgeInsets.symmetric(vertical: 40, horizontal: 20),
+      padding: const EdgeInsets.symmetric(vertical: 48, horizontal: 24),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: const Color(0xFFE2E8F0)),
+      ),
       alignment: Alignment.center,
       child: Column(
         children: [
           Container(
             width: 72,
             height: 72,
-            decoration: const BoxDecoration(
-              color: AppColors.surfaceContainer,
+            decoration: BoxDecoration(
+              color: AppColors.softMint.withValues(alpha: 0.6),
               shape: BoxShape.circle,
             ),
-            child: Icon(
-              Icons.history_toggle_off_outlined,
-              size: 40,
-              color: AppColors.textSecondary.withValues(alpha: 0.7),
+            child: const Icon(
+              Icons.history_toggle_off_rounded,
+              size: 38,
+              color: AppColors.teal,
             ),
           ),
           const SizedBox(height: 16),
@@ -330,8 +387,9 @@ class InterventionHistoryView extends GetView<InterventionHistoryController> {
             'Belum Ada Riwayat Intervensi',
             style: TextStyle(
               fontSize: 16,
-              fontWeight: FontWeight.w700,
-              color: AppColors.textPrimary,
+              fontWeight: FontWeight.w800,
+              color: AppColors.navy,
+              letterSpacing: -0.3,
             ),
           ),
           const SizedBox(height: 6),
@@ -341,7 +399,7 @@ class InterventionHistoryView extends GetView<InterventionHistoryController> {
             style: TextStyle(
               fontSize: 13,
               color: AppColors.textSecondary,
-              height: 1.4,
+              height: 1.45,
             ),
           ),
         ],

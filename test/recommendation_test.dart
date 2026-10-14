@@ -849,9 +849,9 @@ void main() {
     });
 
     // -------------------------------------------------------------------------
-    // 22. Widget rendering
+    // 22. Widget rendering: Refined InsightView
     // -------------------------------------------------------------------------
-    testWidgets('22. Widget rendering: InsightView merender section PILIHAN UNTUKMU dan chip durasi', (tester) async {
+    testWidgets('22. Widget rendering: InsightView merender section saran analitis dan tombol Lihat Intervensi', (tester) async {
       tester.view.physicalSize = const Size(1080, 2400);
       tester.view.devicePixelRatio = 1.0;
       addTearDown(tester.view.resetPhysicalSize);
@@ -882,13 +882,14 @@ void main() {
 
       await tester.pumpAndSettle();
 
-      // Memeriksa tampilan bagian PILIHAN UNTUKMU
-      expect(find.text('PILIHAN UNTUKMU'), findsOneWidget);
+      // Memeriksa tampilan bagian SARAN BERDASARKAN ANALISIS & tombol navigasi
+      expect(find.text('SARAN BERDASARKAN ANALISIS'), findsOneWidget);
       expect(find.text('🌿 Jeda Digital'), findsOneWidget);
-      expect(find.text('5 menit'), findsOneWidget);
-      expect(find.text('15 menit'), findsOneWidget);
-      expect(find.text('30 menit'), findsOneWidget);
-      expect(find.text('Mulai Jeda'), findsOneWidget);
+      expect(find.text('Lihat Intervensi'), findsWidgets);
+
+      // Memastikan kartu tindakan duplikat dan chip durasi tidak ditampilkan di Wawasan
+      expect(find.text('PILIHAN UNTUKMU'), findsNothing);
+      expect(find.text('Mulai Jeda'), findsNothing);
     });
   });
 }

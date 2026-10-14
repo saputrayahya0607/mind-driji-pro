@@ -14,14 +14,20 @@ class DoomscrollView extends GetView<DoomscrollController> {
       appBar: AppBar(
         title: const Text('Doomscroll Monitoring'),
         centerTitle: true,
-        backgroundColor: AppColors.background,
+        backgroundColor: Colors.transparent,
         elevation: 0,
         scrolledUnderElevation: 0,
+        titleTextStyle: const TextStyle(
+          fontSize: 18,
+          fontWeight: FontWeight.w800,
+          color: AppColors.navy,
+          letterSpacing: -0.2,
+        ),
         leading: IconButton(
           icon: const Icon(
             Icons.arrow_back_rounded,
             size: 22,
-            color: AppColors.textPrimary,
+            color: AppColors.navy,
           ),
           constraints: const BoxConstraints(minWidth: 48, minHeight: 48),
           onPressed: () => Get.back(),
@@ -32,16 +38,20 @@ class DoomscrollView extends GetView<DoomscrollController> {
         top: false,
         child: Obx(() {
           if (controller.isLoading.value) {
-            return const Center(
+            return Center(
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  CircularProgressIndicator(
-                    color: AppColors.primary,
-                    strokeWidth: 3,
+                  SizedBox(
+                    width: 32,
+                    height: 32,
+                    child: CircularProgressIndicator(
+                      color: AppColors.teal,
+                      strokeWidth: 3,
+                    ),
                   ),
-                  SizedBox(height: 16),
-                  Text(
+                  const SizedBox(height: 16),
+                  const Text(
                     'Memeriksa status monitoring...',
                     style: TextStyle(
                       color: AppColors.textSecondary,
@@ -55,8 +65,8 @@ class DoomscrollView extends GetView<DoomscrollController> {
           }
 
           return RefreshIndicator(
-            color: AppColors.primary,
-            backgroundColor: AppColors.card,
+            color: AppColors.teal,
+            backgroundColor: Colors.white,
             onRefresh: () => controller.refreshSessions(),
             child: SingleChildScrollView(
               physics: const AlwaysScrollableScrollPhysics(),
@@ -92,9 +102,9 @@ class DoomscrollView extends GetView<DoomscrollController> {
         Text(
           'Doomscroll Monitoring',
           style: TextStyle(
-            fontSize: 20,
-            fontWeight: FontWeight.w700,
-            color: AppColors.textPrimary,
+            fontSize: 22,
+            fontWeight: FontWeight.w800,
+            color: AppColors.navy,
             letterSpacing: -0.3,
           ),
         ),
@@ -114,35 +124,35 @@ class DoomscrollView extends GetView<DoomscrollController> {
   Widget _buildSyncInfoCard() {
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
       decoration: BoxDecoration(
-        color: AppColors.successContainer.withValues(alpha: 0.6),
-        borderRadius: BorderRadius.circular(16),
+        color: AppColors.softMint,
+        borderRadius: BorderRadius.circular(18),
         border: Border.all(
-          color: AppColors.success.withValues(alpha: 0.25),
+          color: AppColors.teal.withValues(alpha: 0.25),
           width: 1,
         ),
+        boxShadow: [
+          BoxShadow(
+            color: AppColors.teal.withValues(alpha: 0.05),
+            blurRadius: 10,
+            offset: const Offset(0, 3),
+          ),
+        ],
       ),
       child: Row(
         children: [
           Container(
-            width: 36,
-            height: 36,
-            decoration: BoxDecoration(
-              color: AppColors.card,
+            width: 38,
+            height: 38,
+            decoration: const BoxDecoration(
+              color: Colors.white,
               shape: BoxShape.circle,
-              boxShadow: [
-                BoxShadow(
-                  color: AppColors.success.withValues(alpha: 0.12),
-                  blurRadius: 6,
-                  offset: const Offset(0, 2),
-                ),
-              ],
             ),
             child: const Icon(
               Icons.schedule_rounded,
               size: 20,
-              color: AppColors.success,
+              color: AppColors.teal,
             ),
           ),
           const SizedBox(width: 12),
@@ -153,17 +163,17 @@ class DoomscrollView extends GetView<DoomscrollController> {
                 Text(
                   'Penyimpanan Lokal Aktif',
                   style: TextStyle(
-                    fontSize: 13,
-                    fontWeight: FontWeight.w700,
-                    color: AppColors.textPrimary,
+                    fontSize: 13.5,
+                    fontWeight: FontWeight.w800,
+                    color: AppColors.navy,
                   ),
                 ),
                 SizedBox(height: 2),
                 Text(
                   'Data sesi scrolling tersimpan aman di perangkat. Sinkronisasi otomatis ke cloud berjalan setiap pukul 23:59 WIB.',
                   style: TextStyle(
-                    fontSize: 11,
-                    color: AppColors.textSecondary,
+                    fontSize: 11.5,
+                    color: AppColors.navy,
                     height: 1.35,
                   ),
                 ),
@@ -181,21 +191,23 @@ class DoomscrollView extends GetView<DoomscrollController> {
 
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.all(18),
+      padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: AppColors.card,
-        borderRadius: BorderRadius.circular(20),
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(22),
         border: Border.all(
           color: isActive
-              ? AppColors.primary.withValues(alpha: 0.4)
+              ? AppColors.teal.withValues(alpha: 0.4)
               : AppColors.warning.withValues(alpha: 0.4),
-          width: 1.2,
+          width: 1.4,
         ),
         boxShadow: [
           BoxShadow(
-            color: AppColors.secondary.withValues(alpha: 0.04),
-            blurRadius: 14,
-            offset: const Offset(0, 3),
+            color: isActive
+                ? AppColors.teal.withValues(alpha: 0.06)
+                : AppColors.warning.withValues(alpha: 0.06),
+            blurRadius: 16,
+            offset: const Offset(0, 4),
           ),
         ],
       ),
@@ -205,11 +217,11 @@ class DoomscrollView extends GetView<DoomscrollController> {
           Row(
             children: [
               Container(
-                width: 44,
-                height: 44,
+                width: 48,
+                height: 48,
                 decoration: BoxDecoration(
                   color: isActive
-                      ? AppColors.primaryContainer
+                      ? AppColors.softMint
                       : AppColors.warningContainer,
                   shape: BoxShape.circle,
                 ),
@@ -217,8 +229,8 @@ class DoomscrollView extends GetView<DoomscrollController> {
                   isActive
                       ? Icons.check_circle_rounded
                       : Icons.warning_amber_rounded,
-                  size: 24,
-                  color: isActive ? AppColors.primary : AppColors.warning,
+                  size: 26,
+                  color: isActive ? AppColors.teal : AppColors.warning,
                 ),
               ),
               const SizedBox(width: 14),
@@ -229,18 +241,18 @@ class DoomscrollView extends GetView<DoomscrollController> {
                     Text(
                       isActive ? 'Monitoring Aktif' : 'Monitoring Belum Aktif',
                       style: const TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.w700,
-                        color: AppColors.textPrimary,
+                        fontSize: 16.5,
+                        fontWeight: FontWeight.w800,
+                        color: AppColors.navy,
                       ),
                     ),
-                    const SizedBox(height: 2),
+                    const SizedBox(height: 3),
                     Text(
                       isActive
                           ? 'MIND DRIJI aktif mendeteksi sesi scrolling di latar belakang'
                           : 'Izin Accessibility Service diperlukan untuk mendeteksi scrolling',
                       style: const TextStyle(
-                        fontSize: 12,
+                        fontSize: 12.5,
                         color: AppColors.textSecondary,
                         height: 1.35,
                       ),
@@ -251,7 +263,7 @@ class DoomscrollView extends GetView<DoomscrollController> {
             ],
           ),
           if (!isActive) ...[
-            const SizedBox(height: 16),
+            const SizedBox(height: 18),
             SizedBox(
               width: double.infinity,
               child: ElevatedButton.icon(
@@ -259,7 +271,7 @@ class DoomscrollView extends GetView<DoomscrollController> {
                 icon: const Icon(Icons.settings_accessibility_rounded, size: 18),
                 label: const Text('Aktifkan Monitoring'),
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: AppColors.primary,
+                  backgroundColor: AppColors.teal,
                   foregroundColor: Colors.white,
                   minimumSize: const Size.fromHeight(48),
                   shape: RoundedRectangleBorder(
@@ -279,11 +291,18 @@ class DoomscrollView extends GetView<DoomscrollController> {
   Widget _buildPrivacyNoticeCard() {
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.all(14),
+      padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: AppColors.surfaceContainerLow,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: AppColors.border),
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: const Color(0xFFE2E8F0)),
+        boxShadow: [
+          BoxShadow(
+            color: AppColors.navy.withValues(alpha: 0.02),
+            blurRadius: 10,
+            offset: const Offset(0, 2),
+          ),
+        ],
       ),
       child: const Row(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -291,7 +310,7 @@ class DoomscrollView extends GetView<DoomscrollController> {
           Icon(
             Icons.privacy_tip_outlined,
             size: 20,
-            color: AppColors.textSecondary,
+            color: AppColors.teal,
           ),
           SizedBox(width: 10),
           Expanded(
@@ -322,19 +341,26 @@ class DoomscrollView extends GetView<DoomscrollController> {
             const Text(
               'Sesi Scrolling Terdeteksi',
               style: TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.w700,
-                color: AppColors.textPrimary,
+                fontSize: 16.5,
+                fontWeight: FontWeight.w800,
+                color: AppColors.navy,
                 letterSpacing: -0.2,
               ),
             ),
             if (list.isNotEmpty)
-              Text(
-                '${list.length} sesi',
-                style: const TextStyle(
-                  fontSize: 12,
-                  fontWeight: FontWeight.w600,
-                  color: AppColors.primary,
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                decoration: BoxDecoration(
+                  color: AppColors.softMint,
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Text(
+                  '${list.length} sesi',
+                  style: const TextStyle(
+                    fontSize: 11.5,
+                    fontWeight: FontWeight.w700,
+                    color: AppColors.navy,
+                  ),
                 ),
               ),
           ],
@@ -360,17 +386,17 @@ class DoomscrollView extends GetView<DoomscrollController> {
   Widget _buildEmptyState() {
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.symmetric(vertical: 34, horizontal: 20),
+      padding: const EdgeInsets.symmetric(vertical: 36, horizontal: 20),
       decoration: BoxDecoration(
-        color: AppColors.card,
-        borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: AppColors.border),
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: const Color(0xFFE2E8F0)),
       ),
       child: const Column(
         children: [
           Icon(
             Icons.history_toggle_off_rounded,
-            size: 42,
+            size: 44,
             color: AppColors.textTertiary,
           ),
           SizedBox(height: 12),
@@ -378,9 +404,9 @@ class DoomscrollView extends GetView<DoomscrollController> {
             'Belum ada sesi scrolling terdeteksi.',
             textAlign: TextAlign.center,
             style: TextStyle(
-              fontSize: 14,
-              fontWeight: FontWeight.w600,
-              color: AppColors.textSecondary,
+              fontSize: 14.5,
+              fontWeight: FontWeight.w700,
+              color: AppColors.navy,
             ),
           ),
           SizedBox(height: 4),
@@ -388,8 +414,8 @@ class DoomscrollView extends GetView<DoomscrollController> {
             'Sesi akan otomatis terbentuk saat kamu melakukan scroll pada aplikasi TikTok, Instagram, YouTube, atau Snapchat.',
             textAlign: TextAlign.center,
             style: TextStyle(
-              fontSize: 12,
-              color: AppColors.textTertiary,
+              fontSize: 12.5,
+              color: AppColors.textSecondary,
               height: 1.4,
             ),
           ),
@@ -406,15 +432,15 @@ class DoomscrollView extends GetView<DoomscrollController> {
         : '${durationSeconds ~/ 60}m ${durationSeconds % 60}d';
 
     return Container(
-      padding: const EdgeInsets.all(14),
+      padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: AppColors.card,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: AppColors.border),
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: const Color(0xFFE2E8F0)),
         boxShadow: [
           BoxShadow(
-            color: AppColors.secondary.withValues(alpha: 0.02),
-            blurRadius: 8,
+            color: AppColors.navy.withValues(alpha: 0.03),
+            blurRadius: 10,
             offset: const Offset(0, 2),
           ),
         ],
@@ -422,17 +448,17 @@ class DoomscrollView extends GetView<DoomscrollController> {
       child: Row(
         children: [
           Container(
-            width: 42,
-            height: 42,
+            width: 44,
+            height: 44,
             decoration: BoxDecoration(
-              color: AppColors.surfaceContainer,
-              borderRadius: BorderRadius.circular(12),
+              color: const Color(0xFFF1F5F9),
+              borderRadius: BorderRadius.circular(14),
             ),
             child: Center(
               child: _buildAppIcon(session.packageName),
             ),
           ),
-          const SizedBox(width: 12),
+          const SizedBox(width: 14),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -444,9 +470,9 @@ class DoomscrollView extends GetView<DoomscrollController> {
                       child: Text(
                         session.appName,
                         style: const TextStyle(
-                          fontSize: 14,
-                          fontWeight: FontWeight.w700,
-                          color: AppColors.textPrimary,
+                          fontSize: 14.5,
+                          fontWeight: FontWeight.w800,
+                          color: AppColors.navy,
                         ),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
@@ -455,9 +481,9 @@ class DoomscrollView extends GetView<DoomscrollController> {
                     Text(
                       _formatTime(session.startedAt),
                       style: const TextStyle(
-                        fontSize: 11,
+                        fontSize: 11.5,
                         color: AppColors.textSecondary,
-                        fontWeight: FontWeight.w500,
+                        fontWeight: FontWeight.w600,
                       ),
                     ),
                   ],
@@ -468,54 +494,53 @@ class DoomscrollView extends GetView<DoomscrollController> {
                     Text(
                       '${session.swipeCount} scroll',
                       style: const TextStyle(
-                        fontSize: 12,
-                        fontWeight: FontWeight.w600,
-                        color: AppColors.textPrimary,
+                        fontSize: 12.5,
+                        fontWeight: FontWeight.w700,
+                        color: AppColors.navy,
                       ),
                     ),
                     const SizedBox(width: 8),
-                    const Text('•', style: TextStyle(color: AppColors.border)),
+                    const Text('•', style: TextStyle(color: Color(0xFFCBD5E1))),
                     const SizedBox(width: 8),
                     Text(
                       'Durasi $durationText',
                       style: const TextStyle(
                         fontSize: 12,
                         color: AppColors.textSecondary,
+                        fontWeight: FontWeight.w500,
                       ),
                     ),
                   ],
                 ),
-                const SizedBox(height: 4),
+                const SizedBox(height: 6),
                 Row(
                   children: [
-                    Icon(
+                    const Icon(
                       Icons.arrow_downward_rounded,
                       size: 13,
-                      color: session.downwardSwipeCount > 0
-                          ? AppColors.primary
-                          : AppColors.textTertiary,
+                      color: AppColors.teal,
                     ),
                     const SizedBox(width: 2),
                     Text(
                       '${session.downwardSwipeCount} bawah',
                       style: const TextStyle(
-                        fontSize: 11,
-                        color: AppColors.textSecondary,
+                        fontSize: 11.5,
+                        fontWeight: FontWeight.w600,
+                        color: AppColors.navy,
                       ),
                     ),
-                    const SizedBox(width: 8),
-                    Icon(
+                    const SizedBox(width: 10),
+                    const Icon(
                       Icons.arrow_upward_rounded,
                       size: 13,
-                      color: session.upwardSwipeCount > 0
-                          ? AppColors.info
-                          : AppColors.textTertiary,
+                      color: AppColors.info,
                     ),
                     const SizedBox(width: 2),
                     Text(
                       '${session.upwardSwipeCount} atas',
                       style: const TextStyle(
-                        fontSize: 11,
+                        fontSize: 11.5,
+                        fontWeight: FontWeight.w600,
                         color: AppColors.textSecondary,
                       ),
                     ),
@@ -529,8 +554,8 @@ class DoomscrollView extends GetView<DoomscrollController> {
                     const Text(
                       'Tersimpan',
                       style: TextStyle(
-                        fontSize: 10,
-                        fontWeight: FontWeight.w600,
+                        fontSize: 10.5,
+                        fontWeight: FontWeight.w700,
                         color: AppColors.success,
                       ),
                     ),
@@ -562,7 +587,7 @@ class DoomscrollView extends GetView<DoomscrollController> {
       color = const Color(0xFFD97706);
     } else {
       icon = Icons.phone_android_rounded;
-      color = AppColors.primary;
+      color = AppColors.teal;
     }
 
     return Icon(icon, size: 22, color: color);
@@ -599,18 +624,18 @@ class DoomscrollView extends GetView<DoomscrollController> {
       return Container(
         margin: const EdgeInsets.only(bottom: 20),
         width: double.infinity,
-        padding: const EdgeInsets.all(18),
+        padding: const EdgeInsets.all(20),
         decoration: BoxDecoration(
-          color: AppColors.card,
-          borderRadius: BorderRadius.circular(20),
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(22),
           border: Border.all(
-            color: AppColors.primary,
-            width: 1.5,
+            color: AppColors.teal,
+            width: 1.6,
           ),
           boxShadow: [
             BoxShadow(
-              color: AppColors.primary.withValues(alpha: 0.12),
-              blurRadius: 16,
+              color: AppColors.teal.withValues(alpha: 0.12),
+              blurRadius: 18,
               offset: const Offset(0, 4),
             ),
           ],
@@ -624,11 +649,11 @@ class DoomscrollView extends GetView<DoomscrollController> {
                   width: 10,
                   height: 10,
                   decoration: BoxDecoration(
-                    color: AppColors.primary,
+                    color: AppColors.teal,
                     shape: BoxShape.circle,
                     boxShadow: [
                       BoxShadow(
-                        color: AppColors.primary.withValues(alpha: 0.4),
+                        color: AppColors.teal.withValues(alpha: 0.5),
                         blurRadius: 6,
                         spreadRadius: 2,
                       ),
@@ -639,9 +664,9 @@ class DoomscrollView extends GetView<DoomscrollController> {
                 const Text(
                   'Sesi scrolling aktif',
                   style: TextStyle(
-                    fontSize: 13,
-                    fontWeight: FontWeight.w700,
-                    color: AppColors.primary,
+                    fontSize: 13.5,
+                    fontWeight: FontWeight.w800,
+                    color: AppColors.teal,
                   ),
                 ),
                 const Spacer(),
@@ -649,21 +674,21 @@ class DoomscrollView extends GetView<DoomscrollController> {
                   padding:
                       const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                   decoration: BoxDecoration(
-                    color: AppColors.primaryContainer,
+                    color: AppColors.softMint,
                     borderRadius: BorderRadius.circular(8),
                   ),
                   child: const Text(
                     'Sedang Memantau',
                     style: TextStyle(
                       fontSize: 11,
-                      fontWeight: FontWeight.w700,
-                      color: AppColors.primary,
+                      fontWeight: FontWeight.w800,
+                      color: AppColors.navy,
                     ),
                   ),
                 ),
               ],
             ),
-            const SizedBox(height: 14),
+            const SizedBox(height: 16),
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               crossAxisAlignment: CrossAxisAlignment.center,
@@ -671,11 +696,11 @@ class DoomscrollView extends GetView<DoomscrollController> {
                 Row(
                   children: [
                     Container(
-                      width: 40,
-                      height: 40,
+                      width: 44,
+                      height: 44,
                       decoration: BoxDecoration(
-                        color: AppColors.surfaceContainer,
-                        borderRadius: BorderRadius.circular(12),
+                        color: const Color(0xFFF1F5F9),
+                        borderRadius: BorderRadius.circular(14),
                       ),
                       child: Center(
                         child: _buildAppIcon(live.packageName),
@@ -686,8 +711,8 @@ class DoomscrollView extends GetView<DoomscrollController> {
                       live.appName,
                       style: const TextStyle(
                         fontSize: 18,
-                        fontWeight: FontWeight.w700,
-                        color: AppColors.textPrimary,
+                        fontWeight: FontWeight.w800,
+                        color: AppColors.navy,
                       ),
                     ),
                   ],
@@ -697,9 +722,9 @@ class DoomscrollView extends GetView<DoomscrollController> {
                   child: Text(
                     durationText,
                     style: const TextStyle(
-                      fontSize: 22,
+                      fontSize: 24,
                       fontWeight: FontWeight.w800,
-                      color: AppColors.secondary,
+                      color: AppColors.navy,
                       letterSpacing: 0.5,
                     ),
                   ),
@@ -710,9 +735,9 @@ class DoomscrollView extends GetView<DoomscrollController> {
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
               decoration: BoxDecoration(
-                color: AppColors.surfaceContainerLow,
+                color: AppColors.background,
                 borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: AppColors.border),
+                border: Border.all(color: const Color(0xFFE2E8F0)),
               ),
               child: Row(
                 children: [
@@ -720,8 +745,8 @@ class DoomscrollView extends GetView<DoomscrollController> {
                     '${live.swipeCount} Scroll',
                     style: const TextStyle(
                       fontSize: 14,
-                      fontWeight: FontWeight.w700,
-                      color: AppColors.textPrimary,
+                      fontWeight: FontWeight.w800,
+                      color: AppColors.navy,
                     ),
                   ),
                   const Spacer(),
@@ -730,15 +755,15 @@ class DoomscrollView extends GetView<DoomscrollController> {
                       const Icon(
                         Icons.arrow_downward_rounded,
                         size: 15,
-                        color: AppColors.primary,
+                        color: AppColors.teal,
                       ),
                       const SizedBox(width: 4),
                       Text(
                         '↓ ${live.downwardSwipeCount}',
                         style: const TextStyle(
                           fontSize: 13,
-                          fontWeight: FontWeight.w600,
-                          color: AppColors.textPrimary,
+                          fontWeight: FontWeight.w700,
+                          color: AppColors.navy,
                         ),
                       ),
                     ],
@@ -756,8 +781,8 @@ class DoomscrollView extends GetView<DoomscrollController> {
                         '↑ ${live.upwardSwipeCount}',
                         style: const TextStyle(
                           fontSize: 13,
-                          fontWeight: FontWeight.w600,
-                          color: AppColors.textPrimary,
+                          fontWeight: FontWeight.w700,
+                          color: AppColors.navy,
                         ),
                       ),
                     ],

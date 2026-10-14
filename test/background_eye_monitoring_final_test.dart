@@ -276,7 +276,7 @@ void main() {
     });
 
     // 7. interval
-    test('7. Interval: default 30 menit dan dapat disesuaikan untuk testing', () async {
+    test('7. Interval: default 15 menit dan dapat disesuaikan untuk testing', () async {
       final service = EyeMonitoringService(
         repository: mockRepo,
         localRepository: localRepo,
@@ -286,7 +286,8 @@ void main() {
       );
 
       expect(service.monitoringInterval, EyeMonitoringConstants.defaultMonitoringInterval);
-      expect(service.monitoringInterval, const Duration(minutes: 30));
+      expect(service.monitoringInterval, const Duration(minutes: 15));
+      expect(service.monitoringInterval.inMilliseconds, 900000);
 
       service.setTestingIntervals(monitoringInterval: EyeMonitoringConstants.testMonitoringInterval);
       expect(service.monitoringInterval, const Duration(seconds: 10));
@@ -556,7 +557,7 @@ void main() {
 
     // 21. missed session
     test('21. Missed session: tidak mengejar banyak sesi terlewat secara beruntun', () async {
-      // Simulasikan sesi terakhir terjadi 3 jam yang lalu (interval 30 menit)
+      // Simulasikan sesi terakhir terjadi 3 jam yang lalu (interval 15 menit)
       await db.into(db.eyeMonitoringConfig).insertOnConflictUpdate(
         EyeMonitoringConfigCompanion.insert(
           id: 'current_config',
