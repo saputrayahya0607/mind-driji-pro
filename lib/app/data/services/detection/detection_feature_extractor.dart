@@ -164,14 +164,16 @@ class DetectionFeatureExtractor {
     }
 
     // Hitung rata-rata dan rasio
-    final downwardRatio =
-        totalSwipes > 0 ? (totalDownward / totalSwipes) : 0.0;
-    final avgSessionDuration =
-        totalSessions > 0 ? (totalDuration ~/ totalSessions) : 0;
-    final avgSwipesPerSession =
-        totalSessions > 0 ? (totalSwipes / totalSessions) : 0.0;
-    final avgInterSwipe =
-        interSwipeCount > 0 ? (interSwipeSum ~/ interSwipeCount) : 0;
+    final downwardRatio = totalSwipes > 0 ? (totalDownward / totalSwipes) : 0.0;
+    final avgSessionDuration = totalSessions > 0
+        ? (totalDuration ~/ totalSessions)
+        : 0;
+    final avgSwipesPerSession = totalSessions > 0
+        ? (totalSwipes / totalSessions)
+        : 0.0;
+    final avgInterSwipe = interSwipeCount > 0
+        ? (interSwipeSum ~/ interSwipeCount)
+        : 0;
 
     // Analisis jeda antar-sesi & pengulangan (Repeated Sessions)
     int repeatedCount = 0;
@@ -185,7 +187,8 @@ class DetectionFeatureExtractor {
       final current = parsed[i];
       final next = parsed[i + 1];
 
-      final currentEnd = current.endedAt ??
+      final currentEnd =
+          current.endedAt ??
           current.startedAt.add(Duration(milliseconds: current.durationMillis));
       final gap = max(0, next.startedAt.difference(currentEnd).inMilliseconds);
 

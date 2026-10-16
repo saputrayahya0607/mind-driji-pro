@@ -11,49 +11,54 @@ import 'tables/sync_queue.dart';
 
 part 'app_database.g.dart';
 
-@DriftDatabase(tables: [
-  ScreenTimeDaily,
-  AppUsageDaily,
-  SyncQueue,
-  DoomscrollSessions,
-  EyeMonitoringSessions,
-  LocalDeviceInfo,
-  EyeMonitoringConfig,
-  InterventionHistories,
-])
+@DriftDatabase(
+  tables: [
+    ScreenTimeDaily,
+    AppUsageDaily,
+    SyncQueue,
+    DoomscrollSessions,
+    EyeMonitoringSessions,
+    LocalDeviceInfo,
+    EyeMonitoringConfig,
+    InterventionHistories,
+  ],
+)
 class AppDatabase extends _$AppDatabase {
   AppDatabase([QueryExecutor? e])
-      : super(e ?? driftDatabase(name: 'mind_drji_local'));
+    : super(e ?? driftDatabase(name: 'mind_drji_local'));
 
   @override
   int get schemaVersion => 6;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
-        onCreate: (m) => m.createAll(),
-        onUpgrade: (m, from, to) async {
-          if (from < 2) {
-            await m.createTable(doomscrollSessions);
-          }
-          if (from < 3) {
-            await m.createTable(eyeMonitoringSessions);
-          }
-          if (from < 4) {
-            await m.createTable(localDeviceInfo);
-            await m.addColumn(screenTimeDaily, screenTimeDaily.deviceId);
-            await m.addColumn(appUsageDaily, appUsageDaily.deviceId);
-            await m.addColumn(doomscrollSessions, doomscrollSessions.deviceId);
-            await m.addColumn(eyeMonitoringSessions, eyeMonitoringSessions.deviceId);
-          }
-          if (from < 5) {
-            await m.createTable(eyeMonitoringConfig);
-          }
-          if (from < 6) {
-            await m.createTable(interventionHistories);
-          }
-        },
-        beforeOpen: (details) async {
-          await customStatement('PRAGMA busy_timeout = 5000;');
-        },
-      );
+    onCreate: (m) => m.createAll(),
+    onUpgrade: (m, from, to) async {
+      if (from < 2) {
+        await m.createTable(doomscrollSessions);
+      }
+      if (from < 3) {
+        await m.createTable(eyeMonitoringSessions);
+      }
+      if (from < 4) {
+        await m.createTable(localDeviceInfo);
+        await m.addColumn(screenTimeDaily, screenTimeDaily.deviceId);
+        await m.addColumn(appUsageDaily, appUsageDaily.deviceId);
+        await m.addColumn(doomscrollSessions, doomscrollSessions.deviceId);
+        await m.addColumn(
+          eyeMonitoringSessions,
+          eyeMonitoringSessions.deviceId,
+        );
+      }
+      if (from < 5) {
+        await m.createTable(eyeMonitoringConfig);
+      }
+      if (from < 6) {
+        await m.createTable(interventionHistories);
+      }
+    },
+    beforeOpen: (details) async {
+      await customStatement('PRAGMA busy_timeout = 5000;');
+    },
+  );
 }

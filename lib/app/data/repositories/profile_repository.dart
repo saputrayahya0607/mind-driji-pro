@@ -5,7 +5,7 @@ class ProfileRepository {
   final SupabaseClient _client;
 
   ProfileRepository({SupabaseClient? client})
-      : _client = client ?? Supabase.instance.client;
+    : _client = client ?? Supabase.instance.client;
 
   /// Mengambil data profile milik pengguna yang sedang login.
   /// Mengembalikan null jika pengguna belum login atau data profil belum ditemukan.
@@ -56,14 +56,17 @@ class ProfileRepository {
       updateData['no_hp'] = noHp.trim().isEmpty ? null : noHp.trim();
     }
     if (jenisKelamin != null) {
-      updateData['jenis_kelamin'] =
-          jenisKelamin.trim().isEmpty ? null : jenisKelamin.trim();
+      updateData['jenis_kelamin'] = jenisKelamin.trim().isEmpty
+          ? null
+          : jenisKelamin.trim();
     }
 
     if (updateData.isEmpty) {
       final currentProfile = await getMyProfile();
       if (currentProfile != null) return currentProfile;
-      throw const PostgrestException(message: 'Tidak ada data untuk diperbarui.');
+      throw const PostgrestException(
+        message: 'Tidak ada data untuk diperbarui.',
+      );
     }
 
     final response = await _client

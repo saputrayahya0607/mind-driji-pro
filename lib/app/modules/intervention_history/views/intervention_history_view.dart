@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
 import '../../../core/constants/app_colors.dart';
+import '../../../core/widgets/stitch_widgets.dart';
 import '../../../data/models/intervention_model.dart';
 import '../controllers/intervention_history_controller.dart';
 
@@ -50,7 +51,10 @@ class InterventionHistoryView extends GetView<InterventionHistoryController> {
       body: Obx(() {
         if (controller.isLoading.value && controller.historyList.isEmpty) {
           return const Center(
-            child: CircularProgressIndicator(color: AppColors.teal),
+            child: MindDrijiLoader(
+              size: 72,
+              message: 'Memuat riwayat intervensi...',
+            ),
           );
         }
 

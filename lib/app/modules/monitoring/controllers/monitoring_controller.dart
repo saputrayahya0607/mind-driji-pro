@@ -1,15 +1,16 @@
+import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import '../../../data/models/app_usage_model.dart';
 import '../../../data/models/monitoring_visualization_model.dart';
+import '../../../data/services/eye_monitoring_service.dart';
 import '../../../data/services/monitoring_data_service.dart';
 
 class MonitoringController extends GetxController with WidgetsBindingObserver {
   final MonitoringDataService _dataService;
 
-  MonitoringController({
-    MonitoringDataService? dataService,
-  }) : _dataService = dataService ?? MonitoringDataService();
+  MonitoringController({MonitoringDataService? dataService})
+    : _dataService = dataService ?? MonitoringDataService();
 
   // State Reaktif
   final selectedPeriod = MonitoringPeriod.daily.obs;
@@ -28,6 +29,22 @@ class MonitoringController extends GetxController with WidgetsBindingObserver {
 
   // App Usage Data
   final topApps = <AppUsageModel>[].obs;
+  final appIconCache = <String, Uint8List?>{}.obs;
+
+  /// Mengambil byte gambar icon aplikasi untuk rendering native
+  Future<Uint8List?> getAppIconBytes(String packageName) async {
+    if (appIconCache.containsKey(packageName)) {
+      return appIconCache[packageName];
+    }
+    try {
+      final bytes = await _dataService.getAppIcon(packageName);
+      appIconCache[packageName] = bytes;
+      return bytes;
+    } catch (_) {
+      appIconCache[packageName] = null;
+      return null;
+    }
+  }
 
   // Doomscroll Data
   final doomscrollSummary = const DoomscrollSummary().obs;
@@ -45,6 +62,24 @@ class MonitoringController extends GetxController with WidgetsBindingObserver {
   bool get hasDoomscrollData => doomscrollSummary.value.hasData;
   bool get hasEyeData => eyeSummary.value.hasData;
   bool get hasAppUsageData => topApps.isNotEmpty;
+
+  /// Status sensor kamera untuk ringkasan di card Monitoring Mata
+  String get cameraSensorStatusText {
+    if (!Get.isRegistered<EyeMonitoringService>()) {
+      return 'Sensor Off';
+    }
+    final eye = Get.find<EyeMonitoringService>();
+    if (!eye.cameraPermission.value) {
+      return 'Izin Kamera Belum Aktif';
+    }
+    if (eye.isSessionRunning.value) {
+      return 'Sensor Aktif';
+    }
+    if (eye.isMonitoringEnabled.value) {
+      return 'Sensor Standby';
+    }
+    return 'Sensor Off';
+  }
 
   @override
   void onInit() {
@@ -86,14 +121,19 @@ class MonitoringController extends GetxController with WidgetsBindingObserver {
     switch (selectedPeriod.value) {
       case MonitoringPeriod.daily:
         final todayMidnight = DateTime(now.year, now.month, now.day);
-        final currentMidnight =
-            DateTime(current.year, current.month, current.day);
+        final currentMidnight = DateTime(
+          current.year,
+          current.month,
+          current.day,
+        );
         return currentMidnight.isBefore(todayMidnight);
 
       case MonitoringPeriod.weekly:
-        final currentMonday =
-            DateTime(current.year, current.month, current.day)
-                .subtract(Duration(days: current.weekday - 1));
+        final currentMonday = DateTime(
+          current.year,
+          current.month,
+          current.day,
+        ).subtract(Duration(days: current.weekday - 1));
         final currentSunday = currentMonday.add(const Duration(days: 6));
         final nowMidnight = DateTime(now.year, now.month, now.day);
         return currentSunday.isBefore(nowMidnight);
@@ -146,12 +186,16 @@ class MonitoringController extends GetxController with WidgetsBindingObserver {
     switch (selectedPeriod.value) {
       case MonitoringPeriod.daily:
         final day = current.day;
-        final monthStr = MonitoringDataService.shortMonthNames[current.month - 1];
+        final monthStr =
+            MonitoringDataService.shortMonthNames[current.month - 1];
         return '$day $monthStr ${current.year}';
 
       case MonitoringPeriod.weekly:
-        final monday = DateTime(current.year, current.month, current.day)
-            .subtract(Duration(days: current.weekday - 1));
+        final monday = DateTime(
+          current.year,
+          current.month,
+          current.day,
+        ).subtract(Duration(days: current.weekday - 1));
         final sunday = monday.add(const Duration(days: 6));
         final mShort = MonitoringDataService.shortMonthNames[monday.month - 1];
         final sShort = MonitoringDataService.shortMonthNames[sunday.month - 1];
@@ -171,7 +215,8 @@ class MonitoringController extends GetxController with WidgetsBindingObserver {
   String get dailySubtitle {
     final current = selectedDate.value;
     final now = DateTime.now();
-    final isToday = current.year == now.year &&
+    final isToday =
+        current.year == now.year &&
         current.month == now.month &&
         current.day == now.day;
 
@@ -200,13 +245,13 @@ class MonitoringController extends GetxController with WidgetsBindingObserver {
       screenTimeComparison.value = stSummary['comparisonText'] as String;
 
       // 2. Charts / Visualization Breakdown
-      if (period == MonitoringPeriod.daily) {
-        final segments = await _dataService.getDailySegments(date: date);
-        dailySegments.assignAll(segments);
-      } else if (period == MonitoringPeriod.weekly) {
+      final segments = await _dataService.getDailySegments(date: date);
+      dailySegments.assignAll(segments);
+
+      if (period == MonitoringPeriod.weekly) {
         final days = await _dataService.getWeeklyDays(dateInWeek: date);
         weeklyDays.assignAll(days);
-      } else {
+      } else if (period == MonitoringPeriod.monthly) {
         final weeks = await _dataService.getMonthlyWeeks(
           year: date.year,
           month: date.month,
@@ -215,10 +260,7 @@ class MonitoringController extends GetxController with WidgetsBindingObserver {
       }
 
       // 3. Top 5 Apps
-      final apps = await _dataService.getTopApps(
-        period: period,
-        date: date,
-      );
+      final apps = await _dataService.getTopApps(period: period, date: date);
       topApps.assignAll(apps);
 
       // 4. Doomscroll Summary

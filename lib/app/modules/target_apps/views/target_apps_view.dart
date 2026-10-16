@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import '../../../core/constants/app_colors.dart';
+import '../../../core/widgets/stitch_widgets.dart';
 import '../../../data/models/target_app_model.dart';
 import '../controllers/target_apps_controller.dart';
 
@@ -65,9 +66,9 @@ class TargetAppsView extends GetView<TargetAppsController> {
             child: Obx(() {
               if (controller.isLoading.value) {
                 return const Center(
-                  child: CircularProgressIndicator(
-                    color: AppColors.primary,
-                    strokeWidth: 3,
+                  child: MindDrijiLoader(
+                    size: 72,
+                    message: 'Memuat daftar aplikasi...',
                   ),
                 );
               }

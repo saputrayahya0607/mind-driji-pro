@@ -1,3 +1,4 @@
+import 'dart:typed_data';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:get/get.dart';
 import 'package:mind_drji/app/core/utils/duration_formatter.dart';
@@ -51,6 +52,9 @@ class FakeScreenTimeRepository implements UsageStatsRepository {
 
   @override
   Future<int> claimLocalUsage(String authenticatedUserId) async => 0;
+
+  @override
+  Future<Uint8List?> getAppIcon(String packageName) async => null;
 }
 
 void main() {

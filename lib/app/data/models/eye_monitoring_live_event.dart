@@ -34,7 +34,9 @@ class EyeMonitoringLiveEvent {
       isMonitoring: map['isMonitoring'] as bool? ?? false,
       faceDetected: map['faceDetected'] as bool? ?? false,
       multipleFaces: map['multipleFaces'] as bool? ?? false,
-      measurementValid: map['measurementValid'] as bool? ?? (map['faceDetected'] as bool? ?? false),
+      measurementValid:
+          map['measurementValid'] as bool? ??
+          (map['faceDetected'] as bool? ?? false),
       currentEar: (map['currentEar'] as num?)?.toDouble() ?? 0.0,
       averageEar: (map['averageEar'] as num?)?.toDouble() ?? 0.0,
       minEar: (map['minEar'] as num?)?.toDouble() ?? 0.0,

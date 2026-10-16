@@ -18,6 +18,6 @@ class ScreenTimeDaily extends Table {
 
   @override
   List<Set<Column>> get uniqueKeys => [
-        {userId, deviceId, date},
-      ];
+    {userId, deviceId, date},
+  ];
 }

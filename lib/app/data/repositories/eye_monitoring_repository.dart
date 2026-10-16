@@ -19,12 +19,13 @@ class EyeMonitoringRepository {
     EyeMonitoringNativeProvider? provider,
     EyeMonitoringLocalRepository? localRepository,
     SupabaseClient? supabase,
-  })  : _provider = provider ?? EyeMonitoringNativeProvider(),
-        _localRepository = localRepository ??
-            (Get.isRegistered<EyeMonitoringLocalRepository>()
-                ? Get.find<EyeMonitoringLocalRepository>()
-                : EyeMonitoringLocalRepository()),
-        _supabase = supabase ?? _safeGetSupabaseClient();
+  }) : _provider = provider ?? EyeMonitoringNativeProvider(),
+       _localRepository =
+           localRepository ??
+           (Get.isRegistered<EyeMonitoringLocalRepository>()
+               ? Get.find<EyeMonitoringLocalRepository>()
+               : EyeMonitoringLocalRepository()),
+       _supabase = supabase ?? _safeGetSupabaseClient();
 
   EyeMonitoringNativeProvider get provider => _provider;
   EyeMonitoringLocalRepository get localRepository => _localRepository;
@@ -37,8 +38,7 @@ class EyeMonitoringRepository {
     }
   }
 
-  String get _currentUserId =>
-      _supabase?.auth.currentUser?.id ?? 'local_user';
+  String get _currentUserId => _supabase?.auth.currentUser?.id ?? 'local_user';
 
   /// Memeriksa status izin kamera
   Future<bool> checkCameraPermission() {
@@ -108,8 +108,9 @@ class EyeMonitoringRepository {
   }
 
   Future<List<EyeMonitoringSessionModel>> _doFlushPendingSessions() async {
-    final pending =
-        await _provider.getPendingSessions(defaultUserId: _currentUserId);
+    final pending = await _provider.getPendingSessions(
+      defaultUserId: _currentUserId,
+    );
     if (pending.isEmpty) return [];
 
     final acknowledgedIds = <String>[];
@@ -145,7 +146,9 @@ class EyeMonitoringRepository {
   /// Menghentikan monitoring, menyimpan summary sesi ke Drift SQLite lokal,
   /// dan mendaftarkannya ke Sync Queue.
   Future<EyeMonitoringSessionModel?> stopMonitoringAndPersist() async {
-    final session = await _provider.stopMonitoring(defaultUserId: _currentUserId);
+    final session = await _provider.stopMonitoring(
+      defaultUserId: _currentUserId,
+    );
     if (session != null && session.durationMillis > 0) {
       await _localRepository.insertSession(session);
     }
@@ -174,7 +177,10 @@ class EyeMonitoringRepository {
     String? userId,
   }) {
     return _localRepository.getSessionsBetween(
-        start: start, end: end, userId: userId);
+      start: start,
+      end: end,
+      userId: userId,
+    );
   }
 
   /// Stream event status realtime langsung dari native

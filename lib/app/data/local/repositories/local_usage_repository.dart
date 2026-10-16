@@ -37,19 +37,21 @@ class LocalUsageRepository {
 
     await _db.transaction(() async {
       // 1. UPSERT screen_time_daily (unique pada userId, deviceId, date)
-      final existingScreenTime = await (_db.select(_db.screenTimeDaily)
-            ..where((tbl) =>
-                tbl.userId.equals(userId) &
-                tbl.deviceId.equals(devId) &
-                tbl.date.equals(date)))
-          .getSingleOrNull();
+      final existingScreenTime =
+          await (_db.select(_db.screenTimeDaily)..where(
+                (tbl) =>
+                    tbl.userId.equals(userId) &
+                    tbl.deviceId.equals(devId) &
+                    tbl.date.equals(date),
+              ))
+              .getSingleOrNull();
 
       String screenTimeId;
       if (existingScreenTime != null) {
         screenTimeId = existingScreenTime.id;
-        await (_db.update(_db.screenTimeDaily)
-              ..where((tbl) => tbl.id.equals(screenTimeId)))
-            .write(
+        await (_db.update(
+          _db.screenTimeDaily,
+        )..where((tbl) => tbl.id.equals(screenTimeId))).write(
           ScreenTimeDailyCompanion(
             totalUsageMillis: Value(BigInt.from(totalUsageMillis)),
             collectedAt: Value(now),
@@ -59,7 +61,9 @@ class LocalUsageRepository {
         );
       } else {
         screenTimeId = UuidGenerator.v4();
-        await _db.into(_db.screenTimeDaily).insert(
+        await _db
+            .into(_db.screenTimeDaily)
+            .insert(
               ScreenTimeDailyCompanion.insert(
                 id: screenTimeId,
                 userId: userId,
@@ -85,20 +89,22 @@ class LocalUsageRepository {
       for (final app in apps) {
         if (app.usageMillis <= 0) continue;
 
-        final existingApp = await (_db.select(_db.appUsageDaily)
-              ..where((tbl) =>
-                  tbl.userId.equals(userId) &
-                  tbl.deviceId.equals(devId) &
-                  tbl.date.equals(date) &
-                  tbl.packageName.equals(app.packageName)))
-            .getSingleOrNull();
+        final existingApp =
+            await (_db.select(_db.appUsageDaily)..where(
+                  (tbl) =>
+                      tbl.userId.equals(userId) &
+                      tbl.deviceId.equals(devId) &
+                      tbl.date.equals(date) &
+                      tbl.packageName.equals(app.packageName),
+                ))
+                .getSingleOrNull();
 
         String appUsageId;
         if (existingApp != null) {
           appUsageId = existingApp.id;
-          await (_db.update(_db.appUsageDaily)
-                ..where((tbl) => tbl.id.equals(appUsageId)))
-              .write(
+          await (_db.update(
+            _db.appUsageDaily,
+          )..where((tbl) => tbl.id.equals(appUsageId))).write(
             AppUsageDailyCompanion(
               appName: Value(app.appName),
               usageMillis: Value(BigInt.from(app.usageMillis)),
@@ -109,7 +115,9 @@ class LocalUsageRepository {
           );
         } else {
           appUsageId = UuidGenerator.v4();
-          await _db.into(_db.appUsageDaily).insert(
+          await _db
+              .into(_db.appUsageDaily)
+              .insert(
                 AppUsageDailyCompanion.insert(
                   id: appUsageId,
                   userId: userId,
@@ -141,14 +149,18 @@ class LocalUsageRepository {
     required String entityType,
     required String entityId,
   }) async {
-    final existingQueue = await (_db.select(_db.syncQueue)
-          ..where((tbl) =>
-              tbl.entityType.equals(entityType) &
-              tbl.entityId.equals(entityId)))
-        .getSingleOrNull();
+    final existingQueue =
+        await (_db.select(_db.syncQueue)..where(
+              (tbl) =>
+                  tbl.entityType.equals(entityType) &
+                  tbl.entityId.equals(entityId),
+            ))
+            .getSingleOrNull();
 
     if (existingQueue == null) {
-      await _db.into(_db.syncQueue).insert(
+      await _db
+          .into(_db.syncQueue)
+          .insert(
             SyncQueueCompanion.insert(
               id: UuidGenerator.v4(),
               entityType: entityType,
@@ -168,11 +180,12 @@ class LocalUsageRepository {
     String? deviceId,
   }) {
     final devId = _resolveDeviceId(deviceId);
-    return (_db.select(_db.screenTimeDaily)
-          ..where((tbl) =>
+    return (_db.select(_db.screenTimeDaily)..where(
+          (tbl) =>
               (tbl.userId.equals(userId) | tbl.userId.equals('local_user')) &
               (tbl.deviceId.equals(devId) | tbl.deviceId.equals('legacy')) &
-              tbl.date.equals(date)))
+              tbl.date.equals(date),
+        ))
         .getSingleOrNull();
   }
 
@@ -184,22 +197,26 @@ class LocalUsageRepository {
   }) {
     final devId = _resolveDeviceId(deviceId);
     return (_db.select(_db.appUsageDaily)
-          ..where((tbl) =>
-              (tbl.userId.equals(userId) | tbl.userId.equals('local_user')) &
-              (tbl.deviceId.equals(devId) | tbl.deviceId.equals('legacy')) &
-              tbl.date.equals(date))
+          ..where(
+            (tbl) =>
+                (tbl.userId.equals(userId) | tbl.userId.equals('local_user')) &
+                (tbl.deviceId.equals(devId) | tbl.deviceId.equals('legacy')) &
+                tbl.date.equals(date),
+          )
           ..orderBy([
             (t) => OrderingTerm(
-                expression: t.usageMillis, mode: OrderingMode.desc)
+              expression: t.usageMillis,
+              mode: OrderingMode.desc,
+            ),
           ]))
         .get();
   }
 
   /// Mengambil antrean sinkronisasi
   Future<List<SyncQueueData>> getPendingQueue() {
-    return (_db.select(_db.syncQueue)
-          ..orderBy([(t) => OrderingTerm.asc(t.createdAt)]))
-        .get();
+    return (_db.select(
+      _db.syncQueue,
+    )..orderBy([(t) => OrderingTerm.asc(t.createdAt)])).get();
   }
 
   /// Menghitung jumlah data yang belum tersinkronisasi (pending / failed)
@@ -210,29 +227,33 @@ class LocalUsageRepository {
 
   /// Mengambil single data screen_time_daily berdasarkan ID
   Future<ScreenTimeDailyData?> getScreenTimeById(String id) {
-    return (_db.select(_db.screenTimeDaily)..where((tbl) => tbl.id.equals(id)))
-        .getSingleOrNull();
+    return (_db.select(
+      _db.screenTimeDaily,
+    )..where((tbl) => tbl.id.equals(id))).getSingleOrNull();
   }
 
   /// Mengambil single data app_usage_daily berdasarkan ID
   Future<AppUsageDailyData?> getAppUsageById(String id) {
-    return (_db.select(_db.appUsageDaily)..where((tbl) => tbl.id.equals(id)))
-        .getSingleOrNull();
+    return (_db.select(
+      _db.appUsageDaily,
+    )..where((tbl) => tbl.id.equals(id))).getSingleOrNull();
   }
 
   /// Menandai data screen_time_daily berhasil tersinkron
   Future<void> markScreenTimeSynced(String id) async {
-    await (_db.update(_db.screenTimeDaily)..where((tbl) => tbl.id.equals(id)))
-        .write(
+    await (_db.update(
+      _db.screenTimeDaily,
+    )..where((tbl) => tbl.id.equals(id))).write(
       const ScreenTimeDailyCompanion(
         syncStatus: Value(SyncStatus.synced),
         lastSyncError: Value(null),
       ),
     );
-    await (_db.delete(_db.syncQueue)
-          ..where((tbl) =>
+    await (_db.delete(_db.syncQueue)..where(
+          (tbl) =>
               tbl.entityType.equals(SyncEntityType.screenTimeDaily) &
-              tbl.entityId.equals(id)))
+              tbl.entityId.equals(id),
+        ))
         .go();
   }
 
@@ -241,8 +262,9 @@ class LocalUsageRepository {
     final current = await getScreenTimeById(id);
     final attempts = (current?.syncAttempts ?? 0) + 1;
 
-    await (_db.update(_db.screenTimeDaily)..where((tbl) => tbl.id.equals(id)))
-        .write(
+    await (_db.update(
+      _db.screenTimeDaily,
+    )..where((tbl) => tbl.id.equals(id))).write(
       ScreenTimeDailyCompanion(
         syncStatus: const Value(SyncStatus.failed),
         syncAttempts: Value(attempts),
@@ -253,17 +275,19 @@ class LocalUsageRepository {
 
   /// Menandai data app_usage_daily berhasil tersinkron
   Future<void> markAppUsageSynced(String id) async {
-    await (_db.update(_db.appUsageDaily)..where((tbl) => tbl.id.equals(id)))
-        .write(
+    await (_db.update(
+      _db.appUsageDaily,
+    )..where((tbl) => tbl.id.equals(id))).write(
       const AppUsageDailyCompanion(
         syncStatus: Value(SyncStatus.synced),
         lastSyncError: Value(null),
       ),
     );
-    await (_db.delete(_db.syncQueue)
-          ..where((tbl) =>
+    await (_db.delete(_db.syncQueue)..where(
+          (tbl) =>
               tbl.entityType.equals(SyncEntityType.appUsageDaily) &
-              tbl.entityId.equals(id)))
+              tbl.entityId.equals(id),
+        ))
         .go();
   }
 
@@ -272,8 +296,9 @@ class LocalUsageRepository {
     final current = await getAppUsageById(id);
     final attempts = (current?.syncAttempts ?? 0) + 1;
 
-    await (_db.update(_db.appUsageDaily)..where((tbl) => tbl.id.equals(id)))
-        .write(
+    await (_db.update(
+      _db.appUsageDaily,
+    )..where((tbl) => tbl.id.equals(id))).write(
       AppUsageDailyCompanion(
         syncStatus: const Value(SyncStatus.failed),
         syncAttempts: Value(attempts),
@@ -284,23 +309,22 @@ class LocalUsageRepository {
 
   /// Memperbarui retry count dan error di sync_queue
   Future<void> updateQueueRetry(String queueId, String error) async {
-    final queue = await (_db.select(_db.syncQueue)
-          ..where((tbl) => tbl.id.equals(queueId)))
-        .getSingleOrNull();
+    final queue = await (_db.select(
+      _db.syncQueue,
+    )..where((tbl) => tbl.id.equals(queueId))).getSingleOrNull();
     final count = (queue?.retryCount ?? 0) + 1;
-    await (_db.update(_db.syncQueue)..where((tbl) => tbl.id.equals(queueId)))
-        .write(
-      SyncQueueCompanion(
-        retryCount: Value(count),
-        lastError: Value(error),
-      ),
+    await (_db.update(
+      _db.syncQueue,
+    )..where((tbl) => tbl.id.equals(queueId))).write(
+      SyncQueueCompanion(retryCount: Value(count), lastError: Value(error)),
     );
   }
 
   /// Menghapus antrean sync berdasarkan ID antrean
   Future<void> removeQueueItem(String queueId) async {
-    await (_db.delete(_db.syncQueue)..where((tbl) => tbl.id.equals(queueId)))
-        .go();
+    await (_db.delete(
+      _db.syncQueue,
+    )..where((tbl) => tbl.id.equals(queueId))).go();
   }
 
   /// Mengambil semua riwayat Screen Time lokal untuk seorang pengguna
@@ -318,10 +342,12 @@ class LocalUsageRepository {
     required String endDate,
   }) {
     return (_db.select(_db.screenTimeDaily)
-          ..where((tbl) =>
-              (tbl.userId.equals(userId) | tbl.userId.equals('local_user')) &
-              tbl.date.isBiggerOrEqualValue(startDate) &
-              tbl.date.isSmallerOrEqualValue(endDate))
+          ..where(
+            (tbl) =>
+                (tbl.userId.equals(userId) | tbl.userId.equals('local_user')) &
+                tbl.date.isBiggerOrEqualValue(startDate) &
+                tbl.date.isSmallerOrEqualValue(endDate),
+          )
           ..orderBy([(t) => OrderingTerm.asc(t.date)]))
         .get();
   }
@@ -333,39 +359,47 @@ class LocalUsageRepository {
     required String endDate,
   }) {
     return (_db.select(_db.appUsageDaily)
-          ..where((tbl) =>
-              (tbl.userId.equals(userId) | tbl.userId.equals('local_user')) &
-              tbl.date.isBiggerOrEqualValue(startDate) &
-              tbl.date.isSmallerOrEqualValue(endDate))
+          ..where(
+            (tbl) =>
+                (tbl.userId.equals(userId) | tbl.userId.equals('local_user')) &
+                tbl.date.isBiggerOrEqualValue(startDate) &
+                tbl.date.isSmallerOrEqualValue(endDate),
+          )
           ..orderBy([
             (t) => OrderingTerm(
-                expression: t.usageMillis, mode: OrderingMode.desc)
+              expression: t.usageMillis,
+              mode: OrderingMode.desc,
+            ),
           ]))
         .get();
   }
 
   /// Mengaitkan seluruh data screen time dan app usage berlabel 'local_user' ke userId user yang sedang login
   Future<int> claimLocalUsage(String authenticatedUserId) async {
-    if (authenticatedUserId.isEmpty || authenticatedUserId == 'local_user') return 0;
+    if (authenticatedUserId.isEmpty || authenticatedUserId == 'local_user') {
+      return 0;
+    }
     final now = DateTime.now();
     var count = 0;
     await _db.transaction(() async {
-      final stCount = await (_db.update(_db.screenTimeDaily)
-            ..where((t) => t.userId.equals('local_user')))
-          .write(
-        ScreenTimeDailyCompanion(
-          userId: Value(authenticatedUserId),
-          updatedAt: Value(now),
-        ),
-      );
-      final auCount = await (_db.update(_db.appUsageDaily)
-            ..where((t) => t.userId.equals('local_user')))
-          .write(
-        AppUsageDailyCompanion(
-          userId: Value(authenticatedUserId),
-          updatedAt: Value(now),
-        ),
-      );
+      final stCount =
+          await (_db.update(
+            _db.screenTimeDaily,
+          )..where((t) => t.userId.equals('local_user'))).write(
+            ScreenTimeDailyCompanion(
+              userId: Value(authenticatedUserId),
+              updatedAt: Value(now),
+            ),
+          );
+      final auCount =
+          await (_db.update(
+            _db.appUsageDaily,
+          )..where((t) => t.userId.equals('local_user'))).write(
+            AppUsageDailyCompanion(
+              userId: Value(authenticatedUserId),
+              updatedAt: Value(now),
+            ),
+          );
       count = stCount + auCount;
     });
     return count;

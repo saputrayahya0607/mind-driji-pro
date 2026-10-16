@@ -64,7 +64,8 @@ class DetectionResult {
       detectedAt: DateTime.now(),
       relatedApps: features?.involvedApps ?? const [],
       title: 'Belum ada pola scrolling khusus yang terdeteksi',
-      description: note ??
+      description:
+          note ??
           'Pola penggunaan aplikasi berada dalam rentang normal berdasarkan data pemantauan.',
       suggestedIntervention: null,
       contextualEyeNote: null,
@@ -96,15 +97,19 @@ class DetectionResult {
       features: BehavioralFeatures.fromJson(
         json['features'] as Map<String, dynamic>,
       ),
-      evidences: (json['evidences'] as List<dynamic>?)
-              ?.map((e) => DetectionEvidence.values.firstWhere(
-                    (ev) => ev.name == e.toString(),
-                    orElse: () => DetectionEvidence.longSession,
-                  ))
+      evidences:
+          (json['evidences'] as List<dynamic>?)
+              ?.map(
+                (e) => DetectionEvidence.values.firstWhere(
+                  (ev) => ev.name == e.toString(),
+                  orElse: () => DetectionEvidence.longSession,
+                ),
+              )
               .toList() ??
           const [],
       detectedAt: DateTime.parse(json['detectedAt'] as String),
-      relatedApps: (json['relatedApps'] as List<dynamic>?)
+      relatedApps:
+          (json['relatedApps'] as List<dynamic>?)
               ?.map((e) => e.toString())
               .toList() ??
           const [],

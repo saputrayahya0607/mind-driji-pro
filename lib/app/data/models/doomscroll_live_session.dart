@@ -38,7 +38,8 @@ class DoomscrollLiveSession {
     }
 
     final rawType = map['type'] as String? ?? 'session_updated';
-    final rawIsActive = map['isActive'] as bool? ?? (rawType != 'session_finished');
+    final rawIsActive =
+        map['isActive'] as bool? ?? (rawType != 'session_finished');
 
     return DoomscrollLiveSession(
       type: rawType,

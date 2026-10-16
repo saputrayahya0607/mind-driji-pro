@@ -3,10 +3,12 @@ import 'package:flutter/services.dart';
 /// Provider native bridge untuk berkomunikasi dengan platform Android
 /// melalui MethodChannel dan EventChannel intervensi.
 class InterventionNativeProvider {
-  static const MethodChannel _channel =
-      MethodChannel('com.hn.minddriji/intervention');
-  static const EventChannel _eventChannel =
-      EventChannel('com.hn.minddriji/intervention_events');
+  static const MethodChannel _channel = MethodChannel(
+    'com.hn.minddriji/intervention',
+  );
+  static const EventChannel _eventChannel = EventChannel(
+    'com.hn.minddriji/intervention_events',
+  );
 
   /// Memulai Digital Break pada native layer (persisten SharedPreferences & notifikasi).
   Future<bool> startDigitalBreak({
@@ -68,8 +70,9 @@ class InterventionNativeProvider {
   /// Mengambil status intervensi yang tersimpan pada Android SharedPreferences.
   Future<Map<String, dynamic>?> getInterventionStatus() async {
     try {
-      final result =
-          await _channel.invokeMethod<Map<dynamic, dynamic>>('getInterventionStatus');
+      final result = await _channel.invokeMethod<Map<dynamic, dynamic>>(
+        'getInterventionStatus',
+      );
       if (result == null) return null;
       return Map<String, dynamic>.from(result);
     } catch (_) {

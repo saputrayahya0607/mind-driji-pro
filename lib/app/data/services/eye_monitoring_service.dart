@@ -46,17 +46,18 @@ class EyeMonitoringService extends GetxService with WidgetsBindingObserver {
     Duration? monitoringInterval,
     Duration? sessionDuration,
     bool autoStart = true,
-  })  : _repository = repository ?? _safeGetRepository(),
-        _localRepository = localRepository ?? _safeGetLocalRepository(),
-        _syncManager = syncManager ?? _safeGetSyncManager(),
-        _db = db ?? _safeGetDatabase(),
-        _supabaseClient = supabaseClient ?? _safeGetSupabaseClient(),
-        _analyzer = analyzer ?? EyeConditionAnalyzer(),
-        _monitoringInterval =
-            monitoringInterval ?? EyeMonitoringConstants.defaultMonitoringInterval,
-        _sessionDuration =
-            sessionDuration ?? EyeMonitoringConstants.defaultSessionDuration,
-        _autoStart = autoStart;
+  }) : _repository = repository ?? _safeGetRepository(),
+       _localRepository = localRepository ?? _safeGetLocalRepository(),
+       _syncManager = syncManager ?? _safeGetSyncManager(),
+       _db = db ?? _safeGetDatabase(),
+       _supabaseClient = supabaseClient ?? _safeGetSupabaseClient(),
+       _analyzer = analyzer ?? EyeConditionAnalyzer(),
+       _monitoringInterval =
+           monitoringInterval ??
+           EyeMonitoringConstants.defaultMonitoringInterval,
+       _sessionDuration =
+           sessionDuration ?? EyeMonitoringConstants.defaultSessionDuration,
+       _autoStart = autoStart;
 
   static EyeMonitoringService get to {
     if (Get.isRegistered<EyeMonitoringService>()) {
@@ -230,7 +231,9 @@ class EyeMonitoringService extends GetxService with WidgetsBindingObserver {
       // Pastikan user masih login
       final client = _supabaseClient ?? _safeGetSupabaseClient();
       if (client != null && client.auth.currentUser == null) {
-        _log('[EYE] No active authenticated session on startup. Disabling monitoring.');
+        _log(
+          '[EYE] No active authenticated session on startup. Disabling monitoring.',
+        );
         await disableMonitoring();
         return;
       }
@@ -252,7 +255,9 @@ class EyeMonitoringService extends GetxService with WidgetsBindingObserver {
 
       _startScheduler();
       if (isDue) {
-        _log('[EYE] Previous session is due on startup. Triggering initial session.');
+        _log(
+          '[EYE] Previous session is due on startup. Triggering initial session.',
+        );
         await _runSessionIfDue();
       } else {
         _scheduleNextSession();
@@ -270,7 +275,8 @@ class EyeMonitoringService extends GetxService with WidgetsBindingObserver {
   void didChangeAppLifecycleState(AppLifecycleState state) {
     _lifecycleState = state;
 
-    if (state == AppLifecycleState.paused || state == AppLifecycleState.inactive) {
+    if (state == AppLifecycleState.paused ||
+        state == AppLifecycleState.inactive) {
       _log('[EYE] App entered background / inactive ($state)');
       // Hentikan sesi in-process jika sedang berjalan untuk melepas kamera hardware bagi background service
       if (isSessionRunning.value) {
@@ -285,7 +291,9 @@ class EyeMonitoringService extends GetxService with WidgetsBindingObserver {
       flushPendingSessions();
 
       if (isMonitoringEnabled.value) {
-        statusMessage.value = isSessionRunning.value ? 'Sedang Memantau' : 'Monitoring Aktif';
+        statusMessage.value = isSessionRunning.value
+            ? 'Sedang Memantau'
+            : 'Monitoring Aktif';
         if (_isSessionDue() && !isSessionRunning.value) {
           _runSessionIfDue();
         } else {
@@ -457,7 +465,9 @@ class EyeMonitoringService extends GetxService with WidgetsBindingObserver {
     try {
       final flushed = await _repository.flushPendingSessions();
       if (flushed.isNotEmpty) {
-        _log('[EYE] Successfully flushed ${flushed.length} sessions from native background queue');
+        _log(
+          '[EYE] Successfully flushed ${flushed.length} sessions from native background queue',
+        );
         final latest = flushed.last;
         lastCompletedSession.value = latest;
         lastSessionCompletedAt.value = latest.endedAt;
@@ -466,7 +476,9 @@ class EyeMonitoringService extends GetxService with WidgetsBindingObserver {
 
         final condition = _analyzer.analyzeSession(latest);
         lastConditionResult.value = condition;
-        _log('[EYE] Flushed session condition: ${condition.level} - ${condition.message}');
+        _log(
+          '[EYE] Flushed session condition: ${condition.level} - ${condition.message}',
+        );
 
         await _saveConfigToDb();
         _triggerCloudSync();
@@ -528,7 +540,9 @@ class EyeMonitoringService extends GetxService with WidgetsBindingObserver {
     _saveConfigToDb();
 
     final delay = targetTime.difference(now);
-    _log('[EYE] Next session scheduled at $targetTime (in ${delay.inSeconds} seconds)');
+    _log(
+      '[EYE] Next session scheduled at $targetTime (in ${delay.inSeconds} seconds)',
+    );
 
     _schedulerTimer = Timer(delay, () {
       if (isMonitoringEnabled.value) {
@@ -543,13 +557,17 @@ class EyeMonitoringService extends GetxService with WidgetsBindingObserver {
 
     // Proteksi duplicate session
     if (_isExecutingSession || isSessionRunning.value) {
-      _log('[EYE] Camera session already running, skipping duplicate invocation');
+      _log(
+        '[EYE] Camera session already running, skipping duplicate invocation',
+      );
       return;
     }
 
     // Proteksi background: jangan start kamera in-process jika app tidak di foreground
     if (_lifecycleState != AppLifecycleState.resumed) {
-      _log('[EYE] App is not in foreground ($_lifecycleState). Skipping in-process session execution.');
+      _log(
+        '[EYE] App is not in foreground ($_lifecycleState). Skipping in-process session execution.',
+      );
       return;
     }
 
@@ -576,7 +594,9 @@ class EyeMonitoringService extends GetxService with WidgetsBindingObserver {
       // Mulai timer durasi sesi (default ~1 menit)
       _sessionTimeoutTimer?.cancel();
       _sessionTimeoutTimer = Timer(_sessionDuration, () {
-        _log('[EYE] Session duration elapsed ($_sessionDuration). Stopping camera.');
+        _log(
+          '[EYE] Session duration elapsed ($_sessionDuration). Stopping camera.',
+        );
         _completeSession(reason: 'duration_completed');
       });
     } catch (e) {
@@ -612,7 +632,9 @@ class EyeMonitoringService extends GetxService with WidgetsBindingObserver {
         lastCompletedSession.value = session;
         final condition = _analyzer.analyzeSession(session);
         lastConditionResult.value = condition;
-        _log('[EYE] Session saved (ID: ${session.id}, Duration: ${session.durationMillis}ms, EAR: ${session.averageEar}, Condition: ${condition.level})');
+        _log(
+          '[EYE] Session saved (ID: ${session.id}, Duration: ${session.durationMillis}ms, EAR: ${session.averageEar}, Condition: ${condition.level})',
+        );
       }
 
       _log('[EYE] Session completed (reason: $reason)');
@@ -642,11 +664,14 @@ class EyeMonitoringService extends GetxService with WidgetsBindingObserver {
     _log('[EYE] Sync started');
     _syncManager.refreshPendingCount().then((_) {
       if (_syncManager.isOnline.value) {
-        _syncManager.syncPendingData().then((success) {
-          _log('[EYE] Sync completed (success: $success)');
-        }).catchError((err) {
-          _log('[EYE] Sync error: $err');
-        });
+        _syncManager
+            .syncPendingData()
+            .then((success) {
+              _log('[EYE] Sync completed (success: $success)');
+            })
+            .catchError((err) {
+              _log('[EYE] Sync error: $err');
+            });
       }
     });
   }
@@ -665,10 +690,14 @@ class EyeMonitoringService extends GetxService with WidgetsBindingObserver {
             _log('[EYE] Face lost');
           }
           if (event.blinkCount > blinkCount.value) {
-            _log('[EYE] Blink received from native EventChannel: count=${event.blinkCount}, currentEar=${event.currentEar.toStringAsFixed(3)}');
+            _log(
+              '[EYE] Blink received from native EventChannel: count=${event.blinkCount}, currentEar=${event.currentEar.toStringAsFixed(3)}',
+            );
           }
           if (event.eyeClosureEvents > eyeClosureEvents.value) {
-            _log('[EYE] Prolonged closure received from native EventChannel: count=${event.eyeClosureEvents}');
+            _log(
+              '[EYE] Prolonged closure received from native EventChannel: count=${event.eyeClosureEvents}',
+            );
           }
           faceDetected.value = event.faceDetected;
           multipleFaces.value = event.multipleFaces;
@@ -735,9 +764,9 @@ class EyeMonitoringService extends GetxService with WidgetsBindingObserver {
     if (db == null) return;
 
     try {
-      final config = await (db.select(db.eyeMonitoringConfig)
-            ..where((t) => t.id.equals('current_config')))
-          .getSingleOrNull();
+      final config = await (db.select(
+        db.eyeMonitoringConfig,
+      )..where((t) => t.id.equals('current_config'))).getSingleOrNull();
 
       if (config != null) {
         isMonitoringEnabled.value = config.monitoringEnabled;
@@ -757,12 +786,13 @@ class EyeMonitoringService extends GetxService with WidgetsBindingObserver {
 
     try {
       final now = DateTime.now();
-      await db.into(db.eyeMonitoringConfig).insertOnConflictUpdate(
+      await db
+          .into(db.eyeMonitoringConfig)
+          .insertOnConflictUpdate(
             EyeMonitoringConfigCompanion.insert(
               id: 'current_config',
               monitoringEnabled: drift.Value(isMonitoringEnabled.value),
-              lastSessionCompletedAt:
-                  drift.Value(lastSessionCompletedAt.value),
+              lastSessionCompletedAt: drift.Value(lastSessionCompletedAt.value),
               nextScheduledAt: drift.Value(nextScheduledAt.value),
               updatedAt: now,
             ),

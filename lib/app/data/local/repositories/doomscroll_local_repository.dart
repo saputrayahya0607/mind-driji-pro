@@ -14,8 +14,8 @@ class DoomscrollLocalRepository {
   final SupabaseClient? _supabase;
 
   DoomscrollLocalRepository({AppDatabase? db, SupabaseClient? supabase})
-      : _db = db ?? AppDatabase(),
-        _supabase = supabase ?? _safeGetSupabaseClient();
+    : _db = db ?? AppDatabase(),
+      _supabase = supabase ?? _safeGetSupabaseClient();
 
   AppDatabase get db => _db;
 
@@ -46,7 +46,8 @@ class DoomscrollLocalRepository {
   /// Menyimpan satu sesi doomscroll ke SQLite lokal dan mendaftarkannya ke antrean sinkronisasi
   Future<void> insertSession(DoomscrollSessionModel session) async {
     final fallbackUserId = _currentUserId;
-    final sessionUserId = (session.userId != null &&
+    final sessionUserId =
+        (session.userId != null &&
             session.userId!.isNotEmpty &&
             session.userId != 'local_user')
         ? session.userId!
@@ -56,16 +57,18 @@ class DoomscrollLocalRepository {
     final devId = _resolveDeviceId(session.deviceId);
 
     await _db.transaction(() async {
-      final existing = await (_db.select(_db.doomscrollSessions)
-            ..where((tbl) => tbl.id.equals(sessionId)))
-          .getSingleOrNull();
+      final existing = await (_db.select(
+        _db.doomscrollSessions,
+      )..where((tbl) => tbl.id.equals(sessionId))).getSingleOrNull();
 
       if (existing != null) {
         // Sesi sudah tersimpan sebelumnya, operasi idempotent
         return;
       }
 
-      await _db.into(_db.doomscrollSessions).insert(
+      await _db
+          .into(_db.doomscrollSessions)
+          .insert(
             DoomscrollSessionsCompanion.insert(
               id: sessionId,
               userId: sessionUserId,
@@ -102,21 +105,26 @@ class DoomscrollLocalRepository {
 
     await _db.transaction(() async {
       for (final session in sessions) {
-        final sessionId = session.id.isNotEmpty ? session.id : UuidGenerator.v4();
+        final sessionId = session.id.isNotEmpty
+            ? session.id
+            : UuidGenerator.v4();
 
         // Hindari duplikasi jika id sesi sudah pernah disimpan
-        final existing = await (_db.select(_db.doomscrollSessions)
-              ..where((tbl) => tbl.id.equals(sessionId)))
-            .getSingleOrNull();
+        final existing = await (_db.select(
+          _db.doomscrollSessions,
+        )..where((tbl) => tbl.id.equals(sessionId))).getSingleOrNull();
 
         if (existing == null) {
           final devId = _resolveDeviceId(session.deviceId);
-          final sessionUserId = (session.userId != null &&
+          final sessionUserId =
+              (session.userId != null &&
                   session.userId!.isNotEmpty &&
                   session.userId != 'local_user')
               ? session.userId!
               : fallbackUserId;
-          await _db.into(_db.doomscrollSessions).insert(
+          await _db
+              .into(_db.doomscrollSessions)
+              .insert(
                 DoomscrollSessionsCompanion.insert(
                   id: sessionId,
                   userId: sessionUserId,
@@ -152,14 +160,18 @@ class DoomscrollLocalRepository {
     required String entityType,
     required String entityId,
   }) async {
-    final existingQueue = await (_db.select(_db.syncQueue)
-          ..where((tbl) =>
-              tbl.entityType.equals(entityType) &
-              tbl.entityId.equals(entityId)))
-        .getSingleOrNull();
+    final existingQueue =
+        await (_db.select(_db.syncQueue)..where(
+              (tbl) =>
+                  tbl.entityType.equals(entityType) &
+                  tbl.entityId.equals(entityId),
+            ))
+            .getSingleOrNull();
 
     if (existingQueue == null) {
-      await _db.into(_db.syncQueue).insert(
+      await _db
+          .into(_db.syncQueue)
+          .insert(
             SyncQueueCompanion.insert(
               id: UuidGenerator.v4(),
               entityType: entityType,
@@ -173,13 +185,18 @@ class DoomscrollLocalRepository {
   }
 
   /// Mengambil daftar riwayat sesi doomscroll pengguna saat ini (terbaru di atas)
-  Future<List<DoomscrollSessionData>> getSessions({int limit = 50, String? deviceId}) {
+  Future<List<DoomscrollSessionData>> getSessions({
+    int limit = 50,
+    String? deviceId,
+  }) {
     final userId = _currentUserId;
     final devId = _resolveDeviceId(deviceId);
     return (_db.select(_db.doomscrollSessions)
-          ..where((tbl) =>
-              (tbl.userId.equals(userId) | tbl.userId.equals('local_user')) &
-              (tbl.deviceId.equals(devId) | tbl.deviceId.equals('legacy')))
+          ..where(
+            (tbl) =>
+                (tbl.userId.equals(userId) | tbl.userId.equals('local_user')) &
+                (tbl.deviceId.equals(devId) | tbl.deviceId.equals('legacy')),
+          )
           ..orderBy([(t) => OrderingTerm.desc(t.startedAt)])
           ..limit(limit))
         .get();
@@ -187,23 +204,26 @@ class DoomscrollLocalRepository {
 
   /// Mengambil satu sesi berdasarkan ID
   Future<DoomscrollSessionData?> getSessionById(String id) {
-    return (_db.select(_db.doomscrollSessions)..where((tbl) => tbl.id.equals(id)))
-        .getSingleOrNull();
+    return (_db.select(
+      _db.doomscrollSessions,
+    )..where((tbl) => tbl.id.equals(id))).getSingleOrNull();
   }
 
   /// Menandai sesi berhasil disinkronkan ke Supabase
   Future<void> markSessionSynced(String id) async {
-    await (_db.update(_db.doomscrollSessions)..where((tbl) => tbl.id.equals(id)))
-        .write(
+    await (_db.update(
+      _db.doomscrollSessions,
+    )..where((tbl) => tbl.id.equals(id))).write(
       const DoomscrollSessionsCompanion(
         syncStatus: Value(SyncStatus.synced),
         lastSyncError: Value(null),
       ),
     );
-    await (_db.delete(_db.syncQueue)
-          ..where((tbl) =>
+    await (_db.delete(_db.syncQueue)..where(
+          (tbl) =>
               tbl.entityType.equals(SyncEntityType.doomscrollSession) &
-              tbl.entityId.equals(id)))
+              tbl.entityId.equals(id),
+        ))
         .go();
   }
 
@@ -212,8 +232,9 @@ class DoomscrollLocalRepository {
     final current = await getSessionById(id);
     final attempts = (current?.syncAttempts ?? 0) + 1;
 
-    await (_db.update(_db.doomscrollSessions)..where((tbl) => tbl.id.equals(id)))
-        .write(
+    await (_db.update(
+      _db.doomscrollSessions,
+    )..where((tbl) => tbl.id.equals(id))).write(
       DoomscrollSessionsCompanion(
         syncStatus: const Value(SyncStatus.failed),
         syncAttempts: Value(attempts),
@@ -231,24 +252,29 @@ class DoomscrollLocalRepository {
     final currentUid = _currentUserId;
     final targetUserId =
         (userId != null && userId.isNotEmpty && userId != 'local_user')
-            ? userId
-            : currentUid;
+        ? userId
+        : currentUid;
 
     return (_db.select(_db.doomscrollSessions)
-          ..where((t) =>
-              (t.userId.equals(targetUserId) | t.userId.equals('local_user')) &
-              t.startedAt.isBiggerOrEqualValue(start) &
-              t.startedAt.isSmallerThanValue(end))
+          ..where(
+            (t) =>
+                (t.userId.equals(targetUserId) |
+                    t.userId.equals('local_user')) &
+                t.startedAt.isBiggerOrEqualValue(start) &
+                t.startedAt.isSmallerThanValue(end),
+          )
           ..orderBy([(t) => OrderingTerm.asc(t.startedAt)]))
         .get();
   }
 
   /// Mengaitkan seluruh sesi berlabel 'local_user' ke userId user yang sedang login
   Future<int> claimLocalSessions(String authenticatedUserId) async {
-    if (authenticatedUserId.isEmpty || authenticatedUserId == 'local_user') return 0;
-    return await (_db.update(_db.doomscrollSessions)
-          ..where((t) => t.userId.equals('local_user')))
-        .write(
+    if (authenticatedUserId.isEmpty || authenticatedUserId == 'local_user') {
+      return 0;
+    }
+    return await (_db.update(
+      _db.doomscrollSessions,
+    )..where((t) => t.userId.equals('local_user'))).write(
       DoomscrollSessionsCompanion(
         userId: Value(authenticatedUserId),
         updatedAt: Value(DateTime.now()),

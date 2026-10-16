@@ -73,7 +73,8 @@ class RuleBasedDetectionStrategy implements DetectionStrategy {
     String? contextualEyeNote;
     if (contextualEye != null && contextualEye.hasData) {
       final isHighClosures =
-          contextualEye.eyeClosureEvents >= thresholds.contextualEyeClosureThreshold;
+          contextualEye.eyeClosureEvents >=
+          thresholds.contextualEyeClosureThreshold;
       final isLowEar =
           contextualEye.averageEar != null && contextualEye.averageEar! < 0.22;
 
@@ -94,7 +95,8 @@ class RuleBasedDetectionStrategy implements DetectionStrategy {
       return DetectionResult.none(
         date: features.date,
         features: features,
-        note: 'Pola penggunaan aplikasi berada dalam rentang wajar berdasarkan parameter pemantauan.',
+        note:
+            'Pola penggunaan aplikasi berada dalam rentang wajar berdasarkan parameter pemantauan.',
       );
     }
 
@@ -108,7 +110,8 @@ class RuleBasedDetectionStrategy implements DetectionStrategy {
 
     // Multi-signal: jika terdapat minimal 2 sinyal utama dan minimal ambang sesi
     if (majorEvidenceCount >= 2 &&
-        features.totalScrollingSessions >= thresholds.multiSignalSessionThreshold) {
+        features.totalScrollingSessions >=
+            thresholds.multiSignalSessionThreshold) {
       return DetectionResult(
         detected: true,
         type: DetectionType.multiSignalScrollingPattern,
@@ -127,8 +130,9 @@ class RuleBasedDetectionStrategy implements DetectionStrategy {
 
     // Single-signal detection types
     if (isLongSession) {
-      final formattedDuration =
-          DurationFormatter.format(features.longestSessionDurationMillis);
+      final formattedDuration = DurationFormatter.format(
+        features.longestSessionDurationMillis,
+      );
       return DetectionResult(
         detected: true,
         type: DetectionType.longScrollSession,

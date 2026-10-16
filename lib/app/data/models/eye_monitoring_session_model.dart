@@ -51,13 +51,15 @@ class EyeMonitoringSessionModel {
         ? DateTime.fromMillisecondsSinceEpoch(rawCollected.toInt())
         : (ended ?? DateTime.now());
 
-    final dur = (map['durationMillis'] as num?)?.toInt() ??
+    final dur =
+        (map['durationMillis'] as num?)?.toInt() ??
         (ended != null ? ended.difference(started).inMilliseconds : 0);
 
     return EyeMonitoringSessionModel(
       id: map['id']?.toString() ?? '',
       userId: defaultUserId,
-      deviceId: map['deviceId']?.toString() ??
+      deviceId:
+          map['deviceId']?.toString() ??
           map['device_id']?.toString() ??
           defaultDeviceId ??
           'legacy',
@@ -77,8 +79,9 @@ class EyeMonitoringSessionModel {
     String authenticatedUserId, {
     String? deviceIdOverride,
   }) {
-    final validAverageEar =
-        (averageEar.isNaN || averageEar.isInfinite) ? 0.0 : averageEar;
+    final validAverageEar = (averageEar.isNaN || averageEar.isInfinite)
+        ? 0.0
+        : averageEar;
     final validMinEar = (minEar.isNaN || minEar.isInfinite) ? 0.0 : minEar;
     final validDuration = durationMillis < 0 ? 0 : durationMillis;
     final effectiveEndedAt =

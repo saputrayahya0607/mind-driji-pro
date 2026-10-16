@@ -1,3 +1,4 @@
+import 'dart:typed_data';
 import 'package:get/get.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../local/repositories/local_usage_repository.dart';
@@ -13,12 +14,13 @@ class UsageStatsRepository {
     UsageStatsProvider? provider,
     LocalUsageRepository? localRepository,
     SupabaseClient? supabase,
-  })  : _provider = provider ?? UsageStatsProvider(),
-        _localRepository = localRepository ??
-            (Get.isRegistered<LocalUsageRepository>()
-                ? Get.find<LocalUsageRepository>()
-                : LocalUsageRepository()),
-        _supabase = supabase ?? _safeGetSupabaseClient();
+  }) : _provider = provider ?? UsageStatsProvider(),
+       _localRepository =
+           localRepository ??
+           (Get.isRegistered<LocalUsageRepository>()
+               ? Get.find<LocalUsageRepository>()
+               : LocalUsageRepository()),
+       _supabase = supabase ?? _safeGetSupabaseClient();
 
   static SupabaseClient? _safeGetSupabaseClient() {
     try {
@@ -40,8 +42,7 @@ class UsageStatsRepository {
     return _provider.openUsageAccessSettings();
   }
 
-  String get _currentUserId =>
-      _supabase?.auth.currentUser?.id ?? 'local_user';
+  String get _currentUserId => _supabase?.auth.currentUser?.id ?? 'local_user';
 
   /// Mengambil data penggunaan hari ini langsung dari perangkat (Native UsageStats)
   /// Jika native gagal / tidak tersedia, fallback mengambil dari database lokal
@@ -61,7 +62,10 @@ class UsageStatsRepository {
 
   /// Menyimpan snapshot data penggunaan harian ke database lokal SQLite
   /// (Dijalankan pada akhir hari / pukul 23:59 WIB sebelum sinkronisasi cloud)
-  Future<void> saveDailySnapshot({UsageStatsModel? stats, DateTime? date}) async {
+  Future<void> saveDailySnapshot({
+    UsageStatsModel? stats,
+    DateTime? date,
+  }) async {
     final actualUserId = _currentUserId;
     final targetDate = date ?? DateTime.now();
     final dateStr = _formatDate(targetDate);
@@ -80,21 +84,24 @@ class UsageStatsRepository {
     final actualUserId = _currentUserId;
     final today = _formatDate(DateTime.now());
 
-    final screenTime =
-        await _localRepository.getScreenTime(actualUserId, today);
+    final screenTime = await _localRepository.getScreenTime(
+      actualUserId,
+      today,
+    );
     if (screenTime == null) return null;
 
-    final appUsages =
-        await _localRepository.getAppUsages(actualUserId, today);
+    final appUsages = await _localRepository.getAppUsages(actualUserId, today);
 
     return UsageStatsModel(
       totalUsageMillis: screenTime.totalUsageMillis.toInt(),
       apps: appUsages
-          .map((a) => AppUsageModel(
-                packageName: a.packageName,
-                appName: a.appName,
-                usageMillis: a.usageMillis.toInt(),
-              ))
+          .map(
+            (a) => AppUsageModel(
+              packageName: a.packageName,
+              appName: a.appName,
+              usageMillis: a.usageMillis.toInt(),
+            ),
+          )
           .toList(),
     );
   }
@@ -110,5 +117,10 @@ class UsageStatsRepository {
   /// Mengklaim data screen time & app usage lokal untuk user yang baru login
   Future<int> claimLocalUsage(String authenticatedUserId) {
     return _localRepository.claimLocalUsage(authenticatedUserId);
+  }
+
+  /// Mengambil native app icon bytes dari PackageManager via Provider
+  Future<Uint8List?> getAppIcon(String packageName) {
+    return _provider.getAppIcon(packageName);
   }
 }

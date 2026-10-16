@@ -1,3 +1,4 @@
+import 'dart:typed_data';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../core/utils/duration_formatter.dart';
 import '../local/repositories/local_usage_repository.dart';
@@ -20,11 +21,11 @@ class MonitoringDataService {
     DoomscrollRepository? doomscrollRepo,
     EyeMonitoringRepository? eyeRepo,
     SupabaseClient? supabase,
-  })  : _usageStatsRepo = usageStatsRepo ?? UsageStatsRepository(),
-        _localUsageRepo = localUsageRepo ?? LocalUsageRepository(),
-        _doomscrollRepo = doomscrollRepo ?? DoomscrollRepository(),
-        _eyeRepo = eyeRepo ?? EyeMonitoringRepository(),
-        _supabase = supabase ?? _safeGetSupabaseClient();
+  }) : _usageStatsRepo = usageStatsRepo ?? UsageStatsRepository(),
+       _localUsageRepo = localUsageRepo ?? LocalUsageRepository(),
+       _doomscrollRepo = doomscrollRepo ?? DoomscrollRepository(),
+       _eyeRepo = eyeRepo ?? EyeMonitoringRepository(),
+       _supabase = supabase ?? _safeGetSupabaseClient();
 
   static SupabaseClient? _safeGetSupabaseClient() {
     try {
@@ -67,7 +68,7 @@ class MonitoringDataService {
     'Kamis',
     'Jumat',
     'Sabtu',
-    'Minggu'
+    'Minggu',
   ];
 
   static const List<String> shortDayNames = [
@@ -77,7 +78,7 @@ class MonitoringDataService {
     'Kam',
     'Jum',
     'Sab',
-    'Min'
+    'Min',
   ];
 
   static const List<String> monthNames = [
@@ -92,7 +93,7 @@ class MonitoringDataService {
     'September',
     'Oktober',
     'November',
-    'Desember'
+    'Desember',
   ];
 
   static const List<String> shortMonthNames = [
@@ -107,7 +108,7 @@ class MonitoringDataService {
     'Sep',
     'Okt',
     'Nov',
-    'Des'
+    'Des',
   ];
 
   /// Menghitung overlap milidetik antara dua rentang waktu secara presisi
@@ -152,8 +153,22 @@ class MonitoringDataService {
     required DateTime targetDate,
     required List<UsageInterval> intervals,
   }) {
-    final dayStart = DateTime(targetDate.year, targetDate.month, targetDate.day, 0, 0, 0);
-    final dayEnd = DateTime(targetDate.year, targetDate.month, targetDate.day + 1, 0, 0, 0);
+    final dayStart = DateTime(
+      targetDate.year,
+      targetDate.month,
+      targetDate.day,
+      0,
+      0,
+      0,
+    );
+    final dayEnd = DateTime(
+      targetDate.year,
+      targetDate.month,
+      targetDate.day + 1,
+      0,
+      0,
+      0,
+    );
 
     final results = <String, int>{
       'Dini Hari': 0,
@@ -169,8 +184,12 @@ class MonitoringDataService {
       }
 
       // Potong interval hanya ke dalam rentang hari targetDate [dayStart .. dayEnd)
-      final effectiveStart = interval.startTime.isBefore(dayStart) ? dayStart : interval.startTime;
-      final effectiveEnd = interval.endTime.isAfter(dayEnd) ? dayEnd : interval.endTime;
+      final effectiveStart = interval.startTime.isBefore(dayStart)
+          ? dayStart
+          : interval.startTime;
+      final effectiveEnd = interval.endTime.isAfter(dayEnd)
+          ? dayEnd
+          : interval.endTime;
 
       if (!effectiveEnd.isAfter(effectiveStart)) {
         continue;
@@ -181,12 +200,38 @@ class MonitoringDataService {
         final sHour = def['start'] as int;
         final eHour = def['end'] as int;
 
-        final segStart = DateTime(targetDate.year, targetDate.month, targetDate.day, sHour, 0, 0);
+        final segStart = DateTime(
+          targetDate.year,
+          targetDate.month,
+          targetDate.day,
+          sHour,
+          0,
+          0,
+        );
         final segEnd = (eHour == 24)
-            ? DateTime(targetDate.year, targetDate.month, targetDate.day + 1, 0, 0, 0)
-            : DateTime(targetDate.year, targetDate.month, targetDate.day, eHour, 0, 0);
+            ? DateTime(
+                targetDate.year,
+                targetDate.month,
+                targetDate.day + 1,
+                0,
+                0,
+                0,
+              )
+            : DateTime(
+                targetDate.year,
+                targetDate.month,
+                targetDate.day,
+                eHour,
+                0,
+                0,
+              );
 
-        final overlap = calculateOverlap(effectiveStart, effectiveEnd, segStart, segEnd);
+        final overlap = calculateOverlap(
+          effectiveStart,
+          effectiveEnd,
+          segStart,
+          segEnd,
+        );
         if (overlap > 0) {
           results[label] = (results[label] ?? 0) + overlap;
         }
@@ -231,9 +276,8 @@ class MonitoringDataService {
     final dateStr = formatDate(date);
     int totalScreenTimeMillis = 0;
     final now = DateTime.now();
-    final isToday = date.year == now.year &&
-        date.month == now.month &&
-        date.day == now.day;
+    final isToday =
+        date.year == now.year && date.month == now.month && date.day == now.day;
 
     List<UsageInterval> fetchedIntervals = [];
 
@@ -245,7 +289,10 @@ class MonitoringDataService {
       } catch (_) {}
     }
     if (totalScreenTimeMillis == 0) {
-      final local = await _localUsageRepo.getScreenTime(effectiveUserId, dateStr);
+      final local = await _localUsageRepo.getScreenTime(
+        effectiveUserId,
+        dateStr,
+      );
       totalScreenTimeMillis = local?.totalUsageMillis.toInt() ?? 0;
     }
 
@@ -255,13 +302,19 @@ class MonitoringDataService {
     final segmentScreenTimes = <String, int>{};
     if (customIntervals != null && customIntervals.isNotEmpty) {
       segmentScreenTimes.addAll(
-        calculateUsageIntervalSegments(targetDate: date, intervals: customIntervals),
+        calculateUsageIntervalSegments(
+          targetDate: date,
+          intervals: customIntervals,
+        ),
       );
     } else if (customScreenTimeBySegment != null) {
       segmentScreenTimes.addAll(customScreenTimeBySegment);
     } else if (fetchedIntervals.isNotEmpty) {
       segmentScreenTimes.addAll(
-        calculateUsageIntervalSegments(targetDate: date, intervals: fetchedIntervals),
+        calculateUsageIntervalSegments(
+          targetDate: date,
+          intervals: fetchedIntervals,
+        ),
       );
     } else if (isToday) {
       for (final def in standardSegmentDefinitions) {
@@ -281,7 +334,10 @@ class MonitoringDataService {
               startTime: sDt,
               endTime: queryEnd,
             );
-            segmentScreenTimes[label] = segUsage.totalUsageMillis.clamp(0, maxSegment);
+            segmentScreenTimes[label] = segUsage.totalUsageMillis.clamp(
+              0,
+              maxSegment,
+            );
           } catch (_) {
             segmentScreenTimes[label] = 0;
           }
@@ -309,9 +365,12 @@ class MonitoringDataService {
 
       for (final session in doomscrollSessions) {
         final sStart = session.startedAt;
-        final sEnd = session.endedAt ??
+        final sEnd =
+            session.endedAt ??
             (session.durationMillis > BigInt.zero
-                ? sStart.add(Duration(milliseconds: session.durationMillis.toInt()))
+                ? sStart.add(
+                    Duration(milliseconds: session.durationMillis.toInt()),
+                  )
                 : DateTime.now());
 
         final overlap = calculateOverlap(sStart, sEnd, segStart, segEnd);
@@ -319,24 +378,32 @@ class MonitoringDataService {
           segDoomscrollMillis += overlap;
           final totalSessMillis = session.durationMillis.toInt();
           if (totalSessMillis > 0) {
-            final swipes =
-                (session.swipeCount * overlap / totalSessMillis).round();
+            final swipes = (session.swipeCount * overlap / totalSessMillis)
+                .round();
             segDoomscrollSwipes += swipes;
           } else {
             segDoomscrollSwipes += session.swipeCount;
           }
-        } else if (sStart.isAfter(segStart.subtract(const Duration(milliseconds: 1))) &&
+        } else if (sStart.isAfter(
+              segStart.subtract(const Duration(milliseconds: 1)),
+            ) &&
             sStart.isBefore(segEnd)) {
           segDoomscrollMillis += session.durationMillis.toInt();
           segDoomscrollSwipes += session.swipeCount;
         }
       }
 
-      int segScreenTimeMillis = (segmentScreenTimes[label] ?? 0).clamp(0, maxSegmentDuration);
+      int segScreenTimeMillis = (segmentScreenTimes[label] ?? 0).clamp(
+        0,
+        maxSegmentDuration,
+      );
       // Jika screen time per segmen tidak tersedia tapi ada total harian dan segmen doomscroll
       if (segScreenTimeMillis == 0 && totalScreenTimeMillis > 0) {
         if (segDoomscrollMillis > 0) {
-          segScreenTimeMillis = segDoomscrollMillis.clamp(0, maxSegmentDuration);
+          segScreenTimeMillis = segDoomscrollMillis.clamp(
+            0,
+            maxSegmentDuration,
+          );
         }
       }
 
@@ -461,9 +528,12 @@ class MonitoringDataService {
       int dayDoomscrollSwipes = 0;
 
       for (final s in doomscrollSessions) {
-        final sEnd = s.endedAt ??
+        final sEnd =
+            s.endedAt ??
             (s.durationMillis > BigInt.zero
-                ? s.startedAt.add(Duration(milliseconds: s.durationMillis.toInt()))
+                ? s.startedAt.add(
+                    Duration(milliseconds: s.durationMillis.toInt()),
+                  )
                 : DateTime.now());
         final overlap = calculateOverlap(s.startedAt, sEnd, dStart, dEnd);
         if (overlap > 0) {
@@ -474,7 +544,9 @@ class MonitoringDataService {
           } else {
             dayDoomscrollSwipes += s.swipeCount;
           }
-        } else if (s.startedAt.isAfter(dStart.subtract(const Duration(milliseconds: 1))) &&
+        } else if (s.startedAt.isAfter(
+              dStart.subtract(const Duration(milliseconds: 1)),
+            ) &&
             s.startedAt.isBefore(dEnd)) {
           dayDoomscrollMillis += s.durationMillis.toInt();
           dayDoomscrollSwipes += s.swipeCount;
@@ -590,30 +662,10 @@ class MonitoringDataService {
     );
 
     final weekRanges = <Map<String, dynamic>>[
-      {
-        'weekNumber': 1,
-        'label': 'Week 1',
-        'startDay': 1,
-        'endDay': 7,
-      },
-      {
-        'weekNumber': 2,
-        'label': 'Week 2',
-        'startDay': 8,
-        'endDay': 14,
-      },
-      {
-        'weekNumber': 3,
-        'label': 'Week 3',
-        'startDay': 15,
-        'endDay': 21,
-      },
-      {
-        'weekNumber': 4,
-        'label': 'Week 4',
-        'startDay': 22,
-        'endDay': 28,
-      },
+      {'weekNumber': 1, 'label': 'Week 1', 'startDay': 1, 'endDay': 7},
+      {'weekNumber': 2, 'label': 'Week 2', 'startDay': 8, 'endDay': 14},
+      {'weekNumber': 3, 'label': 'Week 3', 'startDay': 15, 'endDay': 21},
+      {'weekNumber': 4, 'label': 'Week 4', 'startDay': 22, 'endDay': 28},
       if (daysInMonth > 28)
         {
           'weekNumber': 5,
@@ -646,20 +698,26 @@ class MonitoringDataService {
       int weekDoomscrollSwipes = 0;
 
       for (final s in doomscrollSessions) {
-        final sEnd = s.endedAt ??
+        final sEnd =
+            s.endedAt ??
             (s.durationMillis > BigInt.zero
-                ? s.startedAt.add(Duration(milliseconds: s.durationMillis.toInt()))
+                ? s.startedAt.add(
+                    Duration(milliseconds: s.durationMillis.toInt()),
+                  )
                 : DateTime.now());
         final overlap = calculateOverlap(s.startedAt, sEnd, wStart, wEnd);
         if (overlap > 0) {
           weekDoomscrollMillis += overlap;
           final totalSess = s.durationMillis.toInt();
           if (totalSess > 0) {
-            weekDoomscrollSwipes += (s.swipeCount * overlap / totalSess).round();
+            weekDoomscrollSwipes += (s.swipeCount * overlap / totalSess)
+                .round();
           } else {
             weekDoomscrollSwipes += s.swipeCount;
           }
-        } else if (s.startedAt.isAfter(wStart.subtract(const Duration(milliseconds: 1))) &&
+        } else if (s.startedAt.isAfter(
+              wStart.subtract(const Duration(milliseconds: 1)),
+            ) &&
             s.startedAt.isBefore(wEnd)) {
           weekDoomscrollMillis += s.durationMillis.toInt();
           weekDoomscrollSwipes += s.swipeCount;
@@ -696,14 +754,17 @@ class MonitoringDataService {
     final now = DateTime.now();
 
     if (period == MonitoringPeriod.daily) {
-      final isToday = date.year == now.year &&
+      final isToday =
+          date.year == now.year &&
           date.month == now.month &&
           date.day == now.day;
 
       if (isToday) {
         try {
           final stats = await _usageStatsRepo.getTodayUsage();
-          final nonZeroApps = stats.apps.where((a) => a.usageMillis > 0).toList();
+          final nonZeroApps = stats.apps
+              .where((a) => a.usageMillis > 0)
+              .toList();
           if (nonZeroApps.isNotEmpty) {
             nonZeroApps.sort((a, b) => b.usageMillis.compareTo(a.usageMillis));
             return nonZeroApps.take(5).toList();
@@ -712,20 +773,28 @@ class MonitoringDataService {
       }
 
       final dateStr = formatDate(date);
-      final localApps = await _localUsageRepo.getAppUsages(effectiveUserId, dateStr);
+      final localApps = await _localUsageRepo.getAppUsages(
+        effectiveUserId,
+        dateStr,
+      );
       final appModels = localApps
           .where((a) => a.usageMillis > BigInt.zero)
-          .map((a) => AppUsageModel(
-                packageName: a.packageName,
-                appName: a.appName,
-                usageMillis: a.usageMillis.toInt(),
-              ))
+          .map(
+            (a) => AppUsageModel(
+              packageName: a.packageName,
+              appName: a.appName,
+              usageMillis: a.usageMillis.toInt(),
+            ),
+          )
           .toList();
       appModels.sort((a, b) => b.usageMillis.compareTo(a.usageMillis));
       return appModels.take(5).toList();
     } else if (period == MonitoringPeriod.weekly) {
-      final monday = DateTime(date.year, date.month, date.day)
-          .subtract(Duration(days: date.weekday - 1));
+      final monday = DateTime(
+        date.year,
+        date.month,
+        date.day,
+      ).subtract(Duration(days: date.weekday - 1));
       final sunday = monday.add(const Duration(days: 6));
       final sStr = formatDate(monday);
       final eStr = formatDate(sunday);
@@ -738,7 +807,8 @@ class MonitoringDataService {
       );
 
       final aggregated = <String, AppUsageModel>{};
-      final isCurrentWeek = monday.isBefore(now) &&
+      final isCurrentWeek =
+          monday.isBefore(now) &&
           sunday.add(const Duration(days: 1)).isAfter(now);
 
       // 1. Agregasi app usage dari SQLite Drift (abaikan hari ini jika minggu berjalan, agar digabung dengan live hari ini)
@@ -775,7 +845,9 @@ class MonitoringDataService {
             } else {
               aggregated[app.packageName] = AppUsageModel(
                 packageName: app.packageName,
-                appName: app.appName.isNotEmpty ? app.appName : existing.appName,
+                appName: app.appName.isNotEmpty
+                    ? app.appName
+                    : existing.appName,
                 usageMillis: existing.usageMillis + app.usageMillis,
               );
             }
@@ -804,7 +876,14 @@ class MonitoringDataService {
       // 3. Fallback jika agregasi masih kosong sama sekali (misal user baru install dan langsung buka Tab Minggu)
       if (aggregated.isEmpty) {
         try {
-          final weekStart = DateTime(monday.year, monday.month, monday.day, 0, 0, 0);
+          final weekStart = DateTime(
+            monday.year,
+            monday.month,
+            monday.day,
+            0,
+            0,
+            0,
+          );
           final weekEndQuery = sunday.add(const Duration(days: 1)).isAfter(now)
               ? now
               : DateTime(sunday.year, sunday.month, sunday.day, 23, 59, 59);
@@ -873,7 +952,9 @@ class MonitoringDataService {
             } else {
               aggregated[app.packageName] = AppUsageModel(
                 packageName: app.packageName,
-                appName: app.appName.isNotEmpty ? app.appName : existing.appName,
+                appName: app.appName.isNotEmpty
+                    ? app.appName
+                    : existing.appName,
                 usageMillis: existing.usageMillis + app.usageMillis,
               );
             }
@@ -943,8 +1024,11 @@ class MonitoringDataService {
       start = DateTime(date.year, date.month, date.day, 0, 0, 0);
       end = DateTime(date.year, date.month, date.day + 1, 0, 0, 0);
     } else if (period == MonitoringPeriod.weekly) {
-      final monday = DateTime(date.year, date.month, date.day)
-          .subtract(Duration(days: date.weekday - 1));
+      final monday = DateTime(
+        date.year,
+        date.month,
+        date.day,
+      ).subtract(Duration(days: date.weekday - 1));
       start = DateTime(monday.year, monday.month, monday.day, 0, 0, 0);
       end = start.add(const Duration(days: 7));
     } else {
@@ -964,9 +1048,12 @@ class MonitoringDataService {
     int upwardSwipes = 0;
 
     for (final s in sessions) {
-      final sEnd = s.endedAt ??
+      final sEnd =
+          s.endedAt ??
           (s.durationMillis > BigInt.zero
-              ? s.startedAt.add(Duration(milliseconds: s.durationMillis.toInt()))
+              ? s.startedAt.add(
+                  Duration(milliseconds: s.durationMillis.toInt()),
+                )
               : DateTime.now());
       final overlap = calculateOverlap(s.startedAt, sEnd, start, end);
       if (overlap > 0) {
@@ -974,14 +1061,17 @@ class MonitoringDataService {
         final totalSess = s.durationMillis.toInt();
         if (totalSess > 0) {
           totalSwipes += (s.swipeCount * overlap / totalSess).round();
-          downwardSwipes += (s.downwardSwipeCount * overlap / totalSess).round();
+          downwardSwipes += (s.downwardSwipeCount * overlap / totalSess)
+              .round();
           upwardSwipes += (s.upwardSwipeCount * overlap / totalSess).round();
         } else {
           totalSwipes += s.swipeCount;
           downwardSwipes += s.downwardSwipeCount;
           upwardSwipes += s.upwardSwipeCount;
         }
-      } else if (s.startedAt.isAfter(start.subtract(const Duration(milliseconds: 1))) &&
+      } else if (s.startedAt.isAfter(
+            start.subtract(const Duration(milliseconds: 1)),
+          ) &&
           s.startedAt.isBefore(end)) {
         totalDuration += s.durationMillis.toInt();
         totalSwipes += s.swipeCount;
@@ -1017,8 +1107,11 @@ class MonitoringDataService {
       start = DateTime(date.year, date.month, date.day, 0, 0, 0);
       end = DateTime(date.year, date.month, date.day, 23, 59, 59, 999);
     } else if (period == MonitoringPeriod.weekly) {
-      final monday = DateTime(date.year, date.month, date.day)
-          .subtract(Duration(days: date.weekday - 1));
+      final monday = DateTime(
+        date.year,
+        date.month,
+        date.day,
+      ).subtract(Duration(days: date.weekday - 1));
       final sunday = monday.add(const Duration(days: 6));
       start = DateTime(monday.year, monday.month, monday.day, 0, 0, 0);
       end = DateTime(sunday.year, sunday.month, sunday.day, 23, 59, 59, 999);
@@ -1041,7 +1134,8 @@ class MonitoringDataService {
     int blinks = 0;
 
     for (final s in sessions) {
-      final sEnd = s.endedAt ??
+      final sEnd =
+          s.endedAt ??
           s.startedAt.add(Duration(milliseconds: s.durationMillis.toInt()));
       final overlap = calculateOverlap(s.startedAt, sEnd, start, end);
       if (overlap > 0) {
@@ -1080,7 +1174,8 @@ class MonitoringDataService {
     final now = DateTime.now();
 
     if (period == MonitoringPeriod.daily) {
-      final isToday = date.year == now.year &&
+      final isToday =
+          date.year == now.year &&
           date.month == now.month &&
           date.day == now.day;
 
@@ -1107,13 +1202,16 @@ class MonitoringDataService {
       );
 
       String comparisonText;
-      if (yesterdayRecord != null && yesterdayRecord.totalUsageMillis > BigInt.zero) {
+      if (yesterdayRecord != null &&
+          yesterdayRecord.totalUsageMillis > BigInt.zero) {
         final yMillis = yesterdayRecord.totalUsageMillis.toInt();
         final diff = currentMillis - yMillis;
         if (diff > 0) {
-          comparisonText = 'Naik ${DurationFormatter.format(diff)} dibanding kemarin';
+          comparisonText =
+              'Naik ${DurationFormatter.format(diff)} dibanding kemarin';
         } else if (diff < 0) {
-          comparisonText = 'Turun ${DurationFormatter.format(diff.abs())} dibanding kemarin';
+          comparisonText =
+              'Turun ${DurationFormatter.format(diff.abs())} dibanding kemarin';
         } else {
           comparisonText = 'Sama dengan kemarin';
         }
@@ -1123,37 +1221,46 @@ class MonitoringDataService {
             : '${DurationFormatter.format(currentMillis)} total waktu layar';
       }
 
-      return {
-        'totalMillis': currentMillis,
-        'comparisonText': comparisonText,
-      };
+      return {'totalMillis': currentMillis, 'comparisonText': comparisonText};
     } else if (period == MonitoringPeriod.weekly) {
-      final days = await getWeeklyDays(dateInWeek: date, userId: effectiveUserId);
-      final currentMillis = days.fold<int>(0, (sum, d) => sum + d.screenTimeMillis);
+      final days = await getWeeklyDays(
+        dateInWeek: date,
+        userId: effectiveUserId,
+      );
+      final currentMillis = days.fold<int>(
+        0,
+        (sum, d) => sum + d.screenTimeMillis,
+      );
 
       // Bandingkan dengan minggu sebelumnya
       final prevMonday = date.subtract(Duration(days: date.weekday - 1 + 7));
-      final prevDays = await getWeeklyDays(dateInWeek: prevMonday, userId: effectiveUserId);
-      final prevMillis = prevDays.fold<int>(0, (sum, d) => sum + d.screenTimeMillis);
+      final prevDays = await getWeeklyDays(
+        dateInWeek: prevMonday,
+        userId: effectiveUserId,
+      );
+      final prevMillis = prevDays.fold<int>(
+        0,
+        (sum, d) => sum + d.screenTimeMillis,
+      );
 
       String comparisonText;
       if (prevMillis > 0) {
         final diff = currentMillis - prevMillis;
         if (diff > 0) {
-          comparisonText = 'Naik ${DurationFormatter.format(diff)} dibanding minggu lalu';
+          comparisonText =
+              'Naik ${DurationFormatter.format(diff)} dibanding minggu lalu';
         } else if (diff < 0) {
-          comparisonText = 'Turun ${DurationFormatter.format(diff.abs())} dibanding minggu lalu';
+          comparisonText =
+              'Turun ${DurationFormatter.format(diff.abs())} dibanding minggu lalu';
         } else {
           comparisonText = 'Sama dengan minggu lalu';
         }
       } else {
-        comparisonText = '${DurationFormatter.format(currentMillis)} dari data minggu ini';
+        comparisonText =
+            '${DurationFormatter.format(currentMillis)} dari data minggu ini';
       }
 
-      return {
-        'totalMillis': currentMillis,
-        'comparisonText': comparisonText,
-      };
+      return {'totalMillis': currentMillis, 'comparisonText': comparisonText};
     } else {
       // Monthly
       final weeks = await getMonthlyWeeks(
@@ -1161,7 +1268,10 @@ class MonitoringDataService {
         month: date.month,
         userId: effectiveUserId,
       );
-      final currentMillis = weeks.fold<int>(0, (sum, w) => sum + w.screenTimeMillis);
+      final currentMillis = weeks.fold<int>(
+        0,
+        (sum, w) => sum + w.screenTimeMillis,
+      );
 
       // Bandingkan dengan bulan sebelumnya
       final prevMonthDate = DateTime(date.year, date.month - 1, 1);
@@ -1170,26 +1280,34 @@ class MonitoringDataService {
         month: prevMonthDate.month,
         userId: effectiveUserId,
       );
-      final prevMillis = prevWeeks.fold<int>(0, (sum, w) => sum + w.screenTimeMillis);
+      final prevMillis = prevWeeks.fold<int>(
+        0,
+        (sum, w) => sum + w.screenTimeMillis,
+      );
 
       String comparisonText;
       if (prevMillis > 0) {
         final diff = currentMillis - prevMillis;
         if (diff > 0) {
-          comparisonText = 'Naik ${DurationFormatter.format(diff)} dibanding bulan lalu';
+          comparisonText =
+              'Naik ${DurationFormatter.format(diff)} dibanding bulan lalu';
         } else if (diff < 0) {
-          comparisonText = 'Turun ${DurationFormatter.format(diff.abs())} dibanding bulan lalu';
+          comparisonText =
+              'Turun ${DurationFormatter.format(diff.abs())} dibanding bulan lalu';
         } else {
           comparisonText = 'Sama dengan bulan lalu';
         }
       } else {
-        comparisonText = '${DurationFormatter.format(currentMillis)} dari data bulan ini';
+        comparisonText =
+            '${DurationFormatter.format(currentMillis)} dari data bulan ini';
       }
 
-      return {
-        'totalMillis': currentMillis,
-        'comparisonText': comparisonText,
-      };
+      return {'totalMillis': currentMillis, 'comparisonText': comparisonText};
     }
+  }
+
+  /// Mengambil native app icon bytes dari PackageManager
+  Future<Uint8List?> getAppIcon(String packageName) {
+    return _usageStatsRepo.getAppIcon(packageName);
   }
 }

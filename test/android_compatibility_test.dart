@@ -1,3 +1,4 @@
+import 'dart:typed_data';
 import 'package:drift/native.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -56,6 +57,9 @@ class MockUsageStatsProvider implements UsageStatsProvider {
     if (shouldThrow) throw Exception('Direct Boot storage locked');
     return mockUsage;
   }
+
+  @override
+  Future<Uint8List?> getAppIcon(String packageName) async => null;
 }
 
 class MockDoomscrollProvider implements DoomscrollNativeProvider {

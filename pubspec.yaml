@@ -64,6 +64,7 @@ flutter:
 
   assets:
     - assets/icons/
+    - assets/icons/loader/
     - assets/splash/
 
 flutter_launcher_icons:

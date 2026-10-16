@@ -21,16 +21,18 @@ class InsightService extends GetxService {
     MonitoringDataService? monitoringDataService,
     InsightEngine? engine,
     SupabaseClient? supabase,
-  })  : _detectionService = detectionService ??
-            (Get.isRegistered<DetectionService>()
-                ? Get.find<DetectionService>()
-                : DetectionService()),
-        _monitoringDataService = monitoringDataService ??
-            (Get.isRegistered<MonitoringDataService>()
-                ? Get.find<MonitoringDataService>()
-                : MonitoringDataService()),
-        _engine = engine ?? const InsightEngine(),
-        _supabase = supabase ?? _safeGetSupabaseClient();
+  }) : _detectionService =
+           detectionService ??
+           (Get.isRegistered<DetectionService>()
+               ? Get.find<DetectionService>()
+               : DetectionService()),
+       _monitoringDataService =
+           monitoringDataService ??
+           (Get.isRegistered<MonitoringDataService>()
+               ? Get.find<MonitoringDataService>()
+               : MonitoringDataService()),
+       _engine = engine ?? const InsightEngine(),
+       _supabase = supabase ?? _safeGetSupabaseClient();
 
   static SupabaseClient? _safeGetSupabaseClient() {
     try {
@@ -64,8 +66,10 @@ class InsightService extends GetxService {
 
     try {
       // 1. Ambil hasil deteksi dari DetectionService
-      final detection =
-          await _detectionService.detectForDate(date, userId: effectiveUserId);
+      final detection = await _detectionService.detectForDate(
+        date,
+        userId: effectiveUserId,
+      );
 
       // 2. Ambil segmen harian dan summary dari MonitoringDataService
       final segments = await _monitoringDataService.getDailySegments(
@@ -84,7 +88,8 @@ class InsightService extends GetxService {
         date: date,
         userId: effectiveUserId,
       );
-      final totalScreenTime = (screenTimeSum['totalMillis'] as num?)?.toInt() ?? 0;
+      final totalScreenTime =
+          (screenTimeSum['totalMillis'] as num?)?.toInt() ?? 0;
 
       final topApps = await _monitoringDataService.getTopApps(
         period: MonitoringPeriod.daily,
@@ -105,7 +110,9 @@ class InsightService extends GetxService {
         date: date,
       );
     } catch (e, stack) {
-      debugPrint('[MIND_DRIJI_INSIGHT] Error generating daily insights: $e\n$stack');
+      debugPrint(
+        '[MIND_DRIJI_INSIGHT] Error generating daily insights: $e\n$stack',
+      );
       return [];
     }
   }
@@ -122,8 +129,10 @@ class InsightService extends GetxService {
     );
 
     try {
-      final detection =
-          await _detectionService.detectWeekly(date, userId: effectiveUserId);
+      final detection = await _detectionService.detectWeekly(
+        date,
+        userId: effectiveUserId,
+      );
 
       final weeklyDays = await _monitoringDataService.getWeeklyDays(
         dateInWeek: date,
@@ -141,7 +150,8 @@ class InsightService extends GetxService {
         date: date,
         userId: effectiveUserId,
       );
-      final totalScreenTime = (screenTimeSum['totalMillis'] as num?)?.toInt() ?? 0;
+      final totalScreenTime =
+          (screenTimeSum['totalMillis'] as num?)?.toInt() ?? 0;
 
       final topApps = await _monitoringDataService.getTopApps(
         period: MonitoringPeriod.weekly,
@@ -161,7 +171,9 @@ class InsightService extends GetxService {
         date: date,
       );
     } catch (e, stack) {
-      debugPrint('[MIND_DRIJI_INSIGHT] Error generating weekly insights: $e\n$stack');
+      debugPrint(
+        '[MIND_DRIJI_INSIGHT] Error generating weekly insights: $e\n$stack',
+      );
       return [];
     }
   }
@@ -178,8 +190,10 @@ class InsightService extends GetxService {
     );
 
     try {
-      final detection =
-          await _detectionService.detectMonthly(date, userId: effectiveUserId);
+      final detection = await _detectionService.detectMonthly(
+        date,
+        userId: effectiveUserId,
+      );
 
       final monthlyWeeks = await _monitoringDataService.getMonthlyWeeks(
         year: date.year,
@@ -198,7 +212,8 @@ class InsightService extends GetxService {
         date: date,
         userId: effectiveUserId,
       );
-      final totalScreenTime = (screenTimeSum['totalMillis'] as num?)?.toInt() ?? 0;
+      final totalScreenTime =
+          (screenTimeSum['totalMillis'] as num?)?.toInt() ?? 0;
 
       final topApps = await _monitoringDataService.getTopApps(
         period: MonitoringPeriod.monthly,
@@ -218,7 +233,9 @@ class InsightService extends GetxService {
         date: date,
       );
     } catch (e, stack) {
-      debugPrint('[MIND_DRIJI_INSIGHT] Error generating monthly insights: $e\n$stack');
+      debugPrint(
+        '[MIND_DRIJI_INSIGHT] Error generating monthly insights: $e\n$stack',
+      );
       return [];
     }
   }

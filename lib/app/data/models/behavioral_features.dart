@@ -94,7 +94,8 @@ class BehavioralFeatures {
   factory BehavioralFeatures.fromJson(Map<String, dynamic> json) {
     return BehavioralFeatures(
       date: DateTime.parse(json['date'] as String),
-      totalScrollingSessions: (json['totalScrollingSessions'] as num?)?.toInt() ?? 0,
+      totalScrollingSessions:
+          (json['totalScrollingSessions'] as num?)?.toInt() ?? 0,
       totalScrollingDurationMillis:
           (json['totalScrollingDurationMillis'] as num?)?.toInt() ?? 0,
       totalSwipeCount: (json['totalSwipeCount'] as num?)?.toInt() ?? 0,
@@ -131,7 +132,8 @@ class BehavioralFeatures {
           (json['longestSessionGapMillis'] as num?)?.toInt() ?? 0,
       consecutiveScrollingSessions:
           (json['consecutiveScrollingSessions'] as num?)?.toInt() ?? 0,
-      involvedApps: (json['involvedApps'] as List<dynamic>?)
+      involvedApps:
+          (json['involvedApps'] as List<dynamic>?)
               ?.map((e) => e.toString())
               .toList() ??
           const [],

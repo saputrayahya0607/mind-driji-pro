@@ -1,8 +1,11 @@
+import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../../core/constants/app_colors.dart';
+import '../../../core/utils/duration_formatter.dart';
 import '../../../data/local/repositories/intervention_history_local_repository.dart';
+import '../../../data/models/app_usage_model.dart';
 import '../../../data/models/detection_result.dart';
 import '../../../data/models/intervention_model.dart';
 import '../../../data/models/monitoring_visualization_model.dart';
@@ -37,15 +40,15 @@ class HomeController extends GetxController with WidgetsBindingObserver {
     InterventionHistoryLocalRepository? historyRepository,
     MonitoringDataService? monitoringDataService,
     DoomscrollRepository? doomscrollRepository,
-  })  : _profileRepository = profileRepository,
-        _usageStatsRepository = usageStatsRepository,
-        _supabaseClient = supabaseClient,
-        _eyeMonitoringService = eyeMonitoringService,
-        _detectionService = detectionService,
-        _interventionService = interventionService,
-        _historyRepository = historyRepository,
-        _monitoringDataService = monitoringDataService,
-        _doomscrollRepository = doomscrollRepository;
+  }) : _profileRepository = profileRepository,
+       _usageStatsRepository = usageStatsRepository,
+       _supabaseClient = supabaseClient,
+       _eyeMonitoringService = eyeMonitoringService,
+       _detectionService = detectionService,
+       _interventionService = interventionService,
+       _historyRepository = historyRepository,
+       _monitoringDataService = monitoringDataService,
+       _doomscrollRepository = doomscrollRepository;
 
   MonitoringDataService get _dataService {
     if (_monitoringDataService != null) return _monitoringDataService;
@@ -121,7 +124,7 @@ class HomeController extends GetxController with WidgetsBindingObserver {
 
   String get eyeMonitoringBadgeText {
     if (!eyeMonitoringService.isMonitoringEnabled.value) {
-      return 'Monitoring belum aktif';
+      return 'Belum Aktif';
     }
     if (eyeMonitoringService.isSessionRunning.value) {
       return 'Kamera Aktif';
@@ -176,10 +179,106 @@ class HomeController extends GetxController with WidgetsBindingObserver {
   // State monitoring screen time real di Home
   final hasUsageAccess = false.obs;
   final todayScreenTimeMillis = 0.obs;
+  final todayUsageStats = Rxn<UsageStatsModel>();
+  final timeSegments = <TimeSegmentUsage>[].obs;
+  final yesterdayScreenTimeMillis = 0.obs;
+
+  String? get yesterdayComparisonText {
+    final yesterday = yesterdayScreenTimeMillis.value;
+    final today = todayScreenTimeMillis.value;
+    if (yesterday <= 0 || today <= 0) return null;
+    final diff = today - yesterday;
+    final diffFormatted = DurationFormatter.format(diff.abs());
+    if (diff > 0) {
+      return '+$diffFormatted dari kemarin';
+    } else if (diff < 0) {
+      return '-$diffFormatted dari kemarin';
+    } else {
+      return 'Sama dengan kemarin';
+    }
+  }
+
+  List<TimeSegmentUsage> get displayTimeSegments {
+    if (timeSegments.isNotEmpty) return timeSegments;
+    return const [
+      TimeSegmentUsage(
+        label: DailyTimeSegment.diniHari,
+        timeRange: '00:00–04:59',
+        startHour: 0,
+        endHour: 5,
+        screenTimeMillis: 0,
+        doomscrollMillis: 0,
+        doomscrollSwipes: 0,
+      ),
+      TimeSegmentUsage(
+        label: DailyTimeSegment.pagi,
+        timeRange: '05:00–10:59',
+        startHour: 5,
+        endHour: 11,
+        screenTimeMillis: 0,
+        doomscrollMillis: 0,
+        doomscrollSwipes: 0,
+      ),
+      TimeSegmentUsage(
+        label: DailyTimeSegment.siang,
+        timeRange: '11:00–14:59',
+        startHour: 11,
+        endHour: 15,
+        screenTimeMillis: 0,
+        doomscrollMillis: 0,
+        doomscrollSwipes: 0,
+      ),
+      TimeSegmentUsage(
+        label: DailyTimeSegment.sore,
+        timeRange: '15:00–17:59',
+        startHour: 15,
+        endHour: 18,
+        screenTimeMillis: 0,
+        doomscrollMillis: 0,
+        doomscrollSwipes: 0,
+      ),
+      TimeSegmentUsage(
+        label: DailyTimeSegment.malam,
+        timeRange: '18:00–23:59',
+        startHour: 18,
+        endHour: 24,
+        screenTimeMillis: 0,
+        doomscrollMillis: 0,
+        doomscrollSwipes: 0,
+      ),
+    ];
+  }
+
+  List<AppUsageModel> get topApps {
+    final stats = todayUsageStats.value;
+    if (stats == null || stats.apps.isEmpty) return const [];
+    final list = List<AppUsageModel>.from(stats.apps)
+      ..sort((a, b) => b.usageMillis.compareTo(a.usageMillis));
+    return list.where((a) => a.usageMillis > 0).take(5).toList();
+  }
+
+  /// Cache ikon aplikasi dari Android PackageManager
+  final appIconCache = <String, Uint8List?>{}.obs;
+
+  /// Mengambil byte gambar icon aplikasi untuk rendering native
+  Future<Uint8List?> getAppIconBytes(String packageName) async {
+    if (appIconCache.containsKey(packageName)) {
+      return appIconCache[packageName];
+    }
+    try {
+      final bytes = await _usageRepo.getAppIcon(packageName);
+      appIconCache[packageName] = bytes;
+      return bytes;
+    } catch (_) {
+      appIconCache[packageName] = null;
+      return null;
+    }
+  }
 
   // State ringkasan doomscrolling real hari ini
   final hasAccessibilityPermission = false.obs;
   final doomscrollSummary = const DoomscrollSummary().obs;
+  final mostScrolledApp = Rxn<MostScrolledApp>();
 
   bool get hasDoomscrollData => doomscrollSummary.value.hasData;
   int get doomscrollSessionCount => doomscrollSummary.value.totalSessions;
@@ -191,16 +290,41 @@ class HomeController extends GetxController with WidgetsBindingObserver {
   bool get isDoomscrollMonitoringActive => hasAccessibilityPermission.value;
 
   String get doomscrollMonitoringStatusText =>
-      hasAccessibilityPermission.value ? 'Aktif' : 'Monitoring tidak aktif';
+      hasAccessibilityPermission.value ? 'Aktif' : 'Belum Aktif';
 
   String get doomscrollDataStatusText {
     if (!hasAccessibilityPermission.value) {
-      return 'Monitoring tidak aktif';
+      return 'Belum Aktif';
     }
     if (doomscrollSessionCount == 0) {
       return 'Belum ada sesi scrolling hari ini';
     }
     return '$doomscrollSessionCount sesi • $doomscrollDurationFormatted • $doomscrollSwipes swipe';
+  }
+
+  // State statistik sesi eye monitoring hari ini
+  final todayEyeSessionCount = 0.obs;
+  final todayBlinkCount = 0.obs;
+  final todayAverageEar = 0.0.obs;
+
+  String get cameraSensorStatusText {
+    if (!eyeMonitoringService.cameraPermission.value) {
+      return 'Izin Kamera Belum Aktif';
+    }
+    if (eyeMonitoringService.isSessionRunning.value) {
+      return 'Sensor Aktif';
+    }
+    return 'Sensor Off';
+  }
+
+  Color get cameraSensorStatusColor {
+    if (!eyeMonitoringService.cameraPermission.value) {
+      return AppColors.warning;
+    }
+    if (eyeMonitoringService.isSessionRunning.value) {
+      return AppColors.primary;
+    }
+    return AppColors.textSecondary;
   }
 
   // State hasil deteksi pola perilaku scrolling
@@ -212,7 +336,9 @@ class HomeController extends GetxController with WidgetsBindingObserver {
   String get latestInterventionSummary {
     final item = latestIntervention.value;
     if (item == null) return '';
-    final statusStr = item.status == InterventionStatus.completed ? 'Selesai' : 'Dibatalkan';
+    final statusStr = item.status == InterventionStatus.completed
+        ? 'Selesai'
+        : 'Dibatalkan';
     return '${item.title} · ${item.durationMinutes} menit · $statusStr';
   }
 
@@ -243,7 +369,9 @@ class HomeController extends GetxController with WidgetsBindingObserver {
   /// Mengambil nama depan pengguna dari profil Supabase
   String get greetingName {
     final p = profile.value;
-    if (p != null && p.namaLengkap != null && p.namaLengkap!.trim().isNotEmpty) {
+    if (p != null &&
+        p.namaLengkap != null &&
+        p.namaLengkap!.trim().isNotEmpty) {
       final name = p.namaLengkap!.trim().split(RegExp(r'\s+')).first;
       if (name.isNotEmpty) {
         return name[0].toUpperCase() + name.substring(1);
@@ -285,6 +413,7 @@ class HomeController extends GetxController with WidgetsBindingObserver {
       loadDoomscrollSummary();
       loadDetectionSummary();
       loadLatestIntervention();
+      loadTodayEyeStats();
     }
   }
 
@@ -296,17 +425,18 @@ class HomeController extends GetxController with WidgetsBindingObserver {
       loadDoomscrollSummary(),
       loadDetectionSummary(),
       loadLatestIntervention(),
+      loadTodayEyeStats(),
     ]);
   }
 
-  /// Memuat ringkasan doomscrolling real hari ini via MonitoringDataService
+  /// Memuat ringkasan doomscrolling real hari ini via MonitoringDataService & DoomscrollRepository
   Future<void> loadDoomscrollSummary() async {
     try {
       final repo = _doomscrollRepo;
       if (repo != null) {
         try {
-          hasAccessibilityPermission.value =
-              await repo.checkAccessibilityService();
+          hasAccessibilityPermission.value = await repo
+              .checkAccessibilityService();
         } catch (_) {
           hasAccessibilityPermission.value = false;
         }
@@ -319,7 +449,62 @@ class HomeController extends GetxController with WidgetsBindingObserver {
             }
           }
         } catch (_) {}
+
+        // Hitung aplikasi yang paling banyak di-scroll hari ini (DATA REAL)
+        try {
+          final now = DateTime.now();
+          final todayStart = DateTime(now.year, now.month, now.day, 0, 0, 0);
+          final todayEnd = DateTime(now.year, now.month, now.day, 23, 59, 59);
+          final sessions = await repo.getSessionsBetween(
+            start: todayStart,
+            end: todayEnd,
+          );
+          if (sessions.isNotEmpty) {
+            final map = <String, _AppScrollAccumulator>{};
+            int totalSwipes = 0;
+            for (final s in sessions) {
+              totalSwipes += s.swipeCount;
+              final existing = map[s.packageName];
+              if (existing == null) {
+                map[s.packageName] = _AppScrollAccumulator(
+                  packageName: s.packageName,
+                  appName: s.appName,
+                  swipeCount: s.swipeCount,
+                  durationMillis: s.durationMillis.toInt(),
+                );
+              } else {
+                existing.swipeCount += s.swipeCount;
+                existing.durationMillis += s.durationMillis.toInt();
+                if (existing.appName.isEmpty && s.appName.isNotEmpty) {
+                  existing.appName = s.appName;
+                }
+              }
+            }
+            final sorted = map.values.toList()
+              ..sort((a, b) => b.swipeCount.compareTo(a.swipeCount));
+            if (sorted.isNotEmpty && sorted.first.swipeCount > 0) {
+              final top = sorted.first;
+              final pct = totalSwipes > 0
+                  ? (top.swipeCount / totalSwipes * 100)
+                  : 0.0;
+              mostScrolledApp.value = MostScrolledApp(
+                packageName: top.packageName,
+                appName: top.appName.isNotEmpty ? top.appName : top.packageName,
+                swipeCount: top.swipeCount,
+                durationMillis: top.durationMillis,
+                percentage: pct,
+              );
+            } else {
+              mostScrolledApp.value = null;
+            }
+          } else {
+            mostScrolledApp.value = null;
+          }
+        } catch (_) {
+          mostScrolledApp.value = null;
+        }
       }
+
       if (_monitoringDataService != null ||
           Get.isRegistered<MonitoringDataService>()) {
         final summary = await _dataService.getDoomscrollSummary(
@@ -330,6 +515,43 @@ class HomeController extends GetxController with WidgetsBindingObserver {
       }
     } catch (_) {
       doomscrollSummary.value = const DoomscrollSummary();
+      mostScrolledApp.value = null;
+    }
+  }
+
+  /// Memuat statistik sesi eye monitoring hari ini secara aktual
+  Future<void> loadTodayEyeStats() async {
+    try {
+      final now = DateTime.now();
+      final todayStart = DateTime(now.year, now.month, now.day, 0, 0, 0);
+      final sessions = await eyeMonitoringService.localRepository.getSessions(
+        limit: 100,
+      );
+      final todaySessions = sessions
+          .where((s) => s.startedAt.isAfter(todayStart))
+          .toList();
+      todayEyeSessionCount.value = todaySessions.length;
+      if (todaySessions.isNotEmpty) {
+        int blinks = 0;
+        double totalEar = 0;
+        int earCount = 0;
+        for (final s in todaySessions) {
+          blinks += s.blinkCount;
+          if (s.averageEar > 0) {
+            totalEar += s.averageEar;
+            earCount++;
+          }
+        }
+        todayBlinkCount.value = blinks;
+        todayAverageEar.value = earCount > 0 ? (totalEar / earCount) : 0.0;
+      } else {
+        todayBlinkCount.value = 0;
+        todayAverageEar.value = 0.0;
+      }
+    } catch (_) {
+      todayEyeSessionCount.value = 0;
+      todayBlinkCount.value = 0;
+      todayAverageEar.value = 0.0;
     }
   }
 
@@ -346,7 +568,8 @@ class HomeController extends GetxController with WidgetsBindingObserver {
   /// Memuat hasil deteksi pola scrolling hari ini dari DetectionService
   Future<void> loadDetectionSummary() async {
     try {
-      final service = _detectionService ??
+      final service =
+          _detectionService ??
           (Get.isRegistered<DetectionService>()
               ? Get.find<DetectionService>()
               : null);
@@ -393,17 +616,114 @@ class HomeController extends GetxController with WidgetsBindingObserver {
       if (hasAccess) {
         try {
           final usage = await _usageRepo.getTodayUsage();
+          todayUsageStats.value = usage;
           todayScreenTimeMillis.value = usage.totalUsageMillis;
+
+          // Memuat 5 segmen waktu harian dari data aktual
+          try {
+            if (_monitoringDataService != null ||
+                Get.isRegistered<MonitoringDataService>()) {
+              final segments = await _dataService.getDailySegments(
+                date: DateTime.now(),
+              );
+              timeSegments.assignAll(segments);
+            }
+          } catch (_) {}
+
+          // Memuat perbandingan penggunaan hari kemarin
+          try {
+            final now = DateTime.now();
+            final yesterday = now.subtract(const Duration(days: 1));
+            final yStart = DateTime(
+              yesterday.year,
+              yesterday.month,
+              yesterday.day,
+              0,
+              0,
+              0,
+            );
+            final yEnd = DateTime(
+              yesterday.year,
+              yesterday.month,
+              yesterday.day,
+              23,
+              59,
+              59,
+            );
+            final yStats = await _usageRepo.getUsageRange(
+              startTime: yStart,
+              endTime: yEnd,
+            );
+            yesterdayScreenTimeMillis.value = yStats.totalUsageMillis;
+          } catch (_) {
+            yesterdayScreenTimeMillis.value = 0;
+          }
         } catch (_) {
           // Tetap pertahankan hasUsageAccess = true jika izin sudah diberikan
           todayScreenTimeMillis.value = 0;
+          todayUsageStats.value = null;
+          timeSegments.clear();
+          yesterdayScreenTimeMillis.value = 0;
         }
       } else {
         todayScreenTimeMillis.value = 0;
+        todayUsageStats.value = null;
+        timeSegments.clear();
+        yesterdayScreenTimeMillis.value = 0;
       }
     } catch (_) {
       hasUsageAccess.value = false;
       todayScreenTimeMillis.value = 0;
+      todayUsageStats.value = null;
+      timeSegments.clear();
+      yesterdayScreenTimeMillis.value = 0;
     }
   }
+
+  /// Membuka halaman Pengaturan Sistem Android untuk izin Akses Penggunaan
+  Future<void> openUsageAccessSettings() async {
+    try {
+      await _usageRepo.openUsageAccessSettings();
+    } catch (_) {}
+  }
+
+  /// Membuka halaman Pengaturan Aksesibilitas Android
+  Future<void> openAccessibilitySettings() async {
+    try {
+      await _doomscrollRepo?.openAccessibilitySettings();
+    } catch (_) {}
+  }
+}
+
+/// Model representasi aplikasi terbanyak di-scroll hari ini
+class MostScrolledApp {
+  final String packageName;
+  final String appName;
+  final int swipeCount;
+  final int durationMillis;
+  final double percentage;
+
+  const MostScrolledApp({
+    required this.packageName,
+    required this.appName,
+    required this.swipeCount,
+    required this.durationMillis,
+    required this.percentage,
+  });
+
+  String get durationFormatted => DurationFormatter.format(durationMillis);
+}
+
+class _AppScrollAccumulator {
+  final String packageName;
+  String appName;
+  int swipeCount;
+  int durationMillis;
+
+  _AppScrollAccumulator({
+    required this.packageName,
+    required this.appName,
+    required this.swipeCount,
+    required this.durationMillis,
+  });
 }

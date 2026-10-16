@@ -121,7 +121,8 @@ class RecommendationModel {
       description: json['description'] as String? ?? '',
       reason: json['reason'] as String? ?? '',
       actionLabel: json['actionLabel'] as String? ?? 'Mulai Jeda',
-      durationOptions: (json['durationOptions'] as List<dynamic>?)
+      durationOptions:
+          (json['durationOptions'] as List<dynamic>?)
               ?.map((e) => (e as num).toInt())
               .toList() ??
           RecommendationDurations.digitalBreak,

@@ -15,11 +15,12 @@ class DoomscrollRepository {
   DoomscrollRepository({
     DoomscrollNativeProvider? provider,
     DoomscrollLocalRepository? localRepository,
-  })  : _provider = provider ?? DoomscrollNativeProvider(),
-        _localRepository = localRepository ??
-            (Get.isRegistered<DoomscrollLocalRepository>()
-                ? Get.find<DoomscrollLocalRepository>()
-                : DoomscrollLocalRepository());
+  }) : _provider = provider ?? DoomscrollNativeProvider(),
+       _localRepository =
+           localRepository ??
+           (Get.isRegistered<DoomscrollLocalRepository>()
+               ? Get.find<DoomscrollLocalRepository>()
+               : DoomscrollLocalRepository());
 
   /// Stream event sesi doomscroll realtime dari native Android
   Stream<DoomscrollLiveSession> liveSessionStream() {
@@ -102,7 +103,11 @@ class DoomscrollRepository {
     required DateTime end,
     String? userId,
   }) {
-    return _localRepository.getSessionsBetween(start: start, end: end, userId: userId);
+    return _localRepository.getSessionsBetween(
+      start: start,
+      end: end,
+      userId: userId,
+    );
   }
 
   /// Mengklaim sesi doomscroll lokal untuk user yang baru login

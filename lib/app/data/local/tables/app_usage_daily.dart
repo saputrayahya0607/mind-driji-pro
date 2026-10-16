@@ -20,6 +20,6 @@ class AppUsageDaily extends Table {
 
   @override
   List<Set<Column>> get uniqueKeys => [
-        {userId, deviceId, date, packageName},
-      ];
+    {userId, deviceId, date, packageName},
+  ];
 }

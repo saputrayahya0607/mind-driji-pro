@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_strings.dart';
+import '../../../core/widgets/mind_driji_loader.dart';
 import '../controllers/splash_controller.dart';
 
 class SplashView extends GetView<SplashController> {
@@ -44,47 +45,13 @@ class SplashView extends GetView<SplashController> {
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  // App Icon Container with Cyan/Teal glow
-                  Container(
-                    width: 96,
-                    height: 96,
-                    decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(26),
-                      gradient: const LinearGradient(
-                        colors: [AppColors.teal, AppColors.cyan],
-                        begin: Alignment.topLeft,
-                        end: Alignment.bottomRight,
-                      ),
-                      boxShadow: [
-                        BoxShadow(
-                          color: AppColors.cyan.withValues(alpha: 0.35),
-                          blurRadius: 28,
-                          offset: const Offset(0, 10),
-                        ),
-                      ],
-                    ),
-                    padding: const EdgeInsets.all(3),
-                    child: ClipRRect(
-                      borderRadius: BorderRadius.circular(23),
-                      child: Container(
-                        color: AppColors.navy,
-                        child: Center(
-                          child: Image.asset(
-                            'assets/icons/app_icon.png',
-                            width: 60,
-                            height: 60,
-                            fit: BoxFit.contain,
-                            errorBuilder: (context, error, stackTrace) => const Icon(
-                              Icons.spa_rounded,
-                              size: 46,
-                              color: AppColors.cyan,
-                            ),
-                          ),
-                        ),
-                      ),
-                    ),
+                  // Animated Mind Driji Native Bloom & Breathing Loader
+                  const MindDrijiLoader(
+                    size: 110,
+                    isDark: true,
+                    repeat: true,
                   ),
-                  const SizedBox(height: 28),
+                  const SizedBox(height: 24),
 
                   // App Title
                   const Text(
@@ -108,17 +75,7 @@ class SplashView extends GetView<SplashController> {
                       letterSpacing: 0.4,
                     ),
                   ),
-                  const SizedBox(height: 48),
-
-                  // Loading Spinner
-                  SizedBox(
-                    width: 24,
-                    height: 24,
-                    child: CircularProgressIndicator(
-                      strokeWidth: 2.5,
-                      valueColor: AlwaysStoppedAnimation<Color>(AppColors.cyan),
-                    ),
-                  ),
+                  const SizedBox(height: 36),
                   const SizedBox(height: 20),
 
                   // Manual Navigation fallback button

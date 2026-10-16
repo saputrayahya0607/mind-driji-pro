@@ -31,13 +31,13 @@ class InsightController extends GetxController with WidgetsBindingObserver {
     RecommendationEngine? recommendationEngine,
     InterventionService? interventionService,
     InterventionHistoryLocalRepository? historyRepo,
-  })  : _insightService = insightService,
-        _detectionService = detectionService,
-        _recommendationService = recommendationService,
-        _recommendationEngine =
-            recommendationEngine ?? const RecommendationEngine(),
-        _interventionService = interventionService,
-        _historyRepo = historyRepo;
+  }) : _insightService = insightService,
+       _detectionService = detectionService,
+       _recommendationService = recommendationService,
+       _recommendationEngine =
+           recommendationEngine ?? const RecommendationEngine(),
+       _interventionService = interventionService,
+       _historyRepo = historyRepo;
 
   InterventionHistoryLocalRepository get _historyRepository {
     if (_historyRepo != null) return _historyRepo;
@@ -96,6 +96,7 @@ class InsightController extends GetxController with WidgetsBindingObserver {
   final selectedAction = RxnString();
   final detectionResult = Rxn<DetectionResult>();
   final latestIntervention = Rxn<InterventionModel>();
+  final timeSegments = <TimeSegmentUsage>[].obs;
 
   // Getters
   InsightModel? get featuredInsight =>
@@ -106,6 +107,58 @@ class InsightController extends GetxController with WidgetsBindingObserver {
 
   bool get hasInsights => insights.isNotEmpty;
   bool get hasRecommendations => recommendations.isNotEmpty;
+
+  bool get isToday {
+    final now = DateTime.now();
+    final cur = selectedDate.value;
+    return cur.year == now.year && cur.month == now.month && cur.day == now.day;
+  }
+
+  bool get hasLongScrollDetected {
+    if (detectionResult.value?.type == DetectionType.longScrollSession) {
+      return true;
+    }
+    return insights.any(
+      (i) =>
+          i.type == InsightType.scrolling &&
+          (i.title.toLowerCase().contains('panjang') ||
+              i.summary.toLowerCase().contains('panjang')),
+    );
+  }
+
+  String get longScrollDescription {
+    for (final item in insights) {
+      if (item.type == InsightType.scrolling &&
+          (item.title.toLowerCase().contains('panjang') ||
+              item.summary.toLowerCase().contains('panjang'))) {
+        return item.summary;
+      }
+    }
+    return 'Terdeteksi sesi scrolling dengan durasi panjang pada aplikasi yang dipantau.';
+  }
+
+  bool get hasNightScrollDetected {
+    if (detectionResult.value?.type == DetectionType.nightScrollingPattern) {
+      return true;
+    }
+    return insights.any(
+      (i) =>
+          i.type == InsightType.scrolling &&
+          (i.title.toLowerCase().contains('malam') ||
+              i.summary.toLowerCase().contains('malam')),
+    );
+  }
+
+  String get nightScrollDescription {
+    for (final item in insights) {
+      if (item.type == InsightType.scrolling &&
+          (item.title.toLowerCase().contains('malam') ||
+              item.summary.toLowerCase().contains('malam'))) {
+        return item.summary;
+      }
+    }
+    return 'Terdeteksi aktivitas scrolling saat larut malam atau dini hari.';
+  }
 
   bool get hasDetection =>
       (detectionResult.value?.detected ?? false) ||
@@ -125,7 +178,9 @@ class InsightController extends GetxController with WidgetsBindingObserver {
   /// Memilih dan mencatat rekomendasi yang diambil pengguna (User Choice)
   /// serta memulai intervensi ramah (Digital Break / Relaksasi Mata).
   Future<void> applyRecommendation(
-      RecommendationModel rec, int durationMinutes) async {
+    RecommendationModel rec,
+    int durationMinutes,
+  ) async {
     selectedRecommendation.value = rec;
     userAppliedAction.value = '${rec.title} ($durationMinutes menit)';
     selectAction(rec.title);
@@ -134,10 +189,7 @@ class InsightController extends GetxController with WidgetsBindingObserver {
     if (rec.type == RecommendationType.focusMode) {
       Get.toNamed(
         Routes.focusMode,
-        arguments: {
-          'duration': durationMinutes,
-          'source': rec,
-        },
+        arguments: {'duration': durationMinutes, 'source': rec},
       );
     } else if (svc != null) {
       if (rec.type == RecommendationType.eyeRest) {
@@ -147,10 +199,7 @@ class InsightController extends GetxController with WidgetsBindingObserver {
         );
         Get.toNamed(Routes.eyeRelaxation);
       } else {
-        await svc.startDigitalBreak(
-          durationMinutes,
-          source: rec,
-        );
+        await svc.startDigitalBreak(durationMinutes, source: rec);
         Get.toNamed(Routes.intervention);
       }
     }
@@ -184,14 +233,19 @@ class InsightController extends GetxController with WidgetsBindingObserver {
     switch (selectedPeriod.value) {
       case MonitoringPeriod.daily:
         final todayMidnight = DateTime(now.year, now.month, now.day);
-        final currentMidnight =
-            DateTime(current.year, current.month, current.day);
+        final currentMidnight = DateTime(
+          current.year,
+          current.month,
+          current.day,
+        );
         return currentMidnight.isBefore(todayMidnight);
 
       case MonitoringPeriod.weekly:
-        final currentMonday =
-            DateTime(current.year, current.month, current.day)
-                .subtract(Duration(days: current.weekday - 1));
+        final currentMonday = DateTime(
+          current.year,
+          current.month,
+          current.day,
+        ).subtract(Duration(days: current.weekday - 1));
         final currentSunday = currentMonday.add(const Duration(days: 6));
         final nowMidnight = DateTime(now.year, now.month, now.day);
         return currentSunday.isBefore(nowMidnight);
@@ -207,20 +261,19 @@ class InsightController extends GetxController with WidgetsBindingObserver {
     final current = selectedDate.value;
     switch (selectedPeriod.value) {
       case MonitoringPeriod.daily:
-        final dayName =
-            MonitoringDataService.dayNames[current.weekday - 1];
-        final monthName =
-            MonitoringDataService.monthNames[current.month - 1];
+        final dayName = MonitoringDataService.dayNames[current.weekday - 1];
+        final monthName = MonitoringDataService.monthNames[current.month - 1];
         return '$dayName, ${current.day} $monthName ${current.year}';
 
       case MonitoringPeriod.weekly:
-        final monday = DateTime(current.year, current.month, current.day)
-            .subtract(Duration(days: current.weekday - 1));
+        final monday = DateTime(
+          current.year,
+          current.month,
+          current.day,
+        ).subtract(Duration(days: current.weekday - 1));
         final sunday = monday.add(const Duration(days: 6));
-        final sMonth =
-            MonitoringDataService.shortMonthNames[monday.month - 1];
-        final eMonth =
-            MonitoringDataService.shortMonthNames[sunday.month - 1];
+        final sMonth = MonitoringDataService.shortMonthNames[monday.month - 1];
+        final eMonth = MonitoringDataService.shortMonthNames[sunday.month - 1];
 
         if (monday.month == sunday.month) {
           return '${monday.day} – ${sunday.day} $sMonth ${monday.year}';
@@ -229,8 +282,7 @@ class InsightController extends GetxController with WidgetsBindingObserver {
         }
 
       case MonitoringPeriod.monthly:
-        final mName =
-            MonitoringDataService.monthNames[current.month - 1];
+        final mName = MonitoringDataService.monthNames[current.month - 1];
         return '$mName ${current.year}';
     }
   }
@@ -326,7 +378,10 @@ class InsightController extends GetxController with WidgetsBindingObserver {
       } else if (detectionResult.value != null) {
         final det = detectionResult.value!;
         final f = det.features;
-        result = const InsightEngine().generateInsights(detection: det, features: f);
+        result = const InsightEngine().generateInsights(
+          detection: det,
+          features: f,
+        );
       } else {
         result = [];
       }
@@ -357,12 +412,176 @@ class InsightController extends GetxController with WidgetsBindingObserver {
       }
 
       await loadLatestIntervention();
+      await _loadTimeSegments(date);
     } catch (_) {
       insights.clear();
       recommendations.clear();
+      timeSegments.assignAll(_defaultEmptySegments());
     } finally {
       isLoading.value = false;
     }
+  }
+
+  Future<void> _loadTimeSegments(DateTime date) async {
+    try {
+      final mon = Get.isRegistered<MonitoringDataService>()
+          ? Get.find<MonitoringDataService>()
+          : null;
+      if (mon != null) {
+        if (selectedPeriod.value == MonitoringPeriod.daily) {
+          final segs = await mon.getDailySegments(date: date);
+          timeSegments.assignAll(segs);
+        } else if (selectedPeriod.value == MonitoringPeriod.weekly) {
+          final monday = DateTime(
+            date.year,
+            date.month,
+            date.day,
+          ).subtract(Duration(days: date.weekday - 1));
+          final now = DateTime.now();
+          final todayMidnight = DateTime(now.year, now.month, now.day);
+
+          final aggScreenTime = <String, int>{};
+          final aggDoomscroll = <String, int>{};
+          final aggSwipes = <String, int>{};
+          List<TimeSegmentUsage>? baseSegs;
+
+          for (int i = 0; i < 7; i++) {
+            final dayDt = monday.add(Duration(days: i));
+            if (dayDt.isAfter(todayMidnight) && !isToday) continue;
+            final daySegs = await mon.getDailySegments(date: dayDt);
+            baseSegs ??= daySegs;
+            for (final s in daySegs) {
+              aggScreenTime[s.label] =
+                  (aggScreenTime[s.label] ?? 0) + s.screenTimeMillis;
+              aggDoomscroll[s.label] =
+                  (aggDoomscroll[s.label] ?? 0) + s.doomscrollMillis;
+              aggSwipes[s.label] =
+                  (aggSwipes[s.label] ?? 0) + s.doomscrollSwipes;
+            }
+          }
+
+          if (baseSegs != null && baseSegs.isNotEmpty) {
+            timeSegments.assignAll(
+              baseSegs.map(
+                (s) => TimeSegmentUsage(
+                  label: s.label,
+                  timeRange: s.timeRange,
+                  startHour: s.startHour,
+                  endHour: s.endHour,
+                  screenTimeMillis: aggScreenTime[s.label] ?? 0,
+                  doomscrollMillis: aggDoomscroll[s.label] ?? 0,
+                  doomscrollSwipes: aggSwipes[s.label] ?? 0,
+                ),
+              ),
+            );
+          } else {
+            timeSegments.assignAll(_defaultEmptySegments());
+          }
+        } else {
+          final now = DateTime.now();
+          final daysInMonth = DateTime(date.year, date.month + 1, 0).day;
+          final todayMidnight = DateTime(now.year, now.month, now.day);
+
+          final aggScreenTime = <String, int>{};
+          final aggDoomscroll = <String, int>{};
+          final aggSwipes = <String, int>{};
+          List<TimeSegmentUsage>? baseSegs;
+
+          for (int d = 1; d <= daysInMonth; d++) {
+            final dayDt = DateTime(date.year, date.month, d);
+            if (dayDt.isAfter(todayMidnight) &&
+                dayDt.year == now.year &&
+                dayDt.month == now.month) {
+              continue;
+            }
+            final daySegs = await mon.getDailySegments(date: dayDt);
+            baseSegs ??= daySegs;
+            for (final s in daySegs) {
+              aggScreenTime[s.label] =
+                  (aggScreenTime[s.label] ?? 0) + s.screenTimeMillis;
+              aggDoomscroll[s.label] =
+                  (aggDoomscroll[s.label] ?? 0) + s.doomscrollMillis;
+              aggSwipes[s.label] =
+                  (aggSwipes[s.label] ?? 0) + s.doomscrollSwipes;
+            }
+          }
+
+          if (baseSegs != null && baseSegs.isNotEmpty) {
+            timeSegments.assignAll(
+              baseSegs.map(
+                (s) => TimeSegmentUsage(
+                  label: s.label,
+                  timeRange: s.timeRange,
+                  startHour: s.startHour,
+                  endHour: s.endHour,
+                  screenTimeMillis: aggScreenTime[s.label] ?? 0,
+                  doomscrollMillis: aggDoomscroll[s.label] ?? 0,
+                  doomscrollSwipes: aggSwipes[s.label] ?? 0,
+                ),
+              ),
+            );
+          } else {
+            timeSegments.assignAll(_defaultEmptySegments());
+          }
+        }
+      } else {
+        timeSegments.assignAll(_defaultEmptySegments());
+      }
+    } catch (_) {
+      if (timeSegments.isEmpty) {
+        timeSegments.assignAll(_defaultEmptySegments());
+      }
+    }
+  }
+
+  static List<TimeSegmentUsage> _defaultEmptySegments() {
+    return const [
+      TimeSegmentUsage(
+        label: DailyTimeSegment.diniHari,
+        timeRange: '00:00–05:59',
+        startHour: 0,
+        endHour: 5,
+        screenTimeMillis: 0,
+        doomscrollMillis: 0,
+        doomscrollSwipes: 0,
+      ),
+      TimeSegmentUsage(
+        label: DailyTimeSegment.pagi,
+        timeRange: '06:00–10:59',
+        startHour: 6,
+        endHour: 10,
+        screenTimeMillis: 0,
+        doomscrollMillis: 0,
+        doomscrollSwipes: 0,
+      ),
+      TimeSegmentUsage(
+        label: DailyTimeSegment.siang,
+        timeRange: '11:00–14:59',
+        startHour: 11,
+        endHour: 14,
+        screenTimeMillis: 0,
+        doomscrollMillis: 0,
+        doomscrollSwipes: 0,
+      ),
+      TimeSegmentUsage(
+        label: DailyTimeSegment.sore,
+        timeRange: '15:00–17:59',
+        startHour: 15,
+        endHour: 17,
+        screenTimeMillis: 0,
+        doomscrollMillis: 0,
+        doomscrollSwipes: 0,
+      ),
+      TimeSegmentUsage(
+        label: DailyTimeSegment.malam,
+        timeRange: '18:00–23:59',
+        startHour: 18,
+        endHour: 23,
+        screenTimeMillis: 0,
+        doomscrollMillis: 0,
+        doomscrollSwipes: 0,
+      ),
+    ];
   }
 
   /// Memuat riwayat intervensi terbaru yang telah dilakukan pengguna

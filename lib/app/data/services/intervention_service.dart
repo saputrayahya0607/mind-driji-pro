@@ -28,12 +28,13 @@ class InterventionService extends GetxService with WidgetsBindingObserver {
     InterventionNativeProvider? nativeProvider,
     InterventionHistoryLocalRepository? historyRepository,
     FocusModeExecutor? focusModeExecutor,
-  })  : _nativeProvider = nativeProvider ?? InterventionNativeProvider(),
-        _historyRepo = historyRepository,
-        _focusModeExecutor = focusModeExecutor ??
-            AccessibilityFocusModeExecutor(
-              nativeProvider: nativeProvider ?? InterventionNativeProvider(),
-            );
+  }) : _nativeProvider = nativeProvider ?? InterventionNativeProvider(),
+       _historyRepo = historyRepository,
+       _focusModeExecutor =
+           focusModeExecutor ??
+           AccessibilityFocusModeExecutor(
+             nativeProvider: nativeProvider ?? InterventionNativeProvider(),
+           );
 
   FocusModeExecutor get focusModeExecutor => _focusModeExecutor;
 
@@ -208,11 +209,13 @@ class InterventionService extends GetxService with WidgetsBindingObserver {
     if (!nativeStarted) {
       // Rollback riwayat jika platform native gagal memulai
       try {
-        await historyRepository.update(model.copyWith(
-          status: InterventionStatus.cancelled,
-          cancelledAt: DateTime.now(),
-          endedAt: DateTime.now(),
-        ));
+        await historyRepository.update(
+          model.copyWith(
+            status: InterventionStatus.cancelled,
+            cancelledAt: DateTime.now(),
+            endedAt: DateTime.now(),
+          ),
+        );
       } catch (_) {}
       return false;
     }
@@ -263,11 +266,13 @@ class InterventionService extends GetxService with WidgetsBindingObserver {
 
     if (!nativeStarted) {
       try {
-        await historyRepository.update(model.copyWith(
-          status: InterventionStatus.cancelled,
-          cancelledAt: DateTime.now(),
-          endedAt: DateTime.now(),
-        ));
+        await historyRepository.update(
+          model.copyWith(
+            status: InterventionStatus.cancelled,
+            cancelledAt: DateTime.now(),
+            endedAt: DateTime.now(),
+          ),
+        );
       } catch (_) {}
       return false;
     }
@@ -384,7 +389,8 @@ class InterventionService extends GetxService with WidgetsBindingObserver {
   }
 
   InterventionModel? getActiveIntervention() {
-    if (isActive.value && activeIntervention.value?.status == InterventionStatus.active) {
+    if (isActive.value &&
+        activeIntervention.value?.status == InterventionStatus.active) {
       return activeIntervention.value;
     }
     return null;
@@ -464,15 +470,19 @@ class InterventionService extends GetxService with WidgetsBindingObserver {
             try {
               final existing = await historyRepository.getById(model.id);
               if (existing != null) {
-                await historyRepository.update(model.copyWith(
-                  status: InterventionStatus.completed,
-                  endedAt: model.endedAt,
-                ));
+                await historyRepository.update(
+                  model.copyWith(
+                    status: InterventionStatus.completed,
+                    endedAt: model.endedAt,
+                  ),
+                );
               } else {
-                await historyRepository.insert(model.copyWith(
-                  status: InterventionStatus.completed,
-                  endedAt: model.endedAt,
-                ));
+                await historyRepository.insert(
+                  model.copyWith(
+                    status: InterventionStatus.completed,
+                    endedAt: model.endedAt,
+                  ),
+                );
               }
             } catch (_) {}
             if (model.type == InterventionType.digitalBreak) {
@@ -490,8 +500,9 @@ class InterventionService extends GetxService with WidgetsBindingObserver {
 
     // Fallback: pulihkan dari database lokal jika native status kosong
     try {
-      final activeList =
-          await historyRepository.getByStatus(InterventionStatus.active);
+      final activeList = await historyRepository.getByStatus(
+        InterventionStatus.active,
+      );
       if (activeList.isNotEmpty) {
         final dbModel = activeList.first;
 
@@ -508,10 +519,12 @@ class InterventionService extends GetxService with WidgetsBindingObserver {
           _updateRemainingTime();
           _startTicker();
         } else {
-          await historyRepository.update(dbModel.copyWith(
-            status: InterventionStatus.completed,
-            endedAt: DateTime.now(),
-          ));
+          await historyRepository.update(
+            dbModel.copyWith(
+              status: InterventionStatus.completed,
+              endedAt: DateTime.now(),
+            ),
+          );
           if (dbModel.type == InterventionType.digitalBreak) {
             await _nativeProvider.stopDigitalBreak();
           } else if (dbModel.type == InterventionType.focusMode ||

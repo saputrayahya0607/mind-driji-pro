@@ -51,8 +51,8 @@ class InterventionHistoryLocalRepository {
   InterventionHistoryLocalRepository({
     AppDatabase? db,
     SupabaseClient? supabase,
-  })  : _db = db ?? _resolveDatabase(),
-        _supabase = supabase ?? _safeGetSupabaseClient();
+  }) : _db = db ?? _resolveDatabase(),
+       _supabase = supabase ?? _safeGetSupabaseClient();
 
   static AppDatabase? _testDbInstance;
 
@@ -77,8 +77,7 @@ class InterventionHistoryLocalRepository {
   }
 
   /// Mendapatkan ID pengguna yang terautentikasi saat ini
-  String get _currentUserId =>
-      _supabase?.auth.currentUser?.id ?? 'local_user';
+  String get _currentUserId => _supabase?.auth.currentUser?.id ?? 'local_user';
 
   /// Menyimpan riwayat intervensi baru ke Drift SQLite
   Future<void> insert(InterventionModel model, {String? userId}) async {
@@ -86,7 +85,9 @@ class InterventionHistoryLocalRepository {
         userId ?? (model.userId.isNotEmpty ? model.userId : _currentUserId);
     final id = model.id.isNotEmpty ? model.id : UuidGenerator.v4();
 
-    await _db.into(_db.interventionHistories).insert(
+    await _db
+        .into(_db.interventionHistories)
+        .insert(
           InterventionHistoriesCompanion.insert(
             id: id,
             userId: effectiveUserId,
@@ -109,27 +110,31 @@ class InterventionHistoryLocalRepository {
 
   /// Memperbarui riwayat intervensi yang ada
   Future<void> update(InterventionModel model, {String? userId}) async {
-    final effectiveUserId = userId ?? (model.userId.isNotEmpty ? model.userId : _currentUserId);
+    final effectiveUserId =
+        userId ?? (model.userId.isNotEmpty ? model.userId : _currentUserId);
     final now = DateTime.now();
 
-    await (_db.update(_db.interventionHistories)
-          ..where((t) => t.id.equals(model.id) & t.userId.equals(effectiveUserId)))
+    await (_db.update(_db.interventionHistories)..where(
+          (t) => t.id.equals(model.id) & t.userId.equals(effectiveUserId),
+        ))
         .write(
-      InterventionHistoriesCompanion(
-        status: Value(model.status.name),
-        endedAt: Value(model.endedAt),
-        cancelledAt: Value(model.cancelledAt),
-        updatedAt: Value(now),
-      ),
-    );
+          InterventionHistoriesCompanion(
+            status: Value(model.status.name),
+            endedAt: Value(model.endedAt),
+            cancelledAt: Value(model.cancelledAt),
+            updatedAt: Value(now),
+          ),
+        );
   }
 
   /// Mengambil satu riwayat intervensi berdasarkan ID dan userId
   Future<InterventionModel?> getById(String id, {String? userId}) async {
     final effectiveUserId = userId ?? _currentUserId;
-    final row = await (_db.select(_db.interventionHistories)
-          ..where((t) => t.id.equals(id) & t.userId.equals(effectiveUserId)))
-        .getSingleOrNull();
+    final row =
+        await (_db.select(
+              _db.interventionHistories,
+            )..where((t) => t.id.equals(id) & t.userId.equals(effectiveUserId)))
+            .getSingleOrNull();
 
     if (row == null) return null;
     return _mapRowToModel(row);
@@ -177,10 +182,12 @@ class InterventionHistoryLocalRepository {
   }) async {
     final effectiveUserId = userId ?? _currentUserId;
     var query = _db.select(_db.interventionHistories)
-      ..where((t) =>
-          t.userId.equals(effectiveUserId) &
-          t.startedAt.isBiggerOrEqualValue(start) &
-          t.startedAt.isSmallerOrEqualValue(end));
+      ..where(
+        (t) =>
+            t.userId.equals(effectiveUserId) &
+            t.startedAt.isBiggerOrEqualValue(start) &
+            t.startedAt.isSmallerOrEqualValue(end),
+      );
 
     if (type != null) {
       query = query..where((t) => t.type.equals(type.name));
@@ -199,7 +206,8 @@ class InterventionHistoryLocalRepository {
     final effectiveUserId = userId ?? _currentUserId;
     final query = _db.select(_db.interventionHistories)
       ..where(
-          (t) => t.userId.equals(effectiveUserId) & t.status.equals(status.name))
+        (t) => t.userId.equals(effectiveUserId) & t.status.equals(status.name),
+      )
       ..orderBy([(t) => OrderingTerm.desc(t.startedAt)]);
 
     final rows = await query.get();
@@ -218,9 +226,11 @@ class InterventionHistoryLocalRepository {
 
     if (start != null && end != null) {
       query = query
-        ..where((t) =>
-            t.startedAt.isBiggerOrEqualValue(start) &
-            t.startedAt.isSmallerOrEqualValue(end));
+        ..where(
+          (t) =>
+              t.startedAt.isBiggerOrEqualValue(start) &
+              t.startedAt.isSmallerOrEqualValue(end),
+        );
     }
 
     final rows = await query.get();

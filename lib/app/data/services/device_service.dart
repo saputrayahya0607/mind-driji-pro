@@ -14,8 +14,9 @@ import '../models/device_info_model.dart';
 /// - device_id: identitas instalasi/perangkat fisik (UUID v4 persisten lokal).
 /// - Device ID tetap sama setelah app restart, logout, atau ganti akun di HP yang sama.
 class DeviceService extends GetxService {
-  static const MethodChannel _deviceChannel =
-      MethodChannel('com.hn.minddriji/device_info');
+  static const MethodChannel _deviceChannel = MethodChannel(
+    'com.hn.minddriji/device_info',
+  );
 
   final AppDatabase? _db;
   final SupabaseClient? _supabase;
@@ -28,9 +29,9 @@ class DeviceService extends GetxService {
     AppDatabase? db,
     SupabaseClient? supabase,
     MethodChannel? channel,
-  })  : _db = db ?? _safeGetDatabase(),
-        _supabase = supabase ?? _safeGetSupabaseClient(),
-        _channel = channel ?? _deviceChannel;
+  }) : _db = db ?? _safeGetDatabase(),
+       _supabase = supabase ?? _safeGetSupabaseClient(),
+       _channel = channel ?? _deviceChannel;
 
   static DeviceService get to {
     if (Get.isRegistered<DeviceService>()) {
@@ -92,9 +93,9 @@ class DeviceService extends GetxService {
     }
 
     try {
-      final existing = await (db.select(db.localDeviceInfo)
-            ..where((t) => t.id.equals('current_device')))
-          .getSingleOrNull();
+      final existing = await (db.select(
+        db.localDeviceInfo,
+      )..where((t) => t.id.equals('current_device'))).getSingleOrNull();
 
       if (existing != null) {
         _cachedDeviceId = existing.deviceId;
@@ -116,7 +117,9 @@ class DeviceService extends GetxService {
       final now = DateTime.now();
       final info = await _fetchNativeDeviceInfo();
 
-      await db.into(db.localDeviceInfo).insert(
+      await db
+          .into(db.localDeviceInfo)
+          .insert(
             LocalDeviceInfoCompanion.insert(
               id: 'current_device',
               deviceId: newDeviceId,
@@ -153,7 +156,9 @@ class DeviceService extends GetxService {
   /// Membaca metadata perangkat non-sensitif dari native Android
   Future<Map<String, String>> _fetchNativeDeviceInfo() async {
     try {
-      final rawMap = await _channel.invokeMapMethod<dynamic, dynamic>('getDeviceInfo');
+      final rawMap = await _channel.invokeMapMethod<dynamic, dynamic>(
+        'getDeviceInfo',
+      );
       if (rawMap != null) {
         return {
           'deviceName': rawMap['deviceName']?.toString() ?? 'Android Device',
@@ -227,9 +232,7 @@ class DeviceService extends GetxService {
       if (db != null) {
         await (db.update(db.localDeviceInfo)
               ..where((t) => t.id.equals('current_device')))
-            .write(LocalDeviceInfoCompanion(
-          lastSeenAt: Value(DateTime.now()),
-        ));
+            .write(LocalDeviceInfoCompanion(lastSeenAt: Value(DateTime.now())));
       }
 
       return true;
@@ -242,8 +245,9 @@ class DeviceService extends GetxService {
   /// Memeriksa apakah aplikasi telah dikecualikan dari pembatasan optimasi baterai (Doze mode)
   Future<bool> checkBatteryOptimization() async {
     try {
-      final isIgnoring =
-          await _channel.invokeMethod<bool>('checkBatteryOptimization');
+      final isIgnoring = await _channel.invokeMethod<bool>(
+        'checkBatteryOptimization',
+      );
       return isIgnoring ?? true;
     } catch (_) {
       return true;
@@ -253,8 +257,9 @@ class DeviceService extends GetxService {
   /// Meminta pengguna untuk mengecualikan aplikasi dari optimasi baterai (Ignore Battery Optimizations)
   Future<bool> requestIgnoreBatteryOptimization() async {
     try {
-      final requested = await _channel
-          .invokeMethod<bool>('requestIgnoreBatteryOptimization');
+      final requested = await _channel.invokeMethod<bool>(
+        'requestIgnoreBatteryOptimization',
+      );
       return requested ?? false;
     } catch (_) {
       return false;
@@ -264,8 +269,9 @@ class DeviceService extends GetxService {
   /// Membuka halaman pengaturan Auto-Start khusus OEM (Xiaomi, Samsung, Oppo, Vivo, Asus, dll)
   Future<bool> openOemAutoStartSettings() async {
     try {
-      final opened =
-          await _channel.invokeMethod<bool>('openOemAutoStartSettings');
+      final opened = await _channel.invokeMethod<bool>(
+        'openOemAutoStartSettings',
+      );
       return opened ?? false;
     } catch (_) {
       return false;

@@ -31,24 +31,28 @@ class DetectionService extends GetxService {
     LocalUsageRepository? localUsageRepo,
     EyeMonitoringRepository? eyeRepo,
     SupabaseClient? supabase,
-  })  : _engine = engine ?? DetectionEngine(),
-        _doomscrollRepo = doomscrollRepo ??
-            (Get.isRegistered<DoomscrollRepository>()
-                ? Get.find<DoomscrollRepository>()
-                : DoomscrollRepository()),
-        _usageStatsRepo = usageStatsRepo ??
-            (Get.isRegistered<UsageStatsRepository>()
-                ? Get.find<UsageStatsRepository>()
-                : UsageStatsRepository()),
-        _localUsageRepo = localUsageRepo ??
-            (Get.isRegistered<LocalUsageRepository>()
-                ? Get.find<LocalUsageRepository>()
-                : LocalUsageRepository()),
-        _eyeRepo = eyeRepo ??
-            (Get.isRegistered<EyeMonitoringRepository>()
-                ? Get.find<EyeMonitoringRepository>()
-                : EyeMonitoringRepository()),
-        _supabase = supabase ?? _safeGetSupabaseClient();
+  }) : _engine = engine ?? DetectionEngine(),
+       _doomscrollRepo =
+           doomscrollRepo ??
+           (Get.isRegistered<DoomscrollRepository>()
+               ? Get.find<DoomscrollRepository>()
+               : DoomscrollRepository()),
+       _usageStatsRepo =
+           usageStatsRepo ??
+           (Get.isRegistered<UsageStatsRepository>()
+               ? Get.find<UsageStatsRepository>()
+               : UsageStatsRepository()),
+       _localUsageRepo =
+           localUsageRepo ??
+           (Get.isRegistered<LocalUsageRepository>()
+               ? Get.find<LocalUsageRepository>()
+               : LocalUsageRepository()),
+       _eyeRepo =
+           eyeRepo ??
+           (Get.isRegistered<EyeMonitoringRepository>()
+               ? Get.find<EyeMonitoringRepository>()
+               : EyeMonitoringRepository()),
+       _supabase = supabase ?? _safeGetSupabaseClient();
 
   static SupabaseClient? _safeGetSupabaseClient() {
     try {
@@ -86,7 +90,8 @@ class DetectionService extends GetxService {
 
     try {
       final now = DateTime.now();
-      final isToday = date.year == now.year &&
+      final isToday =
+          date.year == now.year &&
           date.month == now.month &&
           date.day == now.day;
 
@@ -95,7 +100,9 @@ class DetectionService extends GetxService {
         try {
           await _doomscrollRepo.collectAndPersistPendingSessions();
         } catch (e) {
-          debugPrint('[MIND_DRIJI_DETECTION] Error collecting pending native sessions: $e');
+          debugPrint(
+            '[MIND_DRIJI_DETECTION] Error collecting pending native sessions: $e',
+          );
         }
       }
 
@@ -118,8 +125,10 @@ class DetectionService extends GetxService {
       if (totalScreenTimeMillis == 0) {
         final dateStr =
             '${date.year.toString().padLeft(4, '0')}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')}';
-        final localUsage =
-            await _localUsageRepo.getScreenTime(effectiveUserId, dateStr);
+        final localUsage = await _localUsageRepo.getScreenTime(
+          effectiveUserId,
+          dateStr,
+        );
         totalScreenTimeMillis = localUsage?.totalUsageMillis.toInt() ?? 0;
       }
 
@@ -164,10 +173,7 @@ class DetectionService extends GetxService {
         totalScreenTimeMillis: totalScreenTimeMillis,
       );
 
-      return _engine.analyze(
-        features,
-        contextualEye: contextualEye,
-      );
+      return _engine.analyze(features, contextualEye: contextualEye);
     } catch (e, stack) {
       debugPrint('[MIND_DRIJI_DETECTION] Error during detection: $e\n$stack');
       return DetectionResult.none(
@@ -246,12 +252,11 @@ class DetectionService extends GetxService {
         totalScreenTimeMillis: totalScreenTime,
       );
 
-      return _engine.analyze(
-        features,
-        contextualEye: contextualEye,
-      );
+      return _engine.analyze(features, contextualEye: contextualEye);
     } catch (e, stack) {
-      debugPrint('[MIND_DRIJI_DETECTION] Error during range detection: $e\n$stack');
+      debugPrint(
+        '[MIND_DRIJI_DETECTION] Error during range detection: $e\n$stack',
+      );
       return DetectionResult.none(
         date: start,
         note: 'Gagal memproses data pemantauan periode.',
@@ -261,11 +266,22 @@ class DetectionService extends GetxService {
 
   /// Deteksi pola scrolling untuk periode Mingguan (Senin - Minggu)
   Future<DetectionResult> detectWeekly(DateTime date, {String? userId}) async {
-    final monday = DateTime(date.year, date.month, date.day)
-        .subtract(Duration(days: date.weekday - 1));
+    final monday = DateTime(
+      date.year,
+      date.month,
+      date.day,
+    ).subtract(Duration(days: date.weekday - 1));
     final sunday = monday.add(const Duration(days: 6));
     final start = DateTime(monday.year, monday.month, monday.day, 0, 0, 0);
-    final end = DateTime(sunday.year, sunday.month, sunday.day, 23, 59, 59, 999);
+    final end = DateTime(
+      sunday.year,
+      sunday.month,
+      sunday.day,
+      23,
+      59,
+      59,
+      999,
+    );
 
     return detectForRange(start: start, end: end, userId: userId);
   }

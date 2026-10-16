@@ -46,27 +46,40 @@ class DoomscrollSessionModel {
 
     return DoomscrollSessionModel(
       id: map['id'] as String? ?? '',
-      userId: map['userId'] as String? ?? map['user_id'] as String? ?? defaultUserId,
-      deviceId: map['deviceId'] as String? ?? map['device_id'] as String? ?? defaultDeviceId ?? 'legacy',
-      packageName: map['packageName'] as String? ?? map['package_name'] as String? ?? '',
+      userId:
+          map['userId'] as String? ??
+          map['user_id'] as String? ??
+          defaultUserId,
+      deviceId:
+          map['deviceId'] as String? ??
+          map['device_id'] as String? ??
+          defaultDeviceId ??
+          'legacy',
+      packageName:
+          map['packageName'] as String? ?? map['package_name'] as String? ?? '',
       appName: map['appName'] as String? ?? map['app_name'] as String? ?? '',
       startedAt: parseDateTime(map['startedAt'] ?? map['started_at']),
       endedAt: map['endedAt'] != null || map['ended_at'] != null
           ? parseDateTime(map['endedAt'] ?? map['ended_at'])
           : null,
-      durationMillis: (map['durationMillis'] as num?)?.toInt() ??
+      durationMillis:
+          (map['durationMillis'] as num?)?.toInt() ??
           (map['duration_millis'] as num?)?.toInt() ??
           0,
-      swipeCount: (map['swipeCount'] as num?)?.toInt() ??
+      swipeCount:
+          (map['swipeCount'] as num?)?.toInt() ??
           (map['swipe_count'] as num?)?.toInt() ??
           0,
-      downwardSwipeCount: (map['downwardSwipeCount'] as num?)?.toInt() ??
+      downwardSwipeCount:
+          (map['downwardSwipeCount'] as num?)?.toInt() ??
           (map['downward_swipe_count'] as num?)?.toInt() ??
           0,
-      upwardSwipeCount: (map['upwardSwipeCount'] as num?)?.toInt() ??
+      upwardSwipeCount:
+          (map['upwardSwipeCount'] as num?)?.toInt() ??
           (map['upward_swipe_count'] as num?)?.toInt() ??
           0,
-      avgInterSwipeMillis: (map['avgInterSwipeMillis'] as num?)?.toInt() ??
+      avgInterSwipeMillis:
+          (map['avgInterSwipeMillis'] as num?)?.toInt() ??
           (map['avg_inter_swipe_millis'] as num?)?.toInt() ??
           0,
       collectedAt: parseDateTime(map['collectedAt'] ?? map['collected_at']),

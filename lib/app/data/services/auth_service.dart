@@ -15,9 +15,7 @@ class AuthService extends GetxService {
   bool _isHandlingAuthCallback = false;
   bool get isHandlingAuthCallback => _isHandlingAuthCallback;
 
-  AuthService({
-    SupabaseClient? supabase,
-  }) : _supabase = supabase;
+  AuthService({SupabaseClient? supabase}) : _supabase = supabase;
 
   static AuthService get to {
     if (Get.isRegistered<AuthService>()) {
@@ -103,13 +101,15 @@ class AuthService extends GetxService {
 
     final fragmentParams = Uri.splitQueryString(uri.fragment);
     final error = uri.queryParameters['error'] ?? fragmentParams['error'];
-    final errorDesc = uri.queryParameters['error_description'] ??
+    final errorDesc =
+        uri.queryParameters['error_description'] ??
         fragmentParams['error_description'];
 
     // Jika Supabase menyertakan parameter error pada redirect URL
     if (error != null || errorDesc != null) {
       _isHandlingAuthCallback = false;
-      final message = errorDesc ??
+      final message =
+          errorDesc ??
           error ??
           'Tautan verifikasi tidak valid atau telah kedaluwarsa.';
       _showSnackbar(
@@ -150,7 +150,8 @@ class AuthService extends GetxService {
       _isHandlingAuthCallback = false;
 
       final currentRoute = Get.currentRoute;
-      final shouldNavigate = wasAuthCallback ||
+      final shouldNavigate =
+          wasAuthCallback ||
           currentRoute == Routes.login ||
           currentRoute == Routes.register ||
           currentRoute == Routes.splash;

@@ -12,7 +12,8 @@ class AppUsageModel {
   factory AppUsageModel.fromMap(Map<dynamic, dynamic> map) {
     return AppUsageModel(
       packageName: map['packageName'] as String? ?? '',
-      appName: map['appName'] as String? ??
+      appName:
+          map['appName'] as String? ??
           (map['packageName'] as String? ?? 'Aplikasi'),
       usageMillis: (map['usageMillis'] as num?)?.toInt() ?? 0,
     );
@@ -94,7 +95,9 @@ class UsageStatsModel {
 
     final rawTotal = (map['totalUsageMillis'] as num?)?.toInt() ?? 0;
     final appsTotal = apps.fold<int>(0, (sum, a) => sum + a.usageMillis);
-    final totalUsage = rawTotal > 0 ? (appsTotal > rawTotal ? appsTotal : rawTotal) : appsTotal;
+    final totalUsage = rawTotal > 0
+        ? (appsTotal > rawTotal ? appsTotal : rawTotal)
+        : appsTotal;
 
     return UsageStatsModel(
       totalUsageMillis: totalUsage,
@@ -115,4 +118,3 @@ class UsageStatsModel {
     };
   }
 }
-

@@ -6,8 +6,10 @@ import 'package:drift/drift.dart';
 /// atau user login dengan akun yang berbeda.
 @DataClassName('LocalDeviceInfoData')
 class LocalDeviceInfo extends Table {
-  TextColumn get id => text()(); // Fixed single record id, misal 'current_device'
-  TextColumn get deviceId => text()(); // UUID v4 yang dibuat pada first app install
+  TextColumn get id =>
+      text()(); // Fixed single record id, misal 'current_device'
+  TextColumn get deviceId =>
+      text()(); // UUID v4 yang dibuat pada first app install
   TextColumn get deviceName => text().nullable()();
   TextColumn get manufacturer => text().nullable()();
   TextColumn get model => text().nullable()();

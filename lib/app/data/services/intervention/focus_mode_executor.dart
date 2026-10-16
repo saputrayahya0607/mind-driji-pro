@@ -35,9 +35,8 @@ class AccessibilityFocusModeExecutor implements FocusModeExecutor {
   final InterventionNativeProvider _nativeProvider;
   bool _isRunning = false;
 
-  AccessibilityFocusModeExecutor({
-    InterventionNativeProvider? nativeProvider,
-  }) : _nativeProvider = nativeProvider ?? InterventionNativeProvider();
+  AccessibilityFocusModeExecutor({InterventionNativeProvider? nativeProvider})
+    : _nativeProvider = nativeProvider ?? InterventionNativeProvider();
 
   @override
   Future<bool> isSupported() async {
@@ -73,12 +72,12 @@ class AccessibilityFocusModeExecutor implements FocusModeExecutor {
 
   @override
   List<String> get whitelistedPackages => const [
-        'com.hn.mind_drji',
-        'com.android.systemui',
-        'com.android.settings',
-        'com.android.dialer',
-        'com.google.android.dialer',
-      ];
+    'com.hn.mind_drji',
+    'com.android.systemui',
+    'com.android.settings',
+    'com.android.dialer',
+    'com.google.android.dialer',
+  ];
 
   @override
   bool get isRunning => _isRunning;
@@ -110,12 +109,12 @@ class AuditedFocusModeExecutor implements FocusModeExecutor {
 
   @override
   List<String> get whitelistedPackages => const [
-        'com.hn.mind_drji',
-        'com.android.systemui',
-        'com.android.settings',
-        'com.android.dialer',
-        'com.google.android.dialer',
-      ];
+    'com.hn.mind_drji',
+    'com.android.systemui',
+    'com.android.settings',
+    'com.android.dialer',
+    'com.google.android.dialer',
+  ];
 
   @override
   bool get isRunning => _isRunning;

@@ -29,12 +29,12 @@ class SyncManager extends GetxService {
     SupabaseClient? supabase,
     Connectivity? connectivity,
     this.autoStart = true,
-  })  : _localRepo = localRepo,
-        _doomscrollRepoInstance = doomscrollRepo,
-        _eyeMonitoringRepoInstance = eyeMonitoringRepo,
-        _deviceServiceInstance = deviceService,
-        _supabase = supabase ?? _safeGetSupabaseClient(),
-        _connectivity = connectivity;
+  }) : _localRepo = localRepo,
+       _doomscrollRepoInstance = doomscrollRepo,
+       _eyeMonitoringRepoInstance = eyeMonitoringRepo,
+       _deviceServiceInstance = deviceService,
+       _supabase = supabase ?? _safeGetSupabaseClient(),
+       _connectivity = connectivity;
 
   LocalUsageRepository get _repo =>
       _localRepo ??
@@ -101,8 +101,9 @@ class SyncManager extends GetxService {
   /// Inisialisasi listener konektivitas jaringan
   void _initConnectivity() {
     _conn.checkConnectivity().then(_updateConnectionStatus);
-    _connectivitySubscription =
-        _conn.onConnectivityChanged.listen(_updateConnectionStatus);
+    _connectivitySubscription = _conn.onConnectivityChanged.listen(
+      _updateConnectionStatus,
+    );
   }
 
   /// Menangani perubahan status konektivitas internet
@@ -163,7 +164,10 @@ class SyncManager extends GetxService {
 
     final client = _supabase;
     final currentUser = client?.auth.currentUser;
-    if (client == null || currentUser == null || currentUser.id == 'local_user' || currentUser.id.isEmpty) {
+    if (client == null ||
+        currentUser == null ||
+        currentUser.id == 'local_user' ||
+        currentUser.id.isEmpty) {
       // User belum login di cloud, data tetap tersimpan aman di SQLite lokal
       return false;
     }
@@ -182,8 +186,9 @@ class SyncManager extends GetxService {
 
     // Periksa status konektivitas sebelum mencoba kirim
     final connectivityResults = await _conn.checkConnectivity();
-    final connected =
-        connectivityResults.any((r) => r != ConnectivityResult.none);
+    final connected = connectivityResults.any(
+      (r) => r != ConnectivityResult.none,
+    );
     isOnline.value = connected;
     if (!connected) {
       if (pendingCount.value > 0) {
@@ -212,7 +217,9 @@ class SyncManager extends GetxService {
             final data = await _repo.getScreenTimeById(item.entityId);
             if (data != null) {
               if (data.userId == 'local_user') continue;
-              final devId = data.deviceId.isNotEmpty ? data.deviceId : await _deviceService.getDeviceId();
+              final devId = data.deviceId.isNotEmpty
+                  ? data.deviceId
+                  : await _deviceService.getDeviceId();
               await client.from('screen_time_daily').upsert({
                 'id': data.id,
                 'user_id': currentUser.id,
@@ -233,7 +240,9 @@ class SyncManager extends GetxService {
             final data = await _repo.getAppUsageById(item.entityId);
             if (data != null) {
               if (data.userId == 'local_user') continue;
-              final devId = data.deviceId.isNotEmpty ? data.deviceId : await _deviceService.getDeviceId();
+              final devId = data.deviceId.isNotEmpty
+                  ? data.deviceId
+                  : await _deviceService.getDeviceId();
               await client.from('app_usage_daily').upsert({
                 'id': data.id,
                 'user_id': currentUser.id,
@@ -258,7 +267,9 @@ class SyncManager extends GetxService {
               if (session.userId == 'local_user') {
                 await _doomscrollRepo.claimLocalSessions(currentUser.id);
               }
-              final devId = session.deviceId.isNotEmpty ? session.deviceId : await _deviceService.getDeviceId();
+              final devId = session.deviceId.isNotEmpty
+                  ? session.deviceId
+                  : await _deviceService.getDeviceId();
               await client.from('doomscroll_sessions').upsert({
                 'id': session.id,
                 'user_id': currentUser.id,
@@ -283,29 +294,43 @@ class SyncManager extends GetxService {
               await _repo.removeQueueItem(item.id);
             }
           } else if (item.entityType == SyncEntityType.eyeMonitoringSession) {
-            final session = await _eyeMonitoringRepo.getSessionById(item.entityId);
+            final session = await _eyeMonitoringRepo.getSessionById(
+              item.entityId,
+            );
             if (session != null) {
               final authenticatedUserId = currentUser.id;
               // Pastikan record lokal terhubung ke ID authenticated user yang sah
               if (session.userId != authenticatedUserId) {
-                await _eyeMonitoringRepo.updateSessionUserId(session.id, authenticatedUserId);
+                await _eyeMonitoringRepo.updateSessionUserId(
+                  session.id,
+                  authenticatedUserId,
+                );
               }
 
-              final durationMillis = session.durationMillis.toInt() < 0 ? 0 : session.durationMillis.toInt();
+              final durationMillis = session.durationMillis.toInt() < 0
+                  ? 0
+                  : session.durationMillis.toInt();
               // Jangan kirim sesi kosong 0 ms tanpa data monitoring ke cloud
-              if (durationMillis <= 0 && session.blinkCount == 0 && session.eyeClosureEvents == 0) {
+              if (durationMillis <= 0 &&
+                  session.blinkCount == 0 &&
+                  session.eyeClosureEvents == 0) {
                 await _eyeMonitoringRepo.markSessionSynced(session.id);
                 continue;
               }
 
-              final devId = session.deviceId.isNotEmpty ? session.deviceId : await _deviceService.getDeviceId();
-              final validAvgEar = (session.averageEar.isNaN || session.averageEar.isInfinite)
+              final devId = session.deviceId.isNotEmpty
+                  ? session.deviceId
+                  : await _deviceService.getDeviceId();
+              final validAvgEar =
+                  (session.averageEar.isNaN || session.averageEar.isInfinite)
                   ? 0.0
                   : session.averageEar;
-              final validMinEar = (session.minEar.isNaN || session.minEar.isInfinite)
+              final validMinEar =
+                  (session.minEar.isNaN || session.minEar.isInfinite)
                   ? 0.0
                   : session.minEar;
-              final endedAt = session.endedAt ??
+              final endedAt =
+                  session.endedAt ??
                   session.startedAt.add(Duration(milliseconds: durationMillis));
               final nowUtc = DateTime.now().toUtc().toIso8601String();
 
@@ -349,7 +374,9 @@ class SyncManager extends GetxService {
       }
 
       final remainingUsage = await _repo.getPendingSyncCount(currentUser.id);
-      final remainingEye = await _eyeMonitoringRepo.getPendingSyncCount(currentUser.id);
+      final remainingEye = await _eyeMonitoringRepo.getPendingSyncCount(
+        currentUser.id,
+      );
       final remaining = remainingUsage + remainingEye;
       pendingCount.value = remaining;
 

@@ -165,10 +165,11 @@ class InterventionModel {
       startedAt: startedAt ?? this.startedAt,
       endedAt: endedAt ?? this.endedAt,
       status: status ?? this.status,
-      sourceRecommendation:
-          sourceRecommendation ?? this.sourceRecommendation,
+      sourceRecommendation: sourceRecommendation ?? this.sourceRecommendation,
       sourceRecommendationId:
-          sourceRecommendationId ?? this.sourceRecommendationId ?? this.sourceRecommendation?.id,
+          sourceRecommendationId ??
+          this.sourceRecommendationId ??
+          this.sourceRecommendation?.id,
       cancelledAt: cancelledAt ?? this.cancelledAt,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
@@ -199,30 +200,32 @@ class InterventionModel {
   factory InterventionModel.fromMap(Map<String, dynamic> map) {
     final srcRec = map['sourceRecommendation'] != null
         ? RecommendationModel.fromMap(
-            Map<String, dynamic>.from(map['sourceRecommendation'] as Map))
+            Map<String, dynamic>.from(map['sourceRecommendation'] as Map),
+          )
         : null;
-    final created = DateTime.tryParse(map['createdAt']?.toString() ?? '') ??
-        DateTime.now();
+    final created =
+        DateTime.tryParse(map['createdAt']?.toString() ?? '') ?? DateTime.now();
     return InterventionModel(
       id: map['id']?.toString() ?? '',
       userId: map['userId']?.toString() ?? 'local_user',
       type: InterventionType.fromString(map['type']?.toString()),
       title: map['title']?.toString() ?? '',
       durationMinutes: (map['durationMinutes'] as num?)?.toInt() ?? 15,
-      startedAt: DateTime.tryParse(map['startedAt']?.toString() ?? '') ??
+      startedAt:
+          DateTime.tryParse(map['startedAt']?.toString() ?? '') ??
           DateTime.now(),
-      endedAt: DateTime.tryParse(map['endedAt']?.toString() ?? '') ??
-          DateTime.now(),
+      endedAt:
+          DateTime.tryParse(map['endedAt']?.toString() ?? '') ?? DateTime.now(),
       status: InterventionStatus.fromString(map['status']?.toString()),
       sourceRecommendation: srcRec,
-      sourceRecommendationId: map['sourceRecommendationId']?.toString() ??
-          srcRec?.id,
+      sourceRecommendationId:
+          map['sourceRecommendationId']?.toString() ?? srcRec?.id,
       cancelledAt: map['cancelledAt'] != null
           ? DateTime.tryParse(map['cancelledAt']?.toString() ?? '')
           : null,
       createdAt: created,
-      updatedAt: DateTime.tryParse(map['updatedAt']?.toString() ?? '') ??
-          created,
+      updatedAt:
+          DateTime.tryParse(map['updatedAt']?.toString() ?? '') ?? created,
     );
   }
 

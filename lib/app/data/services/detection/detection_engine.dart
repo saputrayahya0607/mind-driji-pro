@@ -22,12 +22,13 @@ class DetectionEngine {
     DetectionStrategy? strategy,
     DetectionThresholds? thresholds,
     DetectionFeatureExtractor? extractor,
-  })  : _strategy = strategy ?? RuleBasedDetectionStrategy(),
-        _thresholds = thresholds ?? const DetectionThresholds(),
-        _extractor = extractor ??
-            DetectionFeatureExtractor(
-              thresholds: thresholds ?? const DetectionThresholds(),
-            );
+  }) : _strategy = strategy ?? RuleBasedDetectionStrategy(),
+       _thresholds = thresholds ?? const DetectionThresholds(),
+       _extractor =
+           extractor ??
+           DetectionFeatureExtractor(
+             thresholds: thresholds ?? const DetectionThresholds(),
+           );
 
   DetectionStrategy get strategy => _strategy;
   DetectionThresholds get thresholds => _thresholds;
@@ -84,9 +85,6 @@ class DetectionEngine {
       totalScreenTimeMillis: totalScreenTimeMillis,
     );
 
-    return analyze(
-      features,
-      contextualEye: contextualEye,
-    );
+    return analyze(features, contextualEye: contextualEye);
   }
 }

@@ -25,7 +25,9 @@ class DeviceInfoModel {
   /// Jika manufacturer kosong atau bernilai null/Unknown, gunakan model (Build.MODEL) sebagai fallback.
   String get displayBrand {
     final m = manufacturer.trim();
-    if (m.isNotEmpty && m.toLowerCase() != 'unknown' && m.toLowerCase() != 'android') {
+    if (m.isNotEmpty &&
+        m.toLowerCase() != 'unknown' &&
+        m.toLowerCase() != 'android') {
       return m;
     }
     if (m.isNotEmpty && m.toLowerCase() != 'unknown') {

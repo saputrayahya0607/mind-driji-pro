@@ -30,157 +30,182 @@ class RecommendationEngine {
     // 1. Cek Sinyal Sesi Panjang (Long Session)
     if (detection.type == DetectionType.longScrollSession ||
         detection.evidences.contains(DetectionEvidence.longSession)) {
-      rawList.add(RecommendationModel(
-        id: 'rec_break_long_${now.millisecondsSinceEpoch}',
-        type: RecommendationType.digitalBreak,
-        title: 'Jeda Digital',
-        description:
-            'Berikan jeda singkat dari aktivitas layar untuk menyegarkan fokus dan pikiranmu.',
-        reason: 'Terdapat sesi scrolling yang berlangsung cukup lama.',
-        actionLabel: 'Mulai Jeda',
-        durationOptions:
-            RecommendationDurations.forType(RecommendationType.digitalBreak),
-        icon: 'spa_rounded',
-        relatedDetection: detection.type,
-        generatedAt: now,
-      ));
+      rawList.add(
+        RecommendationModel(
+          id: 'rec_break_long_${now.millisecondsSinceEpoch}',
+          type: RecommendationType.digitalBreak,
+          title: 'Jeda Digital',
+          description:
+              'Berikan jeda singkat dari aktivitas layar untuk menyegarkan fokus dan pikiranmu.',
+          reason: 'Terdapat sesi scrolling yang berlangsung cukup lama.',
+          actionLabel: 'Mulai Jeda',
+          durationOptions: RecommendationDurations.forType(
+            RecommendationType.digitalBreak,
+          ),
+          icon: 'spa_rounded',
+          relatedDetection: detection.type,
+          generatedAt: now,
+        ),
+      );
     }
 
     // 2. Cek Sinyal Aktivitas Scrolling Tinggi (High Swipe)
     if (detection.type == DetectionType.highScrollActivity ||
         detection.evidences.contains(DetectionEvidence.highSwipeActivity)) {
-      rawList.add(RecommendationModel(
-        id: 'rec_break_swipe_${now.millisecondsSinceEpoch}',
-        type: RecommendationType.digitalBreak,
-        title: 'Jeda Digital',
-        description:
-            'Ambil jeda sejenak untuk menyeimbangkan frekuensi interaksi layarmu.',
-        reason: 'Aktivitas swipe dan scrolling terpantau meningkat.',
-        actionLabel: 'Mulai Jeda',
-        durationOptions:
-            RecommendationDurations.forType(RecommendationType.digitalBreak),
-        icon: 'spa_rounded',
-        relatedDetection: detection.type,
-        generatedAt: now,
-      ));
+      rawList.add(
+        RecommendationModel(
+          id: 'rec_break_swipe_${now.millisecondsSinceEpoch}',
+          type: RecommendationType.digitalBreak,
+          title: 'Jeda Digital',
+          description:
+              'Ambil jeda sejenak untuk menyeimbangkan frekuensi interaksi layarmu.',
+          reason: 'Aktivitas swipe dan scrolling terpantau meningkat.',
+          actionLabel: 'Mulai Jeda',
+          durationOptions: RecommendationDurations.forType(
+            RecommendationType.digitalBreak,
+          ),
+          icon: 'spa_rounded',
+          relatedDetection: detection.type,
+          generatedAt: now,
+        ),
+      );
     }
 
     // 3. Cek Sinyal Sesi Berulang (Repeated Scrolling)
     if (detection.type == DetectionType.repeatedScrolling ||
         detection.evidences.contains(DetectionEvidence.repeatedScrolling)) {
-      rawList.add(RecommendationModel(
-        id: 'rec_focus_rep_${now.millisecondsSinceEpoch}',
-        type: RecommendationType.focusMode,
-        title: 'Mode Fokus',
-        description:
-            'Bantu pertahankan konsentrasi dengan mengurangi dorongan membuka kembali aplikasi secara berulang.',
-        reason:
-            'Beberapa sesi scrolling terjadi kembali dalam jeda waktu yang relatif singkat.',
-        actionLabel: 'Aktifkan Fokus',
-        durationOptions:
-            RecommendationDurations.forType(RecommendationType.focusMode),
-        icon: 'center_focus_strong_rounded',
-        relatedDetection: detection.type,
-        generatedAt: now,
-      ));
+      rawList.add(
+        RecommendationModel(
+          id: 'rec_focus_rep_${now.millisecondsSinceEpoch}',
+          type: RecommendationType.focusMode,
+          title: 'Mode Fokus',
+          description:
+              'Bantu pertahankan konsentrasi dengan mengurangi dorongan membuka kembali aplikasi secara berulang.',
+          reason:
+              'Beberapa sesi scrolling terjadi kembali dalam jeda waktu yang relatif singkat.',
+          actionLabel: 'Aktifkan Fokus',
+          durationOptions: RecommendationDurations.forType(
+            RecommendationType.focusMode,
+          ),
+          icon: 'center_focus_strong_rounded',
+          relatedDetection: detection.type,
+          generatedAt: now,
+        ),
+      );
     }
 
     // 4. Cek Sinyal Pola Malam (Night Scrolling Pattern)
     if (detection.type == DetectionType.nightScrollingPattern ||
         detection.evidences.contains(DetectionEvidence.nightPattern)) {
-      rawList.add(RecommendationModel(
-        id: 'rec_night_${now.millisecondsSinceEpoch}',
-        type: RecommendationType.nightReminder,
-        title: 'Pengingat Malam',
-        description:
-            'Kurangi paparan cahaya layar menjelang waktu istirahat malam demi kenyamanan tidurmu.',
-        reason: 'Aktivitas scrolling terpantau terkonsentrasi pada malam hari.',
-        actionLabel: 'Atur Pengingat',
-        durationOptions:
-            RecommendationDurations.forType(RecommendationType.nightReminder),
-        icon: 'bedtime_rounded',
-        relatedDetection: detection.type,
-        generatedAt: now,
-      ));
+      rawList.add(
+        RecommendationModel(
+          id: 'rec_night_${now.millisecondsSinceEpoch}',
+          type: RecommendationType.nightReminder,
+          title: 'Pengingat Malam',
+          description:
+              'Kurangi paparan cahaya layar menjelang waktu istirahat malam demi kenyamanan tidurmu.',
+          reason:
+              'Aktivitas scrolling terpantau terkonsentrasi pada malam hari.',
+          actionLabel: 'Atur Pengingat',
+          durationOptions: RecommendationDurations.forType(
+            RecommendationType.nightReminder,
+          ),
+          icon: 'bedtime_rounded',
+          relatedDetection: detection.type,
+          generatedAt: now,
+        ),
+      );
     }
 
     // 5. Cek Sinyal Pola Gulir Satu Arah (Downward Pattern)
     if (detection.evidences.contains(DetectionEvidence.downwardPattern) &&
         !detection.evidences.contains(DetectionEvidence.longSession) &&
         !detection.evidences.contains(DetectionEvidence.highSwipeActivity)) {
-      rawList.add(RecommendationModel(
-        id: 'rec_reflect_${now.millisecondsSinceEpoch}',
-        type: RecommendationType.usageReflection,
-        title: 'Refleksi Penggunaan',
-        description:
-            'Luangkan waktu sejenak untuk menyadari ritme dan tujuan penggunaan aplikasi secara bijak.',
-        reason:
-            'Pola scrolling satu arah secara kontinu teridentifikasi pada pemantauan.',
-        actionLabel: 'Mulai Refleksi',
-        durationOptions: RecommendationDurations.forType(
-            RecommendationType.usageReflection),
-        icon: 'psychology_rounded',
-        relatedDetection: detection.type,
-        generatedAt: now,
-      ));
+      rawList.add(
+        RecommendationModel(
+          id: 'rec_reflect_${now.millisecondsSinceEpoch}',
+          type: RecommendationType.usageReflection,
+          title: 'Refleksi Penggunaan',
+          description:
+              'Luangkan waktu sejenak untuk menyadari ritme dan tujuan penggunaan aplikasi secara bijak.',
+          reason:
+              'Pola scrolling satu arah secara kontinu teridentifikasi pada pemantauan.',
+          actionLabel: 'Mulai Refleksi',
+          durationOptions: RecommendationDurations.forType(
+            RecommendationType.usageReflection,
+          ),
+          icon: 'psychology_rounded',
+          relatedDetection: detection.type,
+          generatedAt: now,
+        ),
+      );
     }
 
     // 6. Cek Sinyal Konteks Mata (Contextual Eye Fatigue)
     if (detection.evidences.contains(DetectionEvidence.contextualEyeFatigue) ||
         (detection.contextualEyeNote != null &&
             detection.contextualEyeNote!.isNotEmpty)) {
-      rawList.add(RecommendationModel(
-        id: 'rec_eye_${now.millisecondsSinceEpoch}',
-        type: RecommendationType.eyeRest,
-        title: 'Istirahat Mata',
-        description:
-            'Istirahatkan pandangan dari layar dengan menerapkan aturan 20-20-20.',
-        reason:
-            'Parameter monitoring menunjukkan beberapa kejadian penutupan mata.',
-        actionLabel: 'Istirahatkan Mata',
-        durationOptions:
-            RecommendationDurations.forType(RecommendationType.eyeRest),
-        icon: 'visibility_off_rounded',
-        relatedDetection: detection.type,
-        generatedAt: now,
-      ));
+      rawList.add(
+        RecommendationModel(
+          id: 'rec_eye_${now.millisecondsSinceEpoch}',
+          type: RecommendationType.eyeRest,
+          title: 'Istirahat Mata',
+          description:
+              'Istirahatkan pandangan dari layar dengan menerapkan aturan 20-20-20.',
+          reason:
+              'Parameter monitoring menunjukkan beberapa kejadian penutupan mata.',
+          actionLabel: 'Istirahatkan Mata',
+          durationOptions: RecommendationDurations.forType(
+            RecommendationType.eyeRest,
+          ),
+          icon: 'visibility_off_rounded',
+          relatedDetection: detection.type,
+          generatedAt: now,
+        ),
+      );
     }
 
     // 7. Cek Multi-Signal Scrolling Pattern
     if (detection.type == DetectionType.multiSignalScrollingPattern) {
       if (!rawList.any((r) => r.type == RecommendationType.digitalBreak)) {
-        rawList.add(RecommendationModel(
-          id: 'rec_break_multi_${now.millisecondsSinceEpoch}',
-          type: RecommendationType.digitalBreak,
-          title: 'Jeda Digital',
-          description:
-              'Ambil jeda singkat untuk menyegarkan fokus dan mengistirahatkan pandangan.',
-          reason:
-              'Beberapa pola penggunaan muncul bersamaan pada periode pemantauan.',
-          actionLabel: 'Mulai Jeda',
-          durationOptions:
-              RecommendationDurations.forType(RecommendationType.digitalBreak),
-          icon: 'spa_rounded',
-          relatedDetection: detection.type,
-          generatedAt: now,
-        ));
+        rawList.add(
+          RecommendationModel(
+            id: 'rec_break_multi_${now.millisecondsSinceEpoch}',
+            type: RecommendationType.digitalBreak,
+            title: 'Jeda Digital',
+            description:
+                'Ambil jeda singkat untuk menyegarkan fokus dan mengistirahatkan pandangan.',
+            reason:
+                'Beberapa pola penggunaan muncul bersamaan pada periode pemantauan.',
+            actionLabel: 'Mulai Jeda',
+            durationOptions: RecommendationDurations.forType(
+              RecommendationType.digitalBreak,
+            ),
+            icon: 'spa_rounded',
+            relatedDetection: detection.type,
+            generatedAt: now,
+          ),
+        );
       }
       if (!rawList.any((r) => r.type == RecommendationType.focusMode)) {
-        rawList.add(RecommendationModel(
-          id: 'rec_focus_multi_${now.millisecondsSinceEpoch}',
-          type: RecommendationType.focusMode,
-          title: 'Mode Fokus',
-          description:
-              'Batasi akses sementara ke aplikasi scrolling untuk mengembalikan produktivitas.',
-          reason:
-              'Sesi scrolling panjang dan interaksi berulang muncul secara simultan.',
-          actionLabel: 'Aktifkan Fokus',
-          durationOptions:
-              RecommendationDurations.forType(RecommendationType.focusMode),
-          icon: 'center_focus_strong_rounded',
-          relatedDetection: detection.type,
-          generatedAt: now,
-        ));
+        rawList.add(
+          RecommendationModel(
+            id: 'rec_focus_multi_${now.millisecondsSinceEpoch}',
+            type: RecommendationType.focusMode,
+            title: 'Mode Fokus',
+            description:
+                'Batasi akses sementara ke aplikasi scrolling untuk mengembalikan produktivitas.',
+            reason:
+                'Sesi scrolling panjang dan interaksi berulang muncul secara simultan.',
+            actionLabel: 'Aktifkan Fokus',
+            durationOptions: RecommendationDurations.forType(
+              RecommendationType.focusMode,
+            ),
+            icon: 'center_focus_strong_rounded',
+            relatedDetection: detection.type,
+            generatedAt: now,
+          ),
+        );
       }
     }
 
@@ -210,8 +235,9 @@ class RecommendationEngine {
               'Batasi akses ke aplikasi tertentu selama waktu yang kamu pilih.',
           reason: insight.summary,
           actionLabel: 'Aktifkan Fokus',
-          durationOptions:
-              RecommendationDurations.forType(RecommendationType.focusMode),
+          durationOptions: RecommendationDurations.forType(
+            RecommendationType.focusMode,
+          ),
           icon: 'center_focus_strong_rounded',
           generatedAt: now,
         ),
@@ -228,8 +254,9 @@ class RecommendationEngine {
               'Pertimbangkan mengambil jeda dari layar dan rilekskan otot mata.',
           reason: insight.summary,
           actionLabel: 'Istirahatkan Mata',
-          durationOptions:
-              RecommendationDurations.forType(RecommendationType.eyeRest),
+          durationOptions: RecommendationDurations.forType(
+            RecommendationType.eyeRest,
+          ),
           icon: 'visibility_off_rounded',
           generatedAt: now,
         ),
@@ -245,8 +272,9 @@ class RecommendationEngine {
         description: 'Berikan jeda singkat dari scrolling.',
         reason: insight.summary,
         actionLabel: 'Mulai Jeda',
-        durationOptions:
-            RecommendationDurations.forType(RecommendationType.digitalBreak),
+        durationOptions: RecommendationDurations.forType(
+          RecommendationType.digitalBreak,
+        ),
         icon: 'spa_rounded',
         generatedAt: now,
       ),
@@ -266,10 +294,9 @@ class RecommendationEngine {
     final combinedList = <RecommendationModel>[];
 
     if (detection.detected) {
-      combinedList.addAll(generateFromDetection(
-        detection: detection,
-        features: features,
-      ));
+      combinedList.addAll(
+        generateFromDetection(detection: detection, features: features),
+      );
     }
 
     if (insights != null) {
@@ -281,8 +308,11 @@ class RecommendationEngine {
       }
     }
 
-    return mergeRecommendations(combinedList,
-        detection: detection, features: features);
+    return mergeRecommendations(
+      combinedList,
+      detection: detection,
+      features: features,
+    );
   }
 
   /// Menghapus duplikasi dan menggabungkan rekomendasi bertipe sama menjadi satu kartu kohesif
@@ -320,14 +350,18 @@ class RecommendationEngine {
       }
 
       final representative = items.first;
-      result.add(representative.copyWith(
-        id: 'merged_${type.name}_${DateTime.now().millisecondsSinceEpoch}',
-        reason: mergedReason,
-      ));
+      result.add(
+        representative.copyWith(
+          id: 'merged_${type.name}_${DateTime.now().millisecondsSinceEpoch}',
+          reason: mergedReason,
+        ),
+      );
     }
 
     // Urutkan prioritas tampilan rekomendasi
-    result.sort((a, b) => _priorityOrder(a.type).compareTo(_priorityOrder(b.type)));
+    result.sort(
+      (a, b) => _priorityOrder(a.type).compareTo(_priorityOrder(b.type)),
+    );
 
     return result;
   }

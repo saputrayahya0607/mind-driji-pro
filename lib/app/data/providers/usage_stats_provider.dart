@@ -2,8 +2,9 @@ import 'package:flutter/services.dart';
 import '../models/app_usage_model.dart';
 
 class UsageStatsProvider {
-  static const MethodChannel _channel =
-      MethodChannel('com.hn.minddriji/usage_stats');
+  static const MethodChannel _channel = MethodChannel(
+    'com.hn.minddriji/usage_stats',
+  );
 
   /// Memeriksa status izin akses penggunaan aplikasi (PACKAGE_USAGE_STATS).
   Future<bool> checkUsageAccess() async {
@@ -20,8 +21,9 @@ class UsageStatsProvider {
   /// Membuka halaman Pengaturan Sistem Android untuk mengaktifkan Usage Access.
   Future<bool> openUsageAccessSettings() async {
     try {
-      final result =
-          await _channel.invokeMethod<bool>('openUsageAccessSettings');
+      final result = await _channel.invokeMethod<bool>(
+        'openUsageAccessSettings',
+      );
       return result ?? false;
     } on PlatformException {
       return false;
@@ -33,8 +35,9 @@ class UsageStatsProvider {
   /// Mengambil data statistik penggunaan hari ini dari Android UsageStatsManager.
   Future<UsageStatsModel> getTodayUsage() async {
     try {
-      final result =
-          await _channel.invokeMethod<Map<dynamic, dynamic>>('getTodayUsage');
+      final result = await _channel.invokeMethod<Map<dynamic, dynamic>>(
+        'getTodayUsage',
+      );
       if (result == null) {
         return const UsageStatsModel(totalUsageMillis: 0, apps: []);
       }
@@ -52,13 +55,11 @@ class UsageStatsProvider {
     required DateTime endTime,
   }) async {
     try {
-      final result = await _channel.invokeMethod<Map<dynamic, dynamic>>(
-        'getTodayUsage',
-        {
-          'startTime': startTime.millisecondsSinceEpoch,
-          'endTime': endTime.millisecondsSinceEpoch,
-        },
-      );
+      final result = await _channel
+          .invokeMethod<Map<dynamic, dynamic>>('getTodayUsage', {
+            'startTime': startTime.millisecondsSinceEpoch,
+            'endTime': endTime.millisecondsSinceEpoch,
+          });
       if (result == null) {
         return const UsageStatsModel(totalUsageMillis: 0, apps: []);
       }
@@ -67,6 +68,18 @@ class UsageStatsProvider {
       return const UsageStatsModel(totalUsageMillis: 0, apps: []);
     } catch (_) {
       return const UsageStatsModel(totalUsageMillis: 0, apps: []);
+    }
+  }
+
+  /// Mengambil byte icon aplikasi dari Android PackageManager via MethodChannel
+  Future<Uint8List?> getAppIcon(String packageName) async {
+    try {
+      final result = await _channel.invokeMethod<Uint8List>('getAppIcon', {
+        'packageName': packageName,
+      });
+      return result;
+    } catch (_) {
+      return null;
     }
   }
 }

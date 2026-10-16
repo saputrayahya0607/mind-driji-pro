@@ -96,7 +96,8 @@ class InsightEngine {
         id: 'scroll_${period}_${date.millisecondsSinceEpoch}',
         type: InsightType.scrolling,
         title: 'Belum ada pola scrolling khusus yang terdeteksi',
-        summary: 'Belum ada data sesi scrolling yang tercatat pada periode ini.',
+        summary:
+            'Belum ada data sesi scrolling yang tercatat pada periode ini.',
         details:
             'Terus pantau pola penggunaanmu untuk mendapatkan insight yang lebih lengkap.',
         evidences: const [
@@ -140,7 +141,9 @@ class InsightEngine {
           ),
           InsightEvidenceItem(
             label: 'Durasi scrolling',
-            value: DurationFormatter.format(features.totalScrollingDurationMillis),
+            value: DurationFormatter.format(
+              features.totalScrollingDurationMillis,
+            ),
             iconName: 'timer_rounded',
           ),
         ],
@@ -165,7 +168,9 @@ class InsightEngine {
           evidences: [
             InsightEvidenceItem(
               label: 'Sesi terpanjang',
-              value: DurationFormatter.format(features.longestSessionDurationMillis),
+              value: DurationFormatter.format(
+                features.longestSessionDurationMillis,
+              ),
               iconName: 'hourglass_top_rounded',
             ),
             InsightEvidenceItem(
@@ -224,18 +229,21 @@ class InsightEngine {
         );
 
       case DetectionType.highScrollActivity:
-        final isDownwardPattern = detection.evidences.contains(DetectionEvidence.downwardPattern) &&
+        final isDownwardPattern =
+            detection.evidences.contains(DetectionEvidence.downwardPattern) &&
             !detection.evidences.contains(DetectionEvidence.highSwipeActivity);
         final title = isDownwardPattern
             ? 'Pola scrolling terdeteksi'
-            : (detection.title.isNotEmpty ? detection.title : 'Aktivitas scrolling meningkat');
+            : (detection.title.isNotEmpty
+                  ? detection.title
+                  : 'Aktivitas scrolling meningkat');
         final summary = isDownwardPattern
             ? 'Pola scrolling teridentifikasi dengan konsistensi arah gulir tinggi.'
             : 'Frekuensi navigasi dan interaksi scrolling tercatat tinggi pada periode pemantauan.';
         final details = isDownwardPattern
             ? 'Tercatat dominasi scrolling ke bawah sebanyak ${features.totalDownwardSwipeCount} kali (${(features.downwardSwipeRatio * 100).toInt()}%).'
             : 'Tercatat akumulasi ${features.totalSwipeCount} kali swipe dengan rata-rata '
-                '${features.averageSwipesPerSession.toStringAsFixed(0)} swipe per sesi.';
+                  '${features.averageSwipesPerSession.toStringAsFixed(0)} swipe per sesi.';
 
         final evidencesList = <InsightEvidenceItem>[
           InsightEvidenceItem(
@@ -245,23 +253,32 @@ class InsightEngine {
           ),
         ];
         if (isDownwardPattern || features.downwardSwipeRatio > 0) {
-          evidencesList.add(InsightEvidenceItem(
-            label: 'Rasio arah',
-            value: '${(features.downwardSwipeRatio * 100).toInt()}% ke bawah',
-            iconName: 'arrow_downward_rounded',
-          ));
+          evidencesList.add(
+            InsightEvidenceItem(
+              label: 'Rasio arah',
+              value: '${(features.downwardSwipeRatio * 100).toInt()}% ke bawah',
+              iconName: 'arrow_downward_rounded',
+            ),
+          );
         } else {
-          evidencesList.add(InsightEvidenceItem(
-            label: 'Rata-rata/sesi',
-            value: '${features.averageSwipesPerSession.toStringAsFixed(0)} swipe',
-            iconName: 'swipe_rounded',
-          ));
+          evidencesList.add(
+            InsightEvidenceItem(
+              label: 'Rata-rata/sesi',
+              value:
+                  '${features.averageSwipesPerSession.toStringAsFixed(0)} swipe',
+              iconName: 'swipe_rounded',
+            ),
+          );
         }
-        evidencesList.add(InsightEvidenceItem(
-          label: 'Total durasi',
-          value: DurationFormatter.format(features.totalScrollingDurationMillis),
-          iconName: 'timer_rounded',
-        ));
+        evidencesList.add(
+          InsightEvidenceItem(
+            label: 'Total durasi',
+            value: DurationFormatter.format(
+              features.totalScrollingDurationMillis,
+            ),
+            iconName: 'timer_rounded',
+          ),
+        );
 
         return InsightModel(
           id: 'scroll_${period}_${date.millisecondsSinceEpoch}',
@@ -273,7 +290,8 @@ class InsightEngine {
           relatedApps: features.involvedApps,
           period: period,
           generatedAt: now,
-          suggestedAction: detection.suggestedIntervention ??
+          suggestedAction:
+              detection.suggestedIntervention ??
               (isDownwardPattern ? 'Jeda Digital' : 'Mode Fokus'),
           priority: InsightPriority.high,
         );
@@ -311,7 +329,8 @@ class InsightEngine {
           relatedApps: features.involvedApps,
           period: period,
           generatedAt: now,
-          suggestedAction: detection.suggestedIntervention ?? 'Pengingat Istirahat',
+          suggestedAction:
+              detection.suggestedIntervention ?? 'Pengingat Istirahat',
           priority: InsightPriority.high,
         );
 
@@ -329,7 +348,9 @@ class InsightEngine {
           evidences: [
             InsightEvidenceItem(
               label: 'Sesi terpanjang',
-              value: DurationFormatter.format(features.longestSessionDurationMillis),
+              value: DurationFormatter.format(
+                features.longestSessionDurationMillis,
+              ),
               iconName: 'hourglass_top_rounded',
             ),
             InsightEvidenceItem(
@@ -355,7 +376,8 @@ class InsightEngine {
           id: 'scroll_${period}_${date.millisecondsSinceEpoch}',
           type: InsightType.scrolling,
           title: 'Pola scrolling terdeteksi',
-          summary: 'Kecenderungan pola penggunaan aplikasi teramati pada periode ini.',
+          summary:
+              'Kecenderungan pola penggunaan aplikasi teramati pada periode ini.',
           details: detection.description,
           evidences: [
             InsightEvidenceItem(
@@ -397,11 +419,14 @@ class InsightEngine {
         : features.totalScreenTimeMillis;
 
     if (period == 'weekly' && weeklyDays != null && weeklyDays.isNotEmpty) {
-      final daysWithData =
-          weeklyDays.where((d) => d.screenTimeMillis > 0 || d.doomscrollMillis > 0).toList();
+      final daysWithData = weeklyDays
+          .where((d) => d.screenTimeMillis > 0 || d.doomscrollMillis > 0)
+          .toList();
       if (daysWithData.isEmpty) return null;
 
-      daysWithData.sort((a, b) => b.screenTimeMillis.compareTo(a.screenTimeMillis));
+      daysWithData.sort(
+        (a, b) => b.screenTimeMillis.compareTo(a.screenTimeMillis),
+      );
       final peakDay = daysWithData.first;
 
       return InsightModel(
@@ -438,12 +463,17 @@ class InsightEngine {
       );
     }
 
-    if (period == 'monthly' && monthlyWeeks != null && monthlyWeeks.isNotEmpty) {
-      final weeksWithData =
-          monthlyWeeks.where((w) => w.screenTimeMillis > 0 || w.doomscrollMillis > 0).toList();
+    if (period == 'monthly' &&
+        monthlyWeeks != null &&
+        monthlyWeeks.isNotEmpty) {
+      final weeksWithData = monthlyWeeks
+          .where((w) => w.screenTimeMillis > 0 || w.doomscrollMillis > 0)
+          .toList();
       if (weeksWithData.isEmpty) return null;
 
-      weeksWithData.sort((a, b) => b.screenTimeMillis.compareTo(a.screenTimeMillis));
+      weeksWithData.sort(
+        (a, b) => b.screenTimeMillis.compareTo(a.screenTimeMillis),
+      );
       final peakWeek = weeksWithData.first;
 
       return InsightModel(
@@ -476,11 +506,15 @@ class InsightEngine {
 
     // Daily Usage Pattern
     if (dailySegments != null && dailySegments.isNotEmpty) {
-      final segmentsWithData =
-          dailySegments.where((s) => s.screenTimeMillis > 0 || s.doomscrollMillis > 0).toList();
+      final segmentsWithData = dailySegments
+          .where((s) => s.screenTimeMillis > 0 || s.doomscrollMillis > 0)
+          .toList();
       if (segmentsWithData.isNotEmpty) {
-        segmentsWithData.sort((a, b) => (b.screenTimeMillis + b.doomscrollMillis)
-            .compareTo(a.screenTimeMillis + a.doomscrollMillis));
+        segmentsWithData.sort(
+          (a, b) => (b.screenTimeMillis + b.doomscrollMillis).compareTo(
+            a.screenTimeMillis + a.doomscrollMillis,
+          ),
+        );
         final peakSegment = segmentsWithData.first;
 
         return InsightModel(
@@ -561,7 +595,8 @@ class InsightEngine {
     if (eyeSummary == null || !eyeSummary.hasData) return null;
 
     final now = DateTime.now();
-    final isFatigueIndicated = eyeSummary.eyeClosureEvents >= 5 ||
+    final isFatigueIndicated =
+        eyeSummary.eyeClosureEvents >= 5 ||
         (eyeSummary.averageEar != null && eyeSummary.averageEar! < 0.22);
 
     if (isFatigueIndicated) {

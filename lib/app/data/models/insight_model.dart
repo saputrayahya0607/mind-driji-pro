@@ -8,11 +8,7 @@ enum InsightType {
 }
 
 /// Prioritas urutan penampilan insight (BUKAN tingkat keparahan medis)
-enum InsightPriority {
-  high,
-  medium,
-  low,
-}
+enum InsightPriority { high, medium, low }
 
 /// Butir bukti kuantitatif objektif pendukung insight
 class InsightEvidenceItem {
@@ -27,11 +23,7 @@ class InsightEvidenceItem {
   });
 
   Map<String, dynamic> toJson() {
-    return {
-      'label': label,
-      'value': value,
-      'iconName': iconName,
-    };
+    return {'label': label, 'value': value, 'iconName': iconName};
   }
 
   factory InsightEvidenceItem.fromJson(Map<String, dynamic> json) {
@@ -75,7 +67,8 @@ class InsightModel {
 
   bool get hasEvidences => evidences.isNotEmpty;
   bool get hasRelatedApps => relatedApps.isNotEmpty;
-  bool get hasSuggestedAction => suggestedAction != null && suggestedAction!.isNotEmpty;
+  bool get hasSuggestedAction =>
+      suggestedAction != null && suggestedAction!.isNotEmpty;
 
   Map<String, dynamic> toJson() {
     return {
@@ -103,12 +96,15 @@ class InsightModel {
       title: json['title'] as String? ?? '',
       summary: json['summary'] as String? ?? '',
       details: json['details'] as String? ?? '',
-      evidences: (json['evidences'] as List<dynamic>?)
-              ?.map((e) =>
-                  InsightEvidenceItem.fromJson(e as Map<String, dynamic>))
+      evidences:
+          (json['evidences'] as List<dynamic>?)
+              ?.map(
+                (e) => InsightEvidenceItem.fromJson(e as Map<String, dynamic>),
+              )
               .toList() ??
           const [],
-      relatedApps: (json['relatedApps'] as List<dynamic>?)
+      relatedApps:
+          (json['relatedApps'] as List<dynamic>?)
               ?.map((e) => e.toString())
               .toList() ??
           const [],

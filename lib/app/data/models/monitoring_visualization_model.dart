@@ -101,7 +101,8 @@ class DoomscrollSummary {
   });
 
   String get durationFormatted => DurationFormatter.format(totalDurationMillis);
-  bool get hasData => totalSessions > 0 || totalDurationMillis > 0 || totalSwipes > 0;
+  bool get hasData =>
+      totalSessions > 0 || totalDurationMillis > 0 || totalSwipes > 0;
 }
 
 /// Ringkasan sesi eye monitoring untuk periode aktif

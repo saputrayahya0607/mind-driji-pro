@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import '../../../core/constants/app_colors.dart';
+import '../../../core/widgets/stitch_widgets.dart';
 import '../../../data/local/app_database.dart';
 import '../controllers/doomscroll_controller.dart';
 
@@ -38,28 +39,10 @@ class DoomscrollView extends GetView<DoomscrollController> {
         top: false,
         child: Obx(() {
           if (controller.isLoading.value) {
-            return Center(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  SizedBox(
-                    width: 32,
-                    height: 32,
-                    child: CircularProgressIndicator(
-                      color: AppColors.teal,
-                      strokeWidth: 3,
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-                  const Text(
-                    'Memeriksa status monitoring...',
-                    style: TextStyle(
-                      color: AppColors.textSecondary,
-                      fontSize: 14,
-                      fontWeight: FontWeight.w500,
-                    ),
-                  ),
-                ],
+            return const Center(
+              child: MindDrijiLoader(
+                size: 72,
+                message: 'Memeriksa status monitoring...',
               ),
             );
           }

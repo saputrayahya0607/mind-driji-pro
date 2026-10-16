@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/widgets/app_bottom_navigation.dart';
+import '../../../core/widgets/stitch_widgets.dart';
 import '../../../data/models/profile_model.dart';
 import '../../../routes/app_routes.dart';
 import '../controllers/profile_controller.dart';
@@ -80,23 +81,9 @@ class ProfileView extends GetView<ProfileController> {
   /// State saat data sedang dimuat dari server
   Widget _buildLoadingState() {
     return const Center(
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          CircularProgressIndicator(
-            color: AppColors.primary,
-            strokeWidth: 3,
-          ),
-          SizedBox(height: 16),
-          Text(
-            'Memuat profil...',
-            style: TextStyle(
-              color: AppColors.textSecondary,
-              fontSize: 14,
-              fontWeight: FontWeight.w500,
-            ),
-          ),
-        ],
+      child: MindDrijiLoader(
+        size: 72,
+        message: 'Memuat profil...',
       ),
     );
   }

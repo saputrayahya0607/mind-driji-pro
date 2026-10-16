@@ -18,16 +18,18 @@ class RecommendationService extends GetxService {
     InsightService? insightService,
     RecommendationEngine? engine,
     SupabaseClient? supabase,
-  })  : _detectionService = detectionService ??
-            (Get.isRegistered<DetectionService>()
-                ? Get.find<DetectionService>()
-                : DetectionService()),
-        _insightService = insightService ??
-            (Get.isRegistered<InsightService>()
-                ? Get.find<InsightService>()
-                : InsightService()),
-        _engine = engine ?? const RecommendationEngine(),
-        _supabase = supabase ?? _safeGetSupabaseClient();
+  }) : _detectionService =
+           detectionService ??
+           (Get.isRegistered<DetectionService>()
+               ? Get.find<DetectionService>()
+               : DetectionService()),
+       _insightService =
+           insightService ??
+           (Get.isRegistered<InsightService>()
+               ? Get.find<InsightService>()
+               : InsightService()),
+       _engine = engine ?? const RecommendationEngine(),
+       _supabase = supabase ?? _safeGetSupabaseClient();
 
   static SupabaseClient? _safeGetSupabaseClient() {
     try {
@@ -58,7 +60,8 @@ class RecommendationService extends GetxService {
   }) async {
     final activeUserId = _resolveUserId(userId);
     debugPrint(
-        '[MIND_DRIJI_REC] Generating recommendations for date: ${date.toIso8601String().substring(0, 10)}, user: $activeUserId');
+      '[MIND_DRIJI_REC] Generating recommendations for date: ${date.toIso8601String().substring(0, 10)}, user: $activeUserId',
+    );
 
     try {
       // 1. Dapatkan hasil deteksi dari DetectionService
@@ -81,7 +84,8 @@ class RecommendationService extends GetxService {
       );
 
       debugPrint(
-          '[MIND_DRIJI_REC] Generated ${recommendations.length} recommendations for $activeUserId');
+        '[MIND_DRIJI_REC] Generated ${recommendations.length} recommendations for $activeUserId',
+      );
       return recommendations;
     } catch (e) {
       debugPrint('[MIND_DRIJI_REC] Error generating recommendations: $e');

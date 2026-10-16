@@ -1,4 +1,5 @@
 import 'package:drift/drift.dart' as drift;
+import 'dart:typed_data';
 import 'package:drift/native.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -79,6 +80,8 @@ class FakeUsageStatsRepo implements UsageStatsRepository {
   Future<void> saveDailySnapshot({UsageStatsModel? stats, DateTime? date}) async {}
   @override
   Future<int> claimLocalUsage(String authenticatedUserId) async => 0;
+  @override
+  Future<Uint8List?> getAppIcon(String packageName) async => null;
 }
 
 class FakeDoomNative extends DoomscrollNativeProvider {

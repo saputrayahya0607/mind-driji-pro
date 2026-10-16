@@ -92,6 +92,35 @@ class MainActivity : FlutterActivity() {
                         result.error("QUERY_USAGE_ERROR", e.localizedMessage, null)
                     }
                 }
+                "getAppIcon" -> {
+                    try {
+                        val pkg = call.argument<String>("packageName")
+                        if (pkg.isNullOrEmpty()) {
+                            result.error("INVALID_PACKAGE", "Package name cannot be empty", null)
+                        } else {
+                            val pm = packageManager
+                            val appInfo = pm.getApplicationInfo(pkg, 0)
+                            val drawable = pm.getApplicationIcon(appInfo)
+                            val bitmap = when (drawable) {
+                                is android.graphics.drawable.BitmapDrawable -> drawable.bitmap
+                                else -> {
+                                    val width = if (drawable.intrinsicWidth > 0) drawable.intrinsicWidth else 96
+                                    val height = if (drawable.intrinsicHeight > 0) drawable.intrinsicHeight else 96
+                                    val bmp = android.graphics.Bitmap.createBitmap(width, height, android.graphics.Bitmap.Config.ARGB_8888)
+                                    val canvas = android.graphics.Canvas(bmp)
+                                    drawable.setBounds(0, 0, canvas.width, canvas.height)
+                                    drawable.draw(canvas)
+                                    bmp
+                                }
+                            }
+                            val stream = java.io.ByteArrayOutputStream()
+                            bitmap.compress(android.graphics.Bitmap.CompressFormat.PNG, 100, stream)
+                            result.success(stream.toByteArray())
+                        }
+                    } catch (e: Exception) {
+                        result.error("GET_APP_ICON_ERROR", e.localizedMessage, null)
+                    }
+                }
                 else -> result.notImplemented()
             }
         }
